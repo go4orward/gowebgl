@@ -4,7 +4,7 @@
 
 ## How to Build & Run
 
-Simplest example:
+Simplest example: &emsp; _(for explaining how WebGL works)_
 ```bash
 $ make 
 $ ./wasm_test_server    # open your browser, and visit http://localhost:8080
