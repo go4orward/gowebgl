@@ -1,6 +1,8 @@
 # WebGL in Go
 
-### How to Build & Run
+Graphics library using Go + WebAssembly + WebGL
+
+## How to Build & Run
 
 Simplest example:
 ```bash
