@@ -1,6 +1,6 @@
 # WebGL in Go
 
-Graphics library using Go + WebAssembly + WebGL
+2D & 3D Graphics Library using Go + WebAssembly + WebGL
 
 ## How to Build & Run
 
