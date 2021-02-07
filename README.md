@@ -9,14 +9,14 @@ Simplest example: &emsp; _(for explaining how WebGL works)_
 $ make 
 $ ./wasm_test_server    # open your browser, and visit http://localhost:8080
 ```
-![webgl_teser result](xscreen_webgl.png)
+![webgl_teser result](doc/xscreen_webgl.png)
 
 2D example:
 ```bash
 $ make 2d
 $ ./wasm_test_server    # open your browser, and visit http://localhost:8080
 ```
-![webgl2d_teser result](xscreen_webgl2d.png)
+![webgl2d_teser result](doc/xscreen_webgl2d.png)
 
 3D example:
 ```bash
