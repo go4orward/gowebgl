@@ -16,7 +16,8 @@ func main() {
 	if err != nil {
 		js.Global().Call("alert", "Failed to start WebGL : "+err.Error())
 	} else {
-		vertices, indices := webgl.GetExampleGeometry("triangle")
+		vertices := []float32{-0.5, 0.5, 0, -0.5, -0.5, 0, 0.5, -0.5, 0}
+		indices := []uint32{2, 1, 0}
 		v_shader, f_shader := webgl.GetExampleShaders("default")
 		webgl.Render(wctx, vertices, indices, v_shader, f_shader)
 	}

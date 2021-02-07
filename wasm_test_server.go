@@ -1,5 +1,5 @@
 // This code launches a simple HTTP server to test the pre-built WASM bundle
-// (This code is inspired by https://github.com/bobcob7/wasm-basic-triangle)
+// (This code was inspired by https://github.com/bobcob7/wasm-basic-triangle)
 package main
 
 import (

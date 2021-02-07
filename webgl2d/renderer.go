@@ -22,7 +22,7 @@ func NewRenderer(wctx *common.WebGLContext) *Renderer {
 // Clear
 // ----------------------------------------------------------------------------
 
-func (self *Renderer) Clear() {
+func (self *Renderer) Clear(color string) {
 	// // Enable the depth test
 	// gl.enable(gl.DEPTH_TEST)
 	// gl.depthFunc(gl.LEQUAL) // Near things obscure far things
@@ -32,13 +32,13 @@ func (self *Renderer) Clear() {
 	// // Clear the color buffer bit
 	// gl.clearColor(clear_color[0], clear_color[1], clear_color[2], 1.0)
 	// gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
-
 	context := self.wctx.GetContext()
 	constants := self.wctx.GetConstants()
 
-	context.Call("clearColor", 0.1, 0.1, 0.1, 1.0)    // Set clearing color
-	context.Call("clear", constants.COLOR_BUFFER_BIT) // Clear the canvas
-	// context.Call("enable", constants.DEPTH_TEST)      // Enable the depth test
+	rgb, _ := parse_hex_color(color)
+	context.Call("clearColor", rgb[0], rgb[1], rgb[2], 1.0) // Set clearing color
+	context.Call("clear", constants.COLOR_BUFFER_BIT)       // Clear the canvas
+	// context.Call("enable", constants.DEPTH_TEST)         // Enable the depth test
 
 	context.Call("viewport", 0, 0, self.wctx.GetWidth(), self.wctx.GetHeight()) // Set the view port
 

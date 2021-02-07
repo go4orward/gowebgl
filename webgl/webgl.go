@@ -1,5 +1,5 @@
 // Package webgl implements the simplest library to explain how Go + WASM + WebGL works.
-// This code is inspired by https://github.com/bobcob7/wasm-basic-triangle,
+// This code was inspired by https://github.com/bobcob7/wasm-basic-triangle,
 // and the issue of js.TypedArrayOf() (of Go1.11) was fixed.
 
 package webgl
@@ -7,20 +7,6 @@ package webgl
 import (
 	"../common"
 )
-
-func GetExampleGeometry(example string) ([]float32, []uint32) {
-	var vertices []float32
-	var indices []uint32
-	switch example {
-	case "triangle":
-		vertices = []float32{0, 0.7, 0, -0.5, -0.5, 0, 0.5, -0.5, 0}
-		indices = []uint32{2, 1, 0}
-	default: // rectangle
-		vertices = []float32{-0.5, 0.5, 0, -0.5, -0.5, 0, 0.5, -0.5, 0, 0.5, 0.5, 0}
-		indices = []uint32{2, 1, 0, 2, 0, 3}
-	}
-	return vertices, indices
-}
 
 func GetExampleShaders(example string) (string, string) {
 	var vertex_shader_code string
@@ -82,7 +68,7 @@ func Render(wctx *common.WebGLContext, vertices []float32, indices []uint32, ver
 
 	//// Draw the scene ////
 
-	context.Call("clearColor", 0.1, 0.1, 0.1, 1.0)                    // Set clearing color
+	context.Call("clearColor", 1.0, 1.0, 1.0, 1.0)                    // Set clearing color
 	context.Call("clear", constants.COLOR_BUFFER_BIT)                 // Clear the canvas
 	context.Call("enable", constants.DEPTH_TEST)                      // Enable the depth test
 	context.Call("viewport", 0, 0, wctx.GetWidth(), wctx.GetHeight()) // Set the view port
