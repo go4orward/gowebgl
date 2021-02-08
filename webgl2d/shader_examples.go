@@ -61,3 +61,26 @@ func NewShader_SingleColor(wctx *common.WebGLContext) *Shader {
 	shader.InitBindingForAttribute("pos", "vec2", "geometry.coord") // automatic binding of attribute variable
 	return shader
 }
+
+func NewShader_ModelView(wctx *common.WebGLContext) *Shader {
+	var vertex_shader_code = `
+		precision mediump float;
+		attribute vec2 pos;
+		uniform mat3 mview;
+		void main() {
+			vec3 xy1 = vec3(pos.x, pos.y, 1.0)
+			vec3 new_pos = mview * xy1
+			gl_Position = vec4(new_pos.x, new_pos.y, 0.0, 1.0);
+		}`
+	var fragment_shader_code = `
+		precision mediump float;
+		uniform vec3 color;
+		void main() { 
+			gl_FragColor = vec4(color.r, color.g, color.b, 1.0);
+		}`
+	shader := NewShader(wctx, vertex_shader_code, fragment_shader_code)
+	shader.InitBindingForUniform("mview", "mat3", "renderer.modelview") // automatic binding of ModelView matrix from Renderer
+	shader.InitBindingForUniform("color", "vec3", "material.color")     // automatic binding of uniform variable
+	shader.InitBindingForAttribute("pos", "vec2", "geometry.coord")     // automatic binding of attribute variable
+	return shader
+}

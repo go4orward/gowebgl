@@ -106,7 +106,7 @@ func (self *Geometry) Scale(scale float32) *Geometry {
 	return self
 }
 
-func (self *Geometry) AppyMatrix(mtx *Matrix3) *Geometry {
+func (self *Geometry) AppyMatrix(matrix *geom2d.Matrix3) *Geometry {
 	// for i := 0; i < len(self.verts); i++ {
 	// 	self.verts[i][0] *= scale
 	// 	self.verts[i][1] *= scale

@@ -2,6 +2,10 @@ all:
 	GOOS=js GOARCH=wasm go build -o wasm_test.wasm webgl_tester.go
 	go build -o wasm_test_server wasm_test_server.go
 
+dev:
+	GOOS=js GOARCH=wasm go build -o wasm_test.wasm webgl2d_dev.go
+	go build -o wasm_test_server wasm_test_server.go
+
 2d:
 	GOOS=js GOARCH=wasm go build -o wasm_test.wasm webgl2d_tester.go
 	go build -o wasm_test_server wasm_test_server.go

@@ -6,6 +6,7 @@ import (
 	"syscall/js"
 
 	"github.com/go4orward/gowebgl/common"
+	"github.com/go4orward/gowebgl/common/geom2d"
 )
 
 type Renderer struct {
@@ -52,7 +53,7 @@ func (self *Renderer) RenderAxes(camera *Camera, length float32) {
 	if self.axes == nil {
 		self.axes = NewSceneObject_ForAxes(self.wctx, length)
 	}
-	self.RenderSceneObject(camera, self.axes, camera.ViewMatrix)
+	self.RenderSceneObject(camera, self.axes, camera.viewmatrix)
 }
 
 // ----------------------------------------------------------------------------
@@ -61,9 +62,8 @@ func (self *Renderer) RenderAxes(camera *Camera, length float32) {
 
 func (self *Renderer) RenderScene(camera *Camera, scene *Scene) {
 	// Render all the scene objects
-	view_matrix := camera.ViewMatrix // Matrix3
 	for _, sobj := range scene.Objects {
-		self.RenderSceneObject(camera, sobj, view_matrix)
+		self.RenderSceneObject(camera, sobj, camera.viewmatrix)
 	}
 }
 
@@ -71,7 +71,7 @@ func (self *Renderer) RenderScene(camera *Camera, scene *Scene) {
 // Rendering SceneObject
 // ----------------------------------------------------------------------------
 
-func (self *Renderer) RenderSceneObject(camera *Camera, sobj *SceneObject, view_matrix *Matrix3) error {
+func (self *Renderer) RenderSceneObject(camera *Camera, sobj *SceneObject, mview *geom2d.Matrix3) error {
 	context := self.wctx.GetContext()
 	constants := self.wctx.GetConstants()
 	// 1.
@@ -87,7 +87,7 @@ func (self *Renderer) RenderSceneObject(camera *Camera, sobj *SceneObject, view_
 		autobinding, value := umap["autobinding"].(string), umap["value"]
 		var err error = nil
 		if autobinding != "" {
-			err = self.complete_uniform_binding_automatically(location, dtype, autobinding, sobj)
+			err = self.complete_uniform_binding_automatically(location, dtype, autobinding, sobj, mview)
 		} else if value != nil {
 			err = self.complete_uniform_binding_with_value(location, dtype, value)
 		} else {
@@ -147,7 +147,7 @@ func (self *Renderer) RenderSceneObject(camera *Camera, sobj *SceneObject, view_
 	return nil
 }
 
-func (self *Renderer) complete_uniform_binding_automatically(location js.Value, dtype string, autobinding string, sobj *SceneObject) error {
+func (self *Renderer) complete_uniform_binding_automatically(location js.Value, dtype string, autobinding string, sobj *SceneObject, mview *geom2d.Matrix3) error {
 	context := self.wctx.GetContext()
 	// fmt.Printf("Uniform (%s) : autobinding= '%s'\n", dtype, autobinding)
 	switch autobinding {
@@ -160,6 +160,13 @@ func (self *Renderer) complete_uniform_binding_automatically(location js.Value, 
 		case "vec4":
 			context.Call("uniform4f", location, v[0], v[1], v[2], v[3]) // OK
 			// context.Call("uniform4fv", location, common.ConvertGoSliceToJsTypedArray(v)) // GL_INVALID_OPERATION : glUniform4fv: count > 1 for non-arra
+			return nil
+		}
+	case "renderer.modelview":
+		switch dtype {
+		case "mat3":
+			e := mview.GetElements() // elements from the ModelView matrix
+			context.Call("uniformMatrix3fv", location, e)
 			return nil
 		}
 	}

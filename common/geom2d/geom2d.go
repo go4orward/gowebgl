@@ -1,5 +1,10 @@
 package geom2d
 
+func Assign(a []float32, b []float32) {
+	a[0] = b[0]
+	a[1] = b[1]
+}
+
 func AddAB(a []float32, b []float32) []float32 {
 	return []float32{a[0] + b[0], a[1] + b[1]}
 }
