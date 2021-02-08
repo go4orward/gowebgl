@@ -1,6 +1,6 @@
 package webgl2d
 
-import "../common"
+import "github.com/go4orward/gowebgl/common"
 
 type Camera struct {
 	ViewMatrix *Matrix3

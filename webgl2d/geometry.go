@@ -5,8 +5,8 @@ import (
 	"math"
 	"syscall/js"
 
-	"../common"
-	"../common/geom2d"
+	"github.com/go4orward/gowebgl/common"
+	"github.com/go4orward/gowebgl/common/geom2d"
 )
 
 // ----------------------------------------------------------------------------

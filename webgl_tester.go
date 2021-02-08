@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"syscall/js"
 
-	"./common"
-	"./webgl"
+	"github.com/go4orward/gowebgl/common"
+	"github.com/go4orward/gowebgl/webgl"
 )
 
 func main() {

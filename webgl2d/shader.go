@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"syscall/js"
 
-	"../common"
+	"github.com/go4orward/gowebgl/common"
 )
 
 type Shader struct {

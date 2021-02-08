@@ -1,6 +1,6 @@
 package webgl2d
 
-import "../common"
+import "github.com/go4orward/gowebgl/common"
 
 func NewSceneObject_ForAxes(wctx *common.WebGLContext, length float32) *SceneObject {
 	// This example creates two lines for X (red) and Y (green) axes, with origin at (0,0)

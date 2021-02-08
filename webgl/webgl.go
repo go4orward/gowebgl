@@ -5,7 +5,7 @@
 package webgl
 
 import (
-	"../common"
+	"github.com/go4orward/gowebgl/common"
 )
 
 func GetExampleShaders(example string) (string, string) {

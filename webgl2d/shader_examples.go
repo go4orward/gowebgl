@@ -1,7 +1,7 @@
 package webgl2d
 
 import (
-	"../common"
+	"github.com/go4orward/gowebgl/common"
 )
 
 func NewShader_ForAxes(wctx *common.WebGLContext) *Shader {
