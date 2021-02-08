@@ -26,7 +26,7 @@ func main() {
 		geometry.BuildDataBuffers(true, false, true)        // build data buffers for vertices and faces
 		geometry.BuildWebGLBuffers(wctx, true, false, true) // build WebGL buffers to draw POINTS, LINES, TRIANGLES
 		material := webgl2d.NewMaterial("#cccc00")          // create material (yellow color)
-		shader := webgl2d.NewShader_SingleColor(wctx)       // create a shader, and set its bindings
+		shader := webgl2d.NewShader_ModelView(wctx)         // create a shader, and set its bindings
 		shader.SetBindingToDraw("TRIANGLES", geometry.GetDrawBuffer("TRIANGLES"), geometry.GetDrawCount("TRIANGLES"))
 		shader.CheckBindings()
 		sobj = webgl2d.NewSceneObject(geometry, material, shader)
@@ -37,4 +37,5 @@ func main() {
 	renderer.Clear("#ffffff")             // prepare to render (clearing white background)
 	renderer.RenderScene(camera, scene)   // render the scene (iterating over all the SceneObjects in it)
 	renderer.RenderAxes(camera, 0.8)      // render the axes (just for visual reference)
+	camera.ShowInfo()
 }

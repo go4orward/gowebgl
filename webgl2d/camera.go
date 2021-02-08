@@ -1,6 +1,7 @@
 package webgl2d
 
 import (
+	"fmt"
 	"math"
 
 	"github.com/go4orward/gowebgl/common"
@@ -63,4 +64,9 @@ func (self *Camera) update_view_matrix() *Camera {
 		0.0, 0.0, 1.0)
 	self.viewmatrix.SetMultiplyMatrices(scale, rotation, translation)
 	return self
+}
+
+func (self *Camera) ShowInfo() {
+	fmt.Printf("Camera at (%v,%v) with angle=%.1f zoom=%.2f\n", self.center[0], self.center[1], self.angle, self.zoom)
+	fmt.Println(self.viewmatrix)
 }

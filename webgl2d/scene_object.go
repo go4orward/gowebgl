@@ -10,13 +10,16 @@ type SceneObject struct {
 	shader   *Shader // shader program and its bindings
 
 	children    []*SceneObject
-	modelMatrix *geom2d.Matrix3
+	modelmatrix *geom2d.Matrix3
 }
 
 func NewSceneObject(geometry *Geometry, material *Material, shader *Shader) *SceneObject {
+	if geometry == nil || shader == nil || shader.err != nil {
+		return nil
+	}
 	sobj := SceneObject{geometry: geometry, material: material, shader: shader}
 	sobj.children = nil
-	sobj.modelMatrix = nil
+	sobj.modelmatrix = nil
 	return &sobj
 }
 

@@ -11,6 +11,8 @@ func NewScene() *Scene {
 }
 
 func (self *Scene) Add(sobj *SceneObject) *Scene {
-	self.Objects = append(self.Objects, sobj)
+	if sobj != nil {
+		self.Objects = append(self.Objects, sobj)
+	}
 	return self
 }

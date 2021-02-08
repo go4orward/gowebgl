@@ -165,8 +165,11 @@ func (self *Renderer) complete_uniform_binding_automatically(location js.Value, 
 	case "renderer.modelview":
 		switch dtype {
 		case "mat3":
-			e := mview.GetElements() // elements from the ModelView matrix
-			context.Call("uniformMatrix3fv", location, e)
+			fmt.Println("renderer.modelview")
+			e := common.ConvertGoSliceToJsTypedArray(mview.GetElements()) // elements of ModelView matrix
+			common.ShowArrayInfo("mview_go", mview.GetElements())
+			common.ShowArrayInfo("mivew_js", e)
+			context.Call("uniformMatrix3fv", location, false, e)
 			return nil
 		}
 	}
