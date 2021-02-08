@@ -1,6 +1,6 @@
 # WebGL in Go
 
-2D & 3D Graphics Library using Go + WebAssembly + WebGL
+Interactive 2D & 3D Graphics Library using Go + WebAssembly + WebGL
 
 ## How to Build & Run
 
@@ -23,3 +23,8 @@ $ ./wasm_test_server    # open your browser, and visit http://localhost:8080
 $ make 3d               # COMMING SOON 
 $ ./wasm_test_server    # open your browser, and visit http://localhost:8080
 ```
+
+## Thanks
+
+I hope this project to be helpful for many people to learn WebGL and build awesome 2D & 3D graphics applications.
+Many thanks to @neelance (Richard Musiol), for his vision and huge contributions for GopherJS and WebAssembly for Go.
