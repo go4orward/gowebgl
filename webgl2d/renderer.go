@@ -40,9 +40,6 @@ func (self *Renderer) Clear(color string) {
 	context.Call("clearColor", rgb[0], rgb[1], rgb[2], 1.0) // Set clearing color
 	context.Call("clear", constants.COLOR_BUFFER_BIT)       // Clear the canvas
 	// context.Call("enable", constants.DEPTH_TEST)         // Enable the depth test
-
-	context.Call("viewport", 0, 0, self.wctx.GetWidth(), self.wctx.GetHeight()) // Set the view port
-
 }
 
 // ----------------------------------------------------------------------------
@@ -53,7 +50,7 @@ func (self *Renderer) RenderAxes(camera *Camera, length float32) {
 	if self.axes == nil {
 		self.axes = NewSceneObject_ForAxes(self.wctx, length)
 	}
-	self.RenderSceneObject(camera, self.axes, camera.viewmatrix)
+	self.RenderSceneObject(self.axes, camera.viewmatrix)
 }
 
 // ----------------------------------------------------------------------------
@@ -63,7 +60,8 @@ func (self *Renderer) RenderAxes(camera *Camera, length float32) {
 func (self *Renderer) RenderScene(camera *Camera, scene *Scene) {
 	// Render all the scene objects
 	for _, sobj := range scene.Objects {
-		self.RenderSceneObject(camera, sobj, camera.viewmatrix)
+		modelview := camera.viewmatrix.MultiplyRight(sobj.modelmatrix)
+		self.RenderSceneObject(sobj, modelview)
 	}
 }
 
@@ -71,13 +69,20 @@ func (self *Renderer) RenderScene(camera *Camera, scene *Scene) {
 // Rendering SceneObject
 // ----------------------------------------------------------------------------
 
-func (self *Renderer) RenderSceneObject(camera *Camera, sobj *SceneObject, mview *geom2d.Matrix3) error {
+func (self *Renderer) RenderSceneObject(sobj *SceneObject, modelview *geom2d.Matrix3) error {
 	context := self.wctx.GetContext()
 	constants := self.wctx.GetConstants()
+	shader := sobj.shader
+	if shader == nil {
+		shader = sobj.parent_shader
+		if shader == nil {
+			return errors.New("Failed to RenderSceneObject() : shader not found")
+		}
+	}
 	// 1.
-	sobj.shader.UseProgram()
+	shader.UseProgram()
 	// 2. bind the uniforms of the shader program
-	for uname, umap := range sobj.shader.uniforms {
+	for uname, umap := range shader.uniforms {
 		if umap["location"] == nil {
 			err := errors.New("Invalid binding : call 'shader.CheckBinding()' before rendering")
 			fmt.Println(err.Error())
@@ -87,7 +92,7 @@ func (self *Renderer) RenderSceneObject(camera *Camera, sobj *SceneObject, mview
 		autobinding, value := umap["autobinding"].(string), umap["value"]
 		var err error = nil
 		if autobinding != "" {
-			err = self.complete_uniform_binding_automatically(location, dtype, autobinding, sobj, mview)
+			err = self.complete_uniform_binding_automatically(location, dtype, autobinding, sobj, modelview)
 		} else if value != nil {
 			err = self.complete_uniform_binding_with_value(location, dtype, value)
 		} else {
@@ -99,7 +104,7 @@ func (self *Renderer) RenderSceneObject(camera *Camera, sobj *SceneObject, mview
 		}
 	}
 	// 3. bind the attributes of the shader program
-	for aname, amap := range sobj.shader.attributes {
+	for aname, amap := range shader.attributes {
 		if amap["location"] == nil {
 			err := errors.New("Invalid binding : call 'shader.CheckBinding()' before rendering")
 			fmt.Println(err.Error())
@@ -122,11 +127,11 @@ func (self *Renderer) RenderSceneObject(camera *Camera, sobj *SceneObject, mview
 		}
 	}
 	// 4. draw
-	for mode, mode_map := range sobj.shader.draw_modes {
+	for mode, mode_map := range shader.draw_modes {
 		// fmt.Println("mode_map : %T %T", mode_map["count"], mode_map["buffer"])
 		count := mode_map["count"].(int)
 		if count <= 0 {
-			fmt.Printf("Invalid BindingsToDraw : %v\n", mode_map)
+			fmt.Printf("Invalid BindingsToDraw : %s %v\n", mode, mode_map)
 			continue
 		}
 		switch mode {
@@ -144,32 +149,40 @@ func (self *Renderer) RenderSceneObject(camera *Camera, sobj *SceneObject, mview
 		default:
 		}
 	}
+	for _, child := range sobj.children {
+		modelview := modelview.MultiplyRight(child.modelmatrix)
+		self.RenderSceneObject(child, modelview)
+	}
 	return nil
 }
 
-func (self *Renderer) complete_uniform_binding_automatically(location js.Value, dtype string, autobinding string, sobj *SceneObject, mview *geom2d.Matrix3) error {
+func (self *Renderer) complete_uniform_binding_automatically(location js.Value, dtype string, autobinding string, sobj *SceneObject, modelview *geom2d.Matrix3) error {
 	context := self.wctx.GetContext()
 	// fmt.Printf("Uniform (%s) : autobinding= '%s'\n", dtype, autobinding)
 	switch autobinding {
 	case "material.color":
-		v := sobj.material.color
+		material := sobj.material
+		if material == nil {
+			material = sobj.parent_material
+			if material == nil {
+				return fmt.Errorf("Invalid binding : uniform (%s) - material not found", dtype)
+			}
+		}
+		c := material.color
 		switch dtype {
 		case "vec3":
-			context.Call("uniform3f", location, v[0], v[1], v[2])
+			context.Call("uniform3f", location, c[0], c[1], c[2])
 			return nil
 		case "vec4":
-			context.Call("uniform4f", location, v[0], v[1], v[2], v[3]) // OK
-			// context.Call("uniform4fv", location, common.ConvertGoSliceToJsTypedArray(v)) // GL_INVALID_OPERATION : glUniform4fv: count > 1 for non-arra
+			context.Call("uniform4f", location, c[0], c[1], c[2], c[3])
 			return nil
 		}
 	case "renderer.modelview":
 		switch dtype {
 		case "mat3":
-			fmt.Println("renderer.modelview")
-			e := common.ConvertGoSliceToJsTypedArray(mview.GetElements()) // elements of ModelView matrix
-			common.ShowArrayInfo("mview_go", mview.GetElements())
-			common.ShowArrayInfo("mivew_js", e)
-			context.Call("uniformMatrix3fv", location, false, e)
+			// Note that we need Transpose(), since WebGL uses column-major matrix
+			e := common.ConvertGoSliceToJsTypedArray(modelview.Transpose().GetElements()) // ModelView matrix, converted to JavaScript 'Float32Array'
+			context.Call("uniformMatrix3fv", location, false, e)                          // gl.uniformMatrix3fv(location, transpose, values_array)
 			return nil
 		}
 	}
@@ -193,8 +206,7 @@ func (self *Renderer) complete_uniform_binding_with_value(location js.Value, dty
 		return nil
 	case "vec4":
 		v := value.([]float32)
-		context.Call("uniform4f", location, v[0], v[1], v[2], v[3]) // OK
-		// context.Call("uniform4fv", location, common.ConvertGoSliceToJsTypedArray(v)) // GL_INVALID_OPERATION : glUniform4fv: count > 1 for non-arra
+		context.Call("uniform4f", location, v[0], v[1], v[2], v[3])
 		return nil
 	}
 	return fmt.Errorf("Invalid binding : uniform (%s) failed to bind with value %T", dtype, value)

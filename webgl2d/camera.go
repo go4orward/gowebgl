@@ -40,7 +40,11 @@ func (self *Camera) SetZoom(zoom float32) *Camera {
 	return self.update_view_matrix()
 }
 
-func (self *Camera) SetPose(center []float32, zoom float32, angle_in_degree float32) *Camera {
+func (self *Camera) SetPose(center []float32, angle_in_degree float32, zoom float32) *Camera {
+	if zoom <= 0.0 || zoom >= 1000.0 {
+		fmt.Printf("Camera.SetPose() failed : invalid zoom = %.1f\n", zoom)
+		return self
+	}
 	geom2d.Assign(self.center, center)
 	self.angle = angle_in_degree
 	self.zoom = zoom
@@ -50,23 +54,22 @@ func (self *Camera) SetPose(center []float32, zoom float32, angle_in_degree floa
 func (self *Camera) update_view_matrix() *Camera {
 	radian := float64(self.angle) * (math.Pi / 180.0)
 	cos, sin := float32(math.Cos(radian)), float32(math.Sin(radian))
-	scale := geom2d.NewMatrix3().Set(
+	scaling := geom2d.NewMatrix3().Set(
 		self.zoom, 0.0, 0.0,
 		0.0, self.zoom, 0.0,
 		0.0, 0.0, 1.0)
 	rotation := geom2d.NewMatrix3().Set(
-		cos, -sin, 0.0,
-		sin, cos, 0.0,
+		cos, +sin, 0.0,
+		-sin, cos, 0.0,
 		0.0, 0.0, 1.0)
 	translation := geom2d.NewMatrix3().Set(
-		0.0, 0.0, -self.center[0],
-		0.0, 0.0, -self.center[1],
+		1.0, 0.0, -self.center[0],
+		0.0, 1.0, -self.center[1],
 		0.0, 0.0, 1.0)
-	self.viewmatrix.SetMultiplyMatrices(scale, rotation, translation)
+	self.viewmatrix.SetMultiplyMatrices(scaling, rotation, translation)
 	return self
 }
 
 func (self *Camera) ShowInfo() {
-	fmt.Printf("Camera at (%v,%v) with angle=%.1f zoom=%.2f\n", self.center[0], self.center[1], self.angle, self.zoom)
-	fmt.Println(self.viewmatrix)
+	fmt.Printf("Camera at (%v,%v) with angle=%.1f zoom=%.2f  %v\n", self.center[0], self.center[1], self.angle, self.zoom, self.viewmatrix)
 }

@@ -269,8 +269,6 @@ func (self *Geometry) BuildWebGLBuffers(wctx *common.WebGLContext, for_vert bool
 	} else {
 		self.webgl_buffer_face = js.Null()
 	}
-	common.ShowArrayInfo("dbuf_vert", self.data_buffer_vert)
-	common.ShowArrayInfo("wbuf_vert", self.webgl_buffer_vert)
 }
 
 func (self *Geometry) GetDrawBuffer(mode string) js.Value {

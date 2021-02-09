@@ -20,5 +20,16 @@
         }
     </style>
 </head>
-<body><canvas id="webglcanvas">Your browser doesn't appear to support the canvas tag.</canvas></body>
+<body>
+    <canvas id="webglcanvas">Your browser doesn't appear to support the canvas tag.</canvas>
+    <script>
+        canvas = document.getElementById("webglcanvas")
+        canvas.addEventListener("click", function(event) { processEventFromGo(event); });
+        canvas.addEventListener("dblclick", function(event) { processEventFromGo(event); });
+        canvas.addEventListener("mousemove", function(event) { processEventFromGo(event); });
+        canvas.addEventListener("mousedown", function(event) { processEventFromGo(event); });
+        canvas.addEventListener("mouseup", function(event) { processEventFromGo(event); });
+        canvas.addEventListener("mouseleave", function(event) { processEventFromGo(event); });
+    </script>
+</body>
 </html>

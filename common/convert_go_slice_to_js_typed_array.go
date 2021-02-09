@@ -18,86 +18,85 @@ import (
 // Note that this solution sacrifices performance. (WebGL renderer's frame rate will be OK, though)
 // We hope Go/WebAssembly will sort out this issue in the future.
 
-func ConvertGoSliceToJsTypedArray(s interface{}) js.Value {
-	switch s := s.(type) {
+func ConvertGoSliceToJsTypedArray(a interface{}) js.Value {
+	switch a := a.(type) {
 	case []int8:
-		slice_head := (*reflect.SliceHeader)(unsafe.Pointer(&s))
+		b := js.Global().Get("Uint8Array").New(len(a))
+		slice_head := (*reflect.SliceHeader)(unsafe.Pointer(&a))
 		byte_slice := *(*[]byte)(unsafe.Pointer(slice_head))
-		a := js.Global().Get("Uint8Array").New(len(s))
-		js.CopyBytesToJS(a, byte_slice)
-		return js.Global().Get("Int8Array").New(a.Get("buffer"), a.Get("byteOffset"), a.Get("byteLength"))
+		js.CopyBytesToJS(b, byte_slice)
+		return js.Global().Get("Int8Array").New(b.Get("buffer"), b.Get("byteOffset"), b.Get("byteLength"))
 	case []int16:
-		slice_head := (*reflect.SliceHeader)(unsafe.Pointer(&s))
+		b := js.Global().Get("Uint8Array").New(len(a) * 2)
+		slice_head := (*reflect.SliceHeader)(unsafe.Pointer(&a))
 		slice_head.Len *= 2
 		slice_head.Cap *= 2
 		byte_slice := *(*[]byte)(unsafe.Pointer(slice_head))
-		a := js.Global().Get("Uint8Array").New(len(s) * 2)
-		js.CopyBytesToJS(a, byte_slice)
-		return js.Global().Get("Int16Array").New(a.Get("buffer"), a.Get("byteOffset"), a.Get("byteLength").Int()/2)
+		js.CopyBytesToJS(b, byte_slice)
+		return js.Global().Get("Int16Array").New(b.Get("buffer"), b.Get("byteOffset"), b.Get("byteLength").Int()/2)
 	case []int32:
-		slice_head := (*reflect.SliceHeader)(unsafe.Pointer(&s))
+		b := js.Global().Get("Uint8Array").New(len(a) * 4)
+		slice_head := (*reflect.SliceHeader)(unsafe.Pointer(&a))
 		slice_head.Len *= 4
 		slice_head.Cap *= 4
 		byte_slice := *(*[]byte)(unsafe.Pointer(slice_head))
-		a := js.Global().Get("Uint8Array").New(len(s) * 4)
-		js.CopyBytesToJS(a, byte_slice)
-		return js.Global().Get("Int32Array").New(a.Get("buffer"), a.Get("byteOffset"), a.Get("byteLength").Int()/4)
+		js.CopyBytesToJS(b, byte_slice)
+		return js.Global().Get("Int32Array").New(b.Get("buffer"), b.Get("byteOffset"), b.Get("byteLength").Int()/4)
 	case []int64:
-		slice_head := (*reflect.SliceHeader)(unsafe.Pointer(&s))
+		b := js.Global().Get("Uint8Array").New(len(a) * 8)
+		slice_head := (*reflect.SliceHeader)(unsafe.Pointer(&a))
 		slice_head.Len *= 8
 		slice_head.Cap *= 8
 		byte_slice := *(*[]byte)(unsafe.Pointer(slice_head))
-		a := js.Global().Get("Uint8Array").New(len(s) * 8)
-		js.CopyBytesToJS(a, byte_slice)
-		return js.Global().Get("BigInt64Array").New(a.Get("buffer"), a.Get("byteOffset"), a.Get("byteLength").Int()/8)
+		js.CopyBytesToJS(b, byte_slice)
+		return js.Global().Get("BigInt64Array").New(b.Get("buffer"), b.Get("byteOffset"), b.Get("byteLength").Int()/8)
 	case []uint8:
-		a := js.Global().Get("Uint8Array").New(len(s))
-		js.CopyBytesToJS(a, s)
-		return a
+		b := js.Global().Get("Uint8Array").New(len(a))
+		js.CopyBytesToJS(b, a)
+		return b
 	case []uint16:
-		slice_head := (*reflect.SliceHeader)(unsafe.Pointer(&s))
+		b := js.Global().Get("Uint8Array").New(len(a) * 2)
+		slice_head := (*reflect.SliceHeader)(unsafe.Pointer(&a))
 		slice_head.Len *= 2
 		slice_head.Cap *= 2
 		byte_slice := *(*[]byte)(unsafe.Pointer(slice_head))
-		a := js.Global().Get("Uint8Array").New(len(s) * 2)
-		js.CopyBytesToJS(a, byte_slice)
-		return js.Global().Get("Uint16Array").New(a.Get("buffer"), a.Get("byteOffset"), a.Get("byteLength").Int()/2)
+		js.CopyBytesToJS(b, byte_slice)
+		return js.Global().Get("Uint16Array").New(b.Get("buffer"), b.Get("byteOffset"), b.Get("byteLength").Int()/2)
 	case []uint32:
-		slice_head := (*reflect.SliceHeader)(unsafe.Pointer(&s))
+		b := js.Global().Get("Uint8Array").New(len(a) * 4)
+		slice_head := (*reflect.SliceHeader)(unsafe.Pointer(&a))
 		slice_head.Len *= 4
 		slice_head.Cap *= 4
 		byte_slice := *(*[]byte)(unsafe.Pointer(slice_head))
-		a := js.Global().Get("Uint8Array").New(len(s) * 4)
-		js.CopyBytesToJS(a, byte_slice)
-		return js.Global().Get("Uint32Array").New(a.Get("buffer"), a.Get("byteOffset"), a.Get("byteLength").Int()/4)
+		js.CopyBytesToJS(b, byte_slice)
+		return js.Global().Get("Uint32Array").New(b.Get("buffer"), b.Get("byteOffset"), b.Get("byteLength").Int()/4)
 	case []uint64:
-		slice_head := (*reflect.SliceHeader)(unsafe.Pointer(&s))
+		b := js.Global().Get("Uint8Array").New(len(a) * 4)
+		slice_head := (*reflect.SliceHeader)(unsafe.Pointer(&a))
 		slice_head.Len *= 8
 		slice_head.Cap *= 8
 		byte_slice := *(*[]byte)(unsafe.Pointer(slice_head))
-		a := js.Global().Get("Uint8Array").New(len(s) * 4)
-		js.CopyBytesToJS(a, byte_slice)
-		return js.Global().Get("BigUint64Array").New(a.Get("buffer"), a.Get("byteOffset"), a.Get("byteLength").Int()/8)
+		js.CopyBytesToJS(b, byte_slice)
+		return js.Global().Get("BigUint64Array").New(b.Get("buffer"), b.Get("byteOffset"), b.Get("byteLength").Int()/8)
 	case []float32:
-		slice_head := (*reflect.SliceHeader)(unsafe.Pointer(&s))
+		b := js.Global().Get("Uint8Array").New(len(a) * 4)
+		slice_head := (*reflect.SliceHeader)(unsafe.Pointer(&a))
 		slice_head.Len *= 4
 		slice_head.Cap *= 4
 		byte_slice := *(*[]byte)(unsafe.Pointer(slice_head))
 		// ShowArrayInfo(byte_slice)
-		a := js.Global().Get("Uint8Array").New(len(s) * 4)
-		js.CopyBytesToJS(a, byte_slice)
-		// ShowArrayInfo(a)
-		return js.Global().Get("Float32Array").New(a.Get("buffer"), a.Get("byteOffset"), a.Get("byteLength").Int()/4)
+		js.CopyBytesToJS(b, byte_slice)
+		return js.Global().Get("Float32Array").New(b.Get("buffer"), b.Get("byteOffset"), b.Get("byteLength").Int()/4)
 	case []float64:
-		slice_head := (*reflect.SliceHeader)(unsafe.Pointer(&s))
+		b := js.Global().Get("Uint8Array").New(len(a) * 8)
+		slice_head := (*reflect.SliceHeader)(unsafe.Pointer(&a))
 		slice_head.Len *= 8
 		slice_head.Cap *= 8
 		byte_slice := *(*[]byte)(unsafe.Pointer(slice_head))
-		a := js.Global().Get("Uint8Array").New(len(s) * 8)
-		js.CopyBytesToJS(a, byte_slice)
-		return js.Global().Get("Float64Array").New(a.Get("buffer"), a.Get("byteOffset"), a.Get("byteLength").Int()/8)
+		js.CopyBytesToJS(b, byte_slice)
+		return js.Global().Get("Float64Array").New(b.Get("buffer"), b.Get("byteOffset"), b.Get("byteLength").Int()/8)
 	default:
-		panic(fmt.Sprintf("Unexpected value at ConvertGoSliceToJsTypedArray(): %T", s))
+		panic(fmt.Sprintf("Unexpected value at ConvertGoSliceToJsTypedArray(): %T", a))
 	}
 }
 
@@ -119,8 +118,8 @@ func ShowArrayInfo(desc string, iv interface{}) {
 		} else if v.IsNull() {
 			fmt.Printf("ARRAY %s of js.Value : null\n", desc)
 		} else {
-			fmt.Printf("ARRAY %s of js.Value : type:%s name:%s length:%s (%s) byteLength:%s byteOffset:%s\n", desc, v.Type().String(), v.Get("name").String(), p_int(v, "length"), p_int(v, "BYTES_PER_ELEMENT"), p_int(v, "byteLength"), p_int(v, "byteOffset"))
-			fmt.Printf("ARRAY %s of js.Value : len:%d  %v\n", desc, v.Length(), contents(v))
+			fmt.Printf("ARRAY %s of js.Value : type:%s name:%s (%s) byteLength:%s length:%s byteOffset:%s\n", desc, v.Type().String(), v.Get("name").String(), p_int(v, "length"), p_int(v, "byteLength"), p_int(v, "BYTES_PER_ELEMENT"), p_int(v, "byteOffset"))
+			fmt.Printf("ARRAY %s of js.Value : len:%d  %v\n", desc, v.Length(), a_contents(v))
 		}
 	default:
 		fmt.Printf("ARRAY %s of UNKNOWN \n", desc)
@@ -135,13 +134,14 @@ func p_int(v js.Value, property string) string {
 		return strconv.Itoa(p.Int())
 	}
 }
-func contents(v js.Value) string {
+
+func a_contents(v js.Value) string {
 	contents := ""
 	for i := 0; i < v.Length(); i++ {
-		if i == 0 {
-			contents += v.Index(i).String()
+		if i == 0 { // v.Index(i).Type().String() == "number"
+			contents += fmt.Sprintf("%.1f", v.Index(i).Float())
 		} else {
-			contents += "," + v.Index(i).String()
+			contents += "," + fmt.Sprintf("%.1f", v.Index(i).Float())
 		}
 	}
 	return "[" + contents + "]"
