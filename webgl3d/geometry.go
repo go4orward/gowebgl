@@ -1,12 +1,11 @@
-package webgl2d
+package webgl3d
 
 import (
 	"fmt"
-	"math"
 	"syscall/js"
 
 	"github.com/go4orward/gowebgl/common"
-	"github.com/go4orward/gowebgl/common/geom2d"
+	"github.com/go4orward/gowebgl/common/geom3d"
 )
 
 // ----------------------------------------------------------------------------
@@ -14,7 +13,7 @@ import (
 // ----------------------------------------------------------------------------
 
 type Geometry struct {
-	verts [][2]float32
+	verts [][3]float32
 	edges [][]uint32
 	faces [][]uint32
 
@@ -34,7 +33,7 @@ func NewGeometry() *Geometry {
 
 func (self *Geometry) Clear(geom bool, data_buf bool, webgl_buf bool) *Geometry {
 	if geom {
-		self.verts = make([][2]float32, 0)
+		self.verts = make([][3]float32, 0)
 		self.edges = make([][]uint32, 0)
 		self.faces = make([][]uint32, 0)
 	}
@@ -51,12 +50,12 @@ func (self *Geometry) Clear(geom bool, data_buf bool, webgl_buf bool) *Geometry 
 	return self
 }
 
-func (self *Geometry) AddVertex(coords [2]float32) *Geometry {
+func (self *Geometry) AddVertex(coords [3]float32) *Geometry {
 	self.verts = append(self.verts, coords)
 	return self
 }
 
-func (self *Geometry) AddVertices(coords [][2]float32) *Geometry {
+func (self *Geometry) AddVertices(coords [][3]float32) *Geometry {
 	self.verts = coords
 	return self
 }
@@ -81,34 +80,36 @@ func (self *Geometry) AddFaces(indices [][]uint32) *Geometry {
 	return self
 }
 
-func (self *Geometry) Translate(tx float32, ty float32) *Geometry {
+func (self *Geometry) Translate(tx float32, ty float32, tz float32) *Geometry {
 	for i := 0; i < len(self.verts); i++ {
 		self.verts[i][0] += tx
 		self.verts[i][1] += ty
+		self.verts[i][2] += tz
 	}
 	return self
 }
 
-func (self *Geometry) Rotate(angle_in_degree float32) *Geometry {
-	rad := float64(angle_in_degree * (math.Pi / 180))
-	sin, cos := math.Sin(rad), math.Cos(rad)
+func (self *Geometry) Rotate(axis []float32, angle_in_degree float32) *Geometry {
+	// rad := float64(angle_in_degree * (math.Pi / 180))
+	// sin, cos := math.Sin(rad), math.Cos(rad)
+	// for i := 0; i < len(self.verts); i++ {
+	// 	x, y := float64(self.verts[i][0]), float64(self.verts[i][1])
+	// 	self.verts[i][0] = float32(cos*x - sin*y)
+	// 	self.verts[i][1] = float32(sin*x + cos*y)
+	// }
+	return self
+}
+
+func (self *Geometry) Scale(sx float32, sy float32, sz float32) *Geometry {
 	for i := 0; i < len(self.verts); i++ {
-		x, y := float64(self.verts[i][0]), float64(self.verts[i][1])
-		self.verts[i][0] = float32(cos*x - sin*y)
-		self.verts[i][1] = float32(sin*x + cos*y)
+		self.verts[i][0] *= sx
+		self.verts[i][1] *= sy
+		self.verts[i][2] *= sz
 	}
 	return self
 }
 
-func (self *Geometry) Scale(scale float32) *Geometry {
-	for i := 0; i < len(self.verts); i++ {
-		self.verts[i][0] *= scale
-		self.verts[i][1] *= scale
-	}
-	return self
-}
-
-func (self *Geometry) AppyMatrix(matrix *geom2d.Matrix3) *Geometry {
+func (self *Geometry) AppyMatrix(matrix *geom3d.Matrix4) *Geometry {
 	// for i := 0; i < len(self.verts); i++ {
 	// 	self.verts[i][0] *= scale
 	// 	self.verts[i][1] *= scale
@@ -137,17 +138,17 @@ func (self *Geometry) TriangulateFace(face []uint32) [][]uint32 {
 	for vcount > 3 {
 		i0, i1, i2 := vidx, (vidx+1)%vcount, (vidx+2)%vcount
 		v0, v1, v2 := self.verts[vindices[i0]], self.verts[vindices[i1]], self.verts[vindices[i2]]
-		if geom2d.IsCCW(v0, v1, v2) {
+		if geom3d.IsCCW(v0, v1, v2) {
 			point_inside := false
 			for j := 0; j < vcount; j++ {
-				if j != i0 && j != i1 && j != i2 && geom2d.IsPointInside(self.verts[vindices[j]], v0, v1, v2) {
+				if j != i0 && j != i1 && j != i2 && geom3d.IsPointInside(self.verts[vindices[j]], v0, v1, v2) {
 					point_inside = true
 					break
 				}
 			}
 			if !point_inside {
 				newfaces = append(newfaces, []uint32{vindices[i0], vindices[i1], vindices[i2]})
-				vindices = geom2d.SpliceUint32(vindices, i1, 1)
+				vindices = geom3d.SpliceUint32(vindices, i1, 1)
 			}
 		}
 		vcount = len(vindices)
@@ -164,12 +165,13 @@ func (self *Geometry) TriangulateFace(face []uint32) [][]uint32 {
 func (self *Geometry) BuildDataBuffers(for_verts bool, for_edges bool, for_faces bool) {
 	// create data buffer for vertex points
 	if for_verts {
-		self.data_buffer_vert = make([]float32, len(self.verts)*2)
+		self.data_buffer_vert = make([]float32, len(self.verts)*3)
 		vpos := 0
-		for _, xy := range self.verts {
-			self.data_buffer_vert[vpos+0] = xy[0]
-			self.data_buffer_vert[vpos+1] = xy[1]
-			vpos += 2
+		for _, xyz := range self.verts {
+			self.data_buffer_vert[vpos+0] = xyz[0]
+			self.data_buffer_vert[vpos+1] = xyz[1]
+			self.data_buffer_vert[vpos+2] = xyz[2]
+			vpos += 3
 		}
 	} else {
 		self.data_buffer_vert = nil
@@ -218,12 +220,13 @@ func (self *Geometry) BuildDataBuffers(for_verts bool, for_edges bool, for_faces
 func (self *Geometry) BuildDataBuffersForWireframe() {
 	if self.data_buffer_vert == nil {
 		// create data buffer for vertex points, only if necessary
-		self.data_buffer_vert = make([]float32, len(self.verts)*2)
+		self.data_buffer_vert = make([]float32, len(self.verts)*3)
 		vpos := 0
-		for _, xy := range self.verts {
-			self.data_buffer_vert[vpos+0] = xy[0]
-			self.data_buffer_vert[vpos+1] = xy[1]
-			vpos += 2
+		for _, xyz := range self.verts {
+			self.data_buffer_vert[vpos+0] = xyz[0]
+			self.data_buffer_vert[vpos+1] = xyz[1]
+			self.data_buffer_vert[vpos+2] = xyz[2]
+			vpos += 3
 		}
 	}
 	// create data buffer for edges, by extracting wireframe from faces
@@ -248,7 +251,6 @@ func (self *Geometry) IsWebGLBufferReady() bool {
 }
 
 func (self *Geometry) build_webgl_buffers(wctx *common.WebGLContext, for_vert bool, for_edge bool, for_face bool) {
-	// THIS FUCNTION IS MEANT TO BE CALLED BY RENDERER. NO NEED TO BE EXPORTED
 	context := wctx.GetContext()     // js.Value
 	constants := wctx.GetConstants() // *common.Constants
 	if for_vert && self.data_buffer_vert != nil {

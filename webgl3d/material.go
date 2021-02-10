@@ -1,4 +1,4 @@
-package webgl2d
+package webgl3d
 
 import (
 	"fmt"

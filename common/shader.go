@@ -1,16 +1,14 @@
-package webgl2d
+package common
 
 import (
 	"errors"
 	"fmt"
 	"strings"
 	"syscall/js"
-
-	"github.com/go4orward/gowebgl/common"
 )
 
 type Shader struct {
-	wctx *common.WebGLContext //
+	wctx *WebGLContext //
 
 	vshader_code   string   // vertex   shader source code
 	fshader_code   string   // fragment shader source code
@@ -21,10 +19,11 @@ type Shader struct {
 
 	uniforms   map[string]map[string]interface{} // shader uniforms to bind
 	attributes map[string]map[string]interface{} // shader attributes to bind
-	draw_modes map[string]map[string]interface{} // draw_modes to render ("POINTS", "LINES", "TRIANGLES")
+
+	draw_modes []string // draw_modes to render ("POINTS", "LINES", "TRIANGLES")
 }
 
-func NewShader(wctx *common.WebGLContext, vertex_shader string, fragment_shader string) (*Shader, error) {
+func NewShader(wctx *WebGLContext, vertex_shader string, fragment_shader string) (*Shader, error) {
 	shader := Shader{wctx: wctx, vshader_code: vertex_shader, fshader_code: fragment_shader}
 	context := shader.wctx.GetContext()
 	constants := shader.wctx.GetConstants()
@@ -56,8 +55,24 @@ func NewShader(wctx *common.WebGLContext, vertex_shader string, fragment_shader 
 	// initialize shader bindings with empty map
 	shader.uniforms = map[string]map[string]interface{}{}
 	shader.attributes = map[string]map[string]interface{}{}
-	shader.draw_modes = map[string]map[string]interface{}{}
+	shader.draw_modes = []string{}
 	return &shader, shader.err
+}
+
+func (self *Shader) GetShaderProgram() js.Value {
+	return self.shader_program
+}
+
+func (self *Shader) GetUniformBindings() map[string]map[string]interface{} {
+	return self.uniforms
+}
+
+func (self *Shader) GetAttributeBindings() map[string]map[string]interface{} {
+	return self.attributes
+}
+
+func (self *Shader) GetThingsToDraw() []string {
+	return self.draw_modes
 }
 
 func (self *Shader) ShowInfo() {
@@ -84,8 +99,16 @@ func (self *Shader) ShowInfo() {
 func (self *Shader) InitBindingForUniform(name string, dtype string, autobinding string) {
 	// Initialize uniform binding with its name, data_type, and auto_binding option.
 	// If 'autobinding' is given, then the binding will be attempted automatically.
-	//    (examples: "material.color")
+	//    (examples: "material.color", "renderer.modelview")
 	// Otherwise, 'shader.SetBindingForUniform()' has to be called manually.
+	switch autobinding {
+	case "material.color":
+	case "renderer.modelview":
+	case "":
+	default:
+		fmt.Printf("Invalid autobinding '%s' for uniform '%s'\n", autobinding, name)
+		return
+	}
 	self.uniforms[name] = map[string]interface{}{"dtype": dtype, "autobinding": autobinding}
 }
 
@@ -95,10 +118,10 @@ func (self *Shader) SetBindingForUniform(name string, dtype string, value interf
 		if umap["dtype"] == dtype {
 			umap["value"] = value
 		} else {
-			err = errors.New(fmt.Sprintf("Setting uniform '%s' failed (invalid type '%s')", name, dtype))
+			err = errors.New(fmt.Sprintf("Binding uniform '%s' failed (invalid type '%s')", name, dtype))
 		}
 	} else {
-		err = errors.New(fmt.Sprintf("Setting uniform '%s' failed (not found)", name))
+		err = errors.New(fmt.Sprintf("Binding uniform '%s' failed (not found)", name))
 	}
 	return err
 }
@@ -110,8 +133,25 @@ func (self *Shader) SetBindingForUniform(name string, dtype string, value interf
 func (self *Shader) InitBindingForAttribute(name string, dtype string, autobinding string) {
 	// Initialize attribute binding with its name, data_type, and auto_binding option.
 	// If 'autobinding' is given, then the binding will be attempted automatically.
-	//    (examples: "geometry.coord")
+	//    (examples: "geometry.coord:0:0")
 	// Otherwise, 'shader.SetBindingForUniform()' has to be called manually.
+	autobinding2 := ""
+	if split := strings.Split(autobinding, ":"); len(split) > 0 {
+		autobinding2 = split[0]
+	}
+	switch autobinding2 {
+	case "geometry.coord":
+		var stride, offset int
+		_, err := fmt.Sscanf(autobinding, "geometry.coord:%d:%d", &stride, &offset)
+		if err != nil {
+			fmt.Printf("Invalid autobinding '%s' for attribute '%s'\n", autobinding, name)
+			return
+		}
+	case "":
+	default:
+		fmt.Printf("Invalid autobinding '%s' for uniform '%s'\n", autobinding, name)
+		return
+	}
 	self.attributes[name] = map[string]interface{}{"dtype": dtype, "autobinding": autobinding}
 }
 
@@ -123,25 +163,18 @@ func (self *Shader) SetBindingForAttribute(name string, dtype string, buffer int
 			amap["stride"] = stride
 			amap["offset"] = offset
 		} else {
-			err = errors.New(fmt.Sprintf("Shader.SetAttributeBuffer() failed : attribute '%s' invalid type '%s'", name, dtype))
+			err = errors.New(fmt.Sprintf("Binding attribute '%s' failed (invalid type '%s')", name, dtype))
 		}
 	} else {
-		err = errors.New(fmt.Sprintf("Shader.SetUniformValue() failed : attribute '%s' not found", name))
+		err = errors.New(fmt.Sprintf("Binding attribute '%s' failed (not found)", name))
 	}
 	return err
 }
 
-func (self *Shader) SetBindingToDraw(mode string, webgl_buffer js.Value, count int) {
-	mode_map := self.draw_modes[mode]
-	if mode_map == nil {
-		mode_map = map[string]interface{}{}
-		self.draw_modes[mode] = mode_map
-	}
-	mode_map["buffer"] = webgl_buffer
-	mode_map["count"] = count
-}
+func (self *Shader) SetThingsToDraw(modes ...string) {
+	// set things ("POINTS", "LINES", "TRIANGLES") to draw
+	self.draw_modes = modes
 
-func (self *Shader) CheckBindings() {
 	// check uniform locations before rendering (since gl.getXXX() is expensive)
 	context := self.wctx.GetContext()
 	if self.err != nil {
@@ -163,13 +196,4 @@ func (self *Shader) CheckBindings() {
 			fmt.Printf("Invalid binding for attribute '%s' : %v \n", aname, amap)
 		}
 	}
-}
-
-// ----------------------------------------------------------------------------
-// Using Shader Program
-// ----------------------------------------------------------------------------
-
-func (self *Shader) UseProgram() {
-	context := self.wctx.GetContext()
-	context.Call("useProgram", self.shader_program) // Use the combined shader program object
 }

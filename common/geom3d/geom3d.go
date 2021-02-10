@@ -1,27 +1,29 @@
-package geom2d
+package geom3d
 
-func AddAB(a [2]float32, b [2]float32) [2]float32 {
-	return [2]float32{a[0] + b[0], a[1] + b[1]}
+func AddAB(a [3]float32, b [3]float32) [3]float32 {
+	return [3]float32{a[0] + b[0], a[1] + b[1], a[2] + b[2]}
 }
 
-func SubAB(a [2]float32, b [2]float32) [2]float32 {
-	return [2]float32{a[0] - b[0], a[1] - b[1]}
+func SubAB(a [3]float32, b [3]float32) [3]float32 {
+	return [3]float32{a[0] - b[0], a[1] - b[1], a[2] - b[2]}
 }
 
-func CrossAB(a [2]float32, b [2]float32) float32 {
-	return a[0]*b[1] - a[1]*b[0] // in 2D, (ax,ay,0) x (bx,by,0) = (0,0,ax*by-ay*bx)
+func CrossAB(a [3]float32, b [3]float32) [3]float32 {
+	return [3]float32{a[1]*b[2] - a[2]*b[1], a[2]*b[0] - a[0]*b[2], a[0]*b[1] - a[1]*b[0]}
 }
 
-func IsCCW(v0 [2]float32, v1 [2]float32, v2 [2]float32) bool {
-	v01 := SubAB(v1, v0)
-	v02 := SubAB(v2, v0)
-	return CrossAB(v01, v02) > 0
+func IsCCW(v0 [3]float32, v1 [3]float32, v2 [3]float32) bool {
+	// v01 := SubAB(v1, v0)
+	// v02 := SubAB(v2, v0)
+	// return CrossAB(v01, v02) > 0
+	return false
 }
 
-func IsPointInside(p [2]float32, v0 [2]float32, v1 [2]float32, v2 [2]float32) bool {
-	p0, p1, p2 := SubAB(v0, p), SubAB(v1, p), SubAB(v2, p)
-	c01, c12, c13 := CrossAB(p0, p1), CrossAB(p1, p2), CrossAB(p2, p0)
-	return (c01 > 0 && c12 > 0 && c13 > 0) || (c01 < 0 && c12 < 0 && c13 < 0)
+func IsPointInside(p [3]float32, v0 [3]float32, v1 [3]float32, v2 [3]float32) bool {
+	// p0, p1, p2 := SubAB(v0, p), SubAB(v1, p), SubAB(v2, p)
+	// c01, c12, c13 := CrossAB(p0, p1), CrossAB(p1, p2), CrossAB(p2, p0)
+	// return (c01 > 0 && c12 > 0 && c13 > 0) || (c01 < 0 && c12 < 0 && c13 < 0)
+	return false
 }
 
 func SpliceUint32(a []uint32, pos int, delete_count int, new_entries ...uint32) []uint32 {

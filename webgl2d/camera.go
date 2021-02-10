@@ -4,21 +4,20 @@ import (
 	"fmt"
 	"math"
 
-	"github.com/go4orward/gowebgl/common"
 	"github.com/go4orward/gowebgl/common/geom2d"
 )
 
 type Camera struct {
-	center     []float32       // camera position in world space
+	center     [2]float32      // camera position in world space
 	angle      float32         // camera rotation angle in degree
 	zoom       float32         // camera zoom level
 	viewmatrix *geom2d.Matrix3 // view matrix   Mcw
 }
 
-func NewCamera(wctx *common.WebGLContext) *Camera {
+func NewCamera() *Camera {
 	var camera Camera
 	camera.viewmatrix = geom2d.NewMatrix3() // identity
-	camera.center = []float32{0, 0}
+	camera.center = [2]float32{0, 0}
 	camera.angle = 0.0
 	camera.zoom = 1.0
 	return &camera
@@ -40,12 +39,12 @@ func (self *Camera) SetZoom(zoom float32) *Camera {
 	return self.update_view_matrix()
 }
 
-func (self *Camera) SetPose(center []float32, angle_in_degree float32, zoom float32) *Camera {
+func (self *Camera) SetPose(center [2]float32, angle_in_degree float32, zoom float32) *Camera {
 	if zoom <= 0.0 || zoom >= 1000.0 {
 		fmt.Printf("Camera.SetPose() failed : invalid zoom = %.1f\n", zoom)
 		return self
 	}
-	geom2d.Assign(self.center, center)
+	self.center = center
 	self.angle = angle_in_degree
 	self.zoom = zoom
 	return self.update_view_matrix()
@@ -71,5 +70,5 @@ func (self *Camera) update_view_matrix() *Camera {
 }
 
 func (self *Camera) ShowInfo() {
-	fmt.Printf("Camera at (%v,%v) with angle=%.1f zoom=%.2f  %v\n", self.center[0], self.center[1], self.angle, self.zoom, self.viewmatrix)
+	fmt.Printf("Camera at %v with angle=%.1f zoom=%.2f  %v\n", self.center, self.angle, self.zoom, self.viewmatrix)
 }

@@ -1,4 +1,4 @@
-package webgl2d
+package webgl3d
 
 import (
 	"errors"
@@ -7,7 +7,7 @@ import (
 	"syscall/js"
 
 	"github.com/go4orward/gowebgl/common"
-	"github.com/go4orward/gowebgl/common/geom2d"
+	"github.com/go4orward/gowebgl/common/geom3d"
 )
 
 type Renderer struct {
@@ -29,6 +29,7 @@ func (self *Renderer) Clear(color string) {
 	// gl.enable(gl.DEPTH_TEST)
 	// gl.depthFunc(gl.LEQUAL) // Near things obscure far things
 	// // Set the view port
+	// // gl.viewport(0, 0, this.viewportWidth, this.viewportHeight);
 	// gl.viewport(0, 0, gl.canvas.width, gl.canvas.height)
 	// // Clear the color buffer bit
 	// gl.clearColor(clear_color[0], clear_color[1], clear_color[2], 1.0)
@@ -69,10 +70,10 @@ func (self *Renderer) RenderScene(camera *Camera, scene *Scene) {
 // Rendering SceneObject
 // ----------------------------------------------------------------------------
 
-func (self *Renderer) RenderSceneObject(sobj *SceneObject, modelview *geom2d.Matrix3) error {
+func (self *Renderer) RenderSceneObject(sobj *SceneObject, modelview *geom3d.Matrix4) error {
 	context := self.wctx.GetContext()
 	constants := self.wctx.GetConstants()
-	// 1. If necessary, then build WebGLBuffers for the SceneObject's Geometry
+	// 1. If necessary, then WebGLBuffers for the SceneObject's Geometry
 	if sobj.geometry.IsWebGLBufferReady() == false {
 		sobj.geometry.build_webgl_buffers(self.wctx, true, true, true)
 	}
@@ -134,19 +135,17 @@ func (self *Renderer) RenderSceneObject(sobj *SceneObject, modelview *geom2d.Mat
 	for _, draw_mode := range shader.GetThingsToDraw() {
 		switch draw_mode {
 		case "POINTS":
-			webgl_count := sobj.geometry.GetWebGLCountToDraw("POINTS")
+			webgl_buffer := sobj.geometry.GetWebGLBufferToDraw("POINTS")
 			context.Call("bindBuffer", constants.ELEMENT_ARRAY_BUFFER, nil)
-			context.Call("drawArrays", constants.POINTS, 0, webgl_count)
+			context.Call("drawArrays", constants.POINTS, 0, len(webgl_buffer))
 		case "LINES":
 			webgl_buffer := sobj.geometry.GetWebGLBufferToDraw("LINES")
-			webgl_count := sobj.geometry.GetWebGLCountToDraw("LINES")
 			context.Call("bindBuffer", constants.ELEMENT_ARRAY_BUFFER, webgl_buffer)
-			context.Call("drawElements", constants.LINES, webgl_count, constants.UNSIGNED_INT, 0)
+			context.Call("drawElements", constants.LINES, len(webgl_buffer), constants.UNSIGNED_INT, 0)
 		case "TRIANGLES":
 			webgl_buffer := sobj.geometry.GetWebGLBufferToDraw("TRIANGLES")
-			webgl_count := sobj.geometry.GetWebGLCountToDraw("TRIANGLES")
 			context.Call("bindBuffer", constants.ELEMENT_ARRAY_BUFFER, webgl_buffer)
-			context.Call("drawElements", constants.TRIANGLES, webgl_count, constants.UNSIGNED_INT, 0)
+			context.Call("drawElements", constants.TRIANGLES, len(webgl_buffer), constants.UNSIGNED_INT, 0)
 		default:
 		}
 	}
@@ -158,7 +157,7 @@ func (self *Renderer) RenderSceneObject(sobj *SceneObject, modelview *geom2d.Mat
 	return nil
 }
 
-func (self *Renderer) complete_uniform_binding_automatically(location js.Value, dtype string, autobinding string, sobj *SceneObject, modelview *geom2d.Matrix3) error {
+func (self *Renderer) complete_uniform_binding_automatically(location js.Value, dtype string, autobinding string, sobj *SceneObject, modelview *geom3d.Matrix4) error {
 	context := self.wctx.GetContext()
 	// fmt.Printf("Uniform (%s) : autobinding= '%s'\n", dtype, autobinding)
 	switch autobinding {
@@ -181,9 +180,8 @@ func (self *Renderer) complete_uniform_binding_automatically(location js.Value, 
 		switch dtype {
 		case "mat3":
 			// Note that we need Transpose(), since WebGL uses column-major matrix
-			elements := modelview.Transpose().GetElements()
-			e := common.ConvertGoSliceToJsTypedArray(elements[:]) // ModelView matrix, converted to JavaScript 'Float32Array'
-			context.Call("uniformMatrix3fv", location, false, e)  // gl.uniformMatrix3fv(location, transpose, values_array)
+			e := common.ConvertGoSliceToJsTypedArray(modelview.Transpose().GetElements()) // ModelView matrix, converted to JavaScript 'Float32Array'
+			context.Call("uniformMatrix3fv", location, false, e)                          // gl.uniformMatrix3fv(location, transpose, values_array)
 			return nil
 		}
 	}
@@ -222,7 +220,7 @@ func (self *Renderer) complete_attribute_binding_automatically(location js.Value
 		_, err := fmt.Sscanf(autobinding, "geometry.coord:%d:%d", &stride, &offset)
 		if err == nil {
 			context.Call("bindBuffer", constants.ARRAY_BUFFER, sobj.geometry.GetWebGLBufferToDraw("POINTS"))
-			context.Call("vertexAttribPointer", location, 2, constants.FLOAT, false, stride, offset)
+			context.Call("vertexAttribPointer", location, 3, constants.FLOAT, false, stride, offset)
 			context.Call("enableVertexAttribArray", location)
 			return nil
 		}
