@@ -3,6 +3,7 @@ package main
 
 import (
 	"fmt"
+	"math"
 	"syscall/js"
 
 	"github.com/go4orward/gowebgl/common"
@@ -35,10 +36,28 @@ func main() {
 	renderer.Clear("#ffffff")             // prepare to render (clearing to white background)
 	renderer.RenderScene(camera, scene)   // render the scene (iterating over all the SceneObjects in it)
 	renderer.RenderAxes(camera, 0.8)      // render the axes (just for visual reference)
-	camera.ShowInfo()
 
-	if true { // interactive
-		wctx.SetEventHandler("processEventFromGo")
+	if true { // ONLY FOR INTERACTIVE UI
+		// add user interactions (with mouse)
+		wctx.SetGoCallbackForEventHandling("goProcessEvent") // called from Javascript
+		wctx.RegisterEventHandlerForMouseDrag(func(cxy [2]int, sxy [2]int, keystat [4]bool) {
+			width := float32(wctx.GetWidth()) * 8
+			camera.AddCenter(float32(-cxy[0]+sxy[0])/width, float32(cxy[1]-sxy[1])/width)
+		})
+		wctx.RegisterEventHandlerForMouseWheel(func(scale float32) {
+			scale = float32(math.Sqrt(float64(scale)))
+			camera.SetZoom(scale)
+		})
+		// add animation
+		var rotation_angle float32 = 0.0
+		wctx.SetGoCallbackForAnimationFrame("goDrawAnimationFrame") // called from Javascript
+		wctx.RegisterDrawHandlerForAnimationFrame(func(canvas js.Value) {
+			renderer.Clear("#ffffff")           // prepare to render (clearing to white background)
+			renderer.RenderScene(camera, scene) // render the scene (iterating over all the SceneObjects in it)
+			renderer.RenderAxes(camera, 0.8)    // render the axes (just for visual reference)
+			sobj.Rotate(rotation_angle)
+			rotation_angle += 1.0 // animate rotating scene object
+		})
 		<-make(chan bool) // wait for events from Javascript (without exiting)
 	}
 }

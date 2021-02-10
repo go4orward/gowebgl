@@ -3,6 +3,7 @@ package common
 import (
 	"errors"
 	"fmt"
+	"math"
 	"syscall/js"
 )
 
@@ -67,45 +68,51 @@ func (self *WebGLContext) GetHeight() int {
 }
 
 // ----------------------------------------------------------------------------
-// User Interactions with Mouse
+// User Interactions (Event Handling)
 // ----------------------------------------------------------------------------
 
-func (self *WebGLContext) SetEventHandler(handler_function_name string) {
-	js.Global().Set(handler_function_name, EventHandlerWrapper())
+func (self *WebGLContext) SetGoCallbackForEventHandling(js_function_name string) {
+	js.Global().Set(js_function_name, GoWrapperForEventHandling())
 }
 
-func (self *WebGLContext) RegisterClickEventHandler(handler func(cxy [2]int, keystat [4]bool) bool) {
+func (self *WebGLContext) RegisterEventHandlerForClick(handler func(cxy [2]int, keystat [4]bool)) {
 	evthandler_for_click = handler
 }
 
-func (self *WebGLContext) RegisterDoubleClickEventHandler(handler func(cxy [2]int, keystat [4]bool) bool) {
+func (self *WebGLContext) RegisterEventHandlerForDoubleClick(handler func(cxy [2]int, keystat [4]bool)) {
 	evthandler_for_dblclick = handler
 }
 
-func (self *WebGLContext) RegisterMouseOverEventHandler(handler func(cxy [2]int, keystat [4]bool) bool) {
+func (self *WebGLContext) RegisterEventHandlerForMouseOver(handler func(cxy [2]int, keystat [4]bool)) {
 	evthandler_for_mouse_over = handler
 }
 
-func (self *WebGLContext) RegisterMouseDragEventHandler(handler func(cxy [2]int, sxy [2]int, keystat [4]bool) bool) {
+func (self *WebGLContext) RegisterEventHandlerForMouseDrag(handler func(cxy [2]int, sxy [2]int, keystat [4]bool)) {
 	evthandler_for_mouse_drag = handler
 }
 
-func (self *WebGLContext) RegisterMouseWheelEventHandler(handler func(x int) bool) {
+func (self *WebGLContext) RegisterEventHandlerForMouseWheel(handler func(scale float32)) {
 	evthandler_for_mouse_wheel = handler
 }
 
 var mouse_dragging bool = false
 var mouse_sxy [2]int
-var evthandler_for_click func(cxy [2]int, keystat [4]bool) bool = nil
-var evthandler_for_dblclick func(cxy [2]int, keystat [4]bool) bool = nil
-var evthandler_for_mouse_over func(cxy [2]int, keystat [4]bool) bool = nil
-var evthandler_for_mouse_drag func(cxy [2]int, sxy [2]int, keystat [4]bool) bool = nil
-var evthandler_for_mouse_wheel func(x int) bool = nil
+var mouse_wheel_scale float64 = 1.0
+var evthandler_for_click func(cxy [2]int, keystat [4]bool) = nil
+var evthandler_for_dblclick func(cxy [2]int, keystat [4]bool) = nil
+var evthandler_for_mouse_over func(cxy [2]int, keystat [4]bool) = nil
+var evthandler_for_mouse_drag func(cxy [2]int, sxy [2]int, keystat [4]bool) = nil
+var evthandler_for_mouse_wheel func(scale float32) = nil
 
-func EventHandlerWrapper() js.Func {
+func GoWrapperForEventHandling() js.Func {
 	// NOTE THAT THIS WRAPPER FUNCTION SHOULD BE EXPORTED
 	function := js.FuncOf(func(this js.Value, args []js.Value) interface{} {
-		event := args[0]
+		if len(args) != 2 {
+			fmt.Println("Invalid GoCallback call (for EventHandling) from Javascript")
+			return nil
+		}
+		// canvas := args[0] // js.Value (canvas DOM element)
+		event := args[1] // js.Value (event object)
 		etype := event.Get("type").String()
 		switch etype {
 		case "click":
@@ -150,8 +157,45 @@ func EventHandlerWrapper() js.Func {
 			mouse_dragging = false
 		case "mouseleave":
 			mouse_dragging = false
+		case "wheel":
+			if evthandler_for_mouse_wheel != nil {
+				mouse_wheel_scale += float64(event.Get("deltaY").Int()) * -0.01
+				scale := float32(math.Min(math.Max(.1, mouse_wheel_scale), 10)) // [ 0.1 , 10.0 ]
+				evthandler_for_mouse_wheel(scale)
+			}
 		default:
 			fmt.Println(etype)
+		}
+		return nil
+	})
+	return function
+}
+
+// ----------------------------------------------------------------------------
+// Animation Frame
+// ----------------------------------------------------------------------------
+
+func (self *WebGLContext) SetGoCallbackForAnimationFrame(js_function_name string) {
+	js.Global().Set(js_function_name, GoWrapperForAnimationFrame())
+}
+
+// RegisterDrawSceneCallback
+func (self *WebGLContext) RegisterDrawHandlerForAnimationFrame(function func(canvas js.Value)) {
+	handler_draw_animation_frame = function
+}
+
+var handler_draw_animation_frame func(canvas js.Value) = nil
+
+func GoWrapperForAnimationFrame() js.Func {
+	// NOTE THAT THIS WRAPPER FUNCTION SHOULD BE EXPORTED
+	function := js.FuncOf(func(this js.Value, args []js.Value) interface{} {
+		if len(args) != 1 {
+			fmt.Println("Invalid GoCallback call (for AnimationFrame) from Javascript")
+			return nil
+		}
+		canvas := args[0] // js.Value (canvas DOM element)
+		if handler_draw_animation_frame != nil {
+			handler_draw_animation_frame(canvas)
 		}
 		return nil
 	})

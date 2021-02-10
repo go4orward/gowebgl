@@ -24,12 +24,21 @@
     <canvas id="webglcanvas">Your browser doesn't appear to support the canvas tag.</canvas>
     <script>
         canvas = document.getElementById("webglcanvas")
-        canvas.addEventListener("click", function(event) { processEventFromGo(event); });
-        canvas.addEventListener("dblclick", function(event) { processEventFromGo(event); });
-        canvas.addEventListener("mousemove", function(event) { processEventFromGo(event); });
-        canvas.addEventListener("mousedown", function(event) { processEventFromGo(event); });
-        canvas.addEventListener("mouseup", function(event) { processEventFromGo(event); });
-        canvas.addEventListener("mouseleave", function(event) { processEventFromGo(event); });
+        canvas.addEventListener("click", function(event) { goProcessEvent(canvas, event); });
+        canvas.addEventListener("dblclick", function(event) { goProcessEvent(canvas, event); });
+        canvas.addEventListener("mousemove", function(event) { goProcessEvent(canvas, event); });
+        canvas.addEventListener("mousedown", function(event) { goProcessEvent(canvas, event); });
+        canvas.addEventListener("mouseup", function(event) { goProcessEvent(canvas, event); });
+        canvas.addEventListener("mouseleave", function(event) { goProcessEvent(canvas, event); });
+        canvas.addEventListener("wheel", function(event) { goProcessEvent(canvas, event); });
+
+        requestAnimationFrame(drawSceneForAnimation);
+        function drawSceneForAnimation() {
+            if (typeof goDrawAnimationFrame != 'undefined') {
+                goDrawAnimationFrame(canvas);   // draw the scene by calling Go renderer function
+            }
+            requestAnimationFrame(drawSceneForAnimation); // call itself again for the next frame
+        }
     </script>
 </body>
 </html>

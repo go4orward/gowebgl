@@ -50,6 +50,22 @@ func (self *Camera) SetPose(center [2]float32, angle_in_degree float32, zoom flo
 	return self.update_view_matrix()
 }
 
+func (self *Camera) AddAngle(angle_in_degree float32) *Camera {
+	self.angle += angle_in_degree
+	return self.update_view_matrix()
+}
+
+func (self *Camera) AddCenter(cx float32, cy float32) *Camera {
+	self.center[0] += cx
+	self.center[1] += cy
+	return self.update_view_matrix()
+}
+
+func (self *Camera) AddZoom(zoom float32) *Camera {
+	self.zoom *= zoom
+	return self.update_view_matrix()
+}
+
 func (self *Camera) update_view_matrix() *Camera {
 	radian := float64(self.angle) * (math.Pi / 180.0)
 	cos, sin := float32(math.Cos(radian)), float32(math.Sin(radian))
