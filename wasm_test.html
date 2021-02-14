@@ -4,6 +4,8 @@
     <meta charset="utf-8">
     <script src="wasm/wasm_exec.js"></script>
     <script>
+        wasm_js_listener = function(event) { goEventHandler(event); };
+        wasm_js_renderer = function(canvas) { goSceneRenderer(canvas); }
         const go = new Go();
         WebAssembly.instantiateStreaming(fetch("wasm/wasm_test.wasm"), go.importObject).then((result) => {
             go.run(result.instance);
@@ -11,7 +13,7 @@
     </script>
     <style>
         body,pre { margin:0;padding:0; }
-        #webglcanvas {
+        #wasmcanvas {
             position:fixed;
             opacity:1.0;
             width: 100%;
@@ -21,24 +23,6 @@
     </style>
 </head>
 <body>
-    <canvas id="webglcanvas">Your browser doesn't appear to support the canvas tag.</canvas>
-    <script>
-        canvas = document.getElementById("webglcanvas")
-        canvas.addEventListener("click", function(event) { goProcessEvent(canvas, event); });
-        canvas.addEventListener("dblclick", function(event) { goProcessEvent(canvas, event); });
-        canvas.addEventListener("mousemove", function(event) { goProcessEvent(canvas, event); });
-        canvas.addEventListener("mousedown", function(event) { goProcessEvent(canvas, event); });
-        canvas.addEventListener("mouseup", function(event) { goProcessEvent(canvas, event); });
-        canvas.addEventListener("mouseleave", function(event) { goProcessEvent(canvas, event); });
-        canvas.addEventListener("wheel", function(event) { goProcessEvent(canvas, event); });
-
-        requestAnimationFrame(drawSceneForAnimation);
-        function drawSceneForAnimation() {
-            if (typeof goDrawAnimationFrame != 'undefined') {
-                goDrawAnimationFrame(canvas);   // draw the scene by calling Go renderer function
-            }
-            requestAnimationFrame(drawSceneForAnimation); // call itself again for the next frame
-        }
-    </script>
+    <canvas id="wasmcanvas">Canvas Tag Not Supported</canvas>
 </body>
 </html>

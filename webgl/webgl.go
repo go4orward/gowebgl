@@ -68,10 +68,12 @@ func Render(wctx *common.WebGLContext, vertices []float32, indices []uint32, ver
 
 	//// Draw the scene ////
 
-	context.Call("clearColor", 1.0, 1.0, 1.0, 1.0)                    // Set clearing color
-	context.Call("clear", constants.COLOR_BUFFER_BIT)                 // Clear the canvas
-	context.Call("enable", constants.DEPTH_TEST)                      // Enable the depth test
-	context.Call("viewport", 0, 0, wctx.GetWidth(), wctx.GetHeight()) // Set the view port
+	context.Call("clearColor", 1.0, 1.0, 1.0, 1.0)    // Set clearing color
+	context.Call("clear", constants.COLOR_BUFFER_BIT) // Clear the canvas
+	context.Call("enable", constants.DEPTH_TEST)      // Enable the depth test
+
+	wh := wctx.GetWH()
+	context.Call("viewport", 0, 0, wh[0], wh[1]) // Set the view port
 
 	// Draw the geometry
 	context.Call("drawElements", constants.TRIANGLES, len(indices), constants.UNSIGNED_SHORT, 0)

@@ -1,21 +1,215 @@
 package webgl3d
 
-func (self *Geometry) LoadCube(xsize float32, ysize float32, zsize float32) *Geometry {
-	self.Clear(true, true, true)
-	return self
+import (
+	"fmt"
+	"math"
+
+	geography "github.com/go4orward/gowebgl/common/geography"
+)
+
+const InRadian = (math.Pi / 180.0)
+const InDegree = (180.0 / math.Pi)
+
+func NewGeometry_Polygon(n int, radius float32, starting_angle_in_degree float32) *Geometry {
+	geometry := NewGeometry() // create an empty geometry
+	radian := float64(starting_angle_in_degree * (math.Pi / 180.0))
+	radian_step := (2 * math.Pi) / float64(n)
+	face_indices := make([]uint32, n)
+	for i := 0; i < n; i++ {
+		geometry.AddVertex([3]float32{radius * float32(math.Cos(radian)), radius * float32(math.Sin(radian)), 0})
+		face_indices[i] = uint32(i)
+		radian += radian_step
+	}
+	geometry.AddFace(face_indices)
+	return geometry
 }
 
-func (self *Geometry) LoadSphere(radius float32, wsegs int, hsegs int) *Geometry {
-	self.Clear(true, true, true)
-	return self
+func NewGeometry_Cube(xsize float32, ysize float32, zsize float32) *Geometry {
+	geometry := NewGeometry()
+	x, y, z := xsize/2, ysize/2, zsize/2
+	geometry.SetVertices([][3]float32{
+		{-x, -y, -z}, {+x, -y, -z}, {+x, +y, -z}, {-x, +y, -z},
+		{-x, -y, +z}, {+x, -y, +z}, {+x, +y, +z}, {-x, +y, +z}})
+	geometry.SetFaces([][]uint32{
+		{0, 3, 2, 1}, {0, 1, 5, 4}, {1, 2, 6, 5}, {2, 3, 7, 6}, {3, 0, 4, 7}, {4, 5, 6, 7}})
+	return geometry
 }
 
-func (self *Geometry) LoadCylinder(radius float32, segs int, height float32) *Geometry {
-	self.Clear(true, true, true)
-	return self
+func NewGeometry_Sphere(radius float32, wsegs int, hsegs int) *Geometry {
+	//   Sphere with the minimum number of vertices (to be used with face normal vectors)
+	geometry := NewGeometry()
+	wnum, hnum := wsegs+1, hsegs+1
+	wstep := math.Pi * 2.0 / float32(wsegs)
+	hstep := math.Pi / float32(hsegs)
+	for i := 0; i < wnum; i++ {
+		lon := wstep * float32(i) // longitude (λ)
+		for j := 1; j <= hnum; j++ {
+			lat := -math.Pi/2.0 + hstep*float32(j) // latitude (φ)
+			geometry.AddVertex(geography.GetXYZFromLL(lon, lat, radius))
+		}
+	}
+	npole := geometry.AddVertex([3]float32{0, 0, +radius}) // north pole
+	spole := geometry.AddVertex([3]float32{0, 0, -radius}) // south pole
+	for i := 0; i < wnum; i++ {                            // quadratic faces on the side
+		for j := 0; j < hnum-1; j++ {
+			start := uint32((i+0)*hnum + j)
+			wnext := uint32((i+1)%wnum*hnum + j)
+			geometry.AddFace([]uint32{start, wnext, wnext + 1, start + 1})
+		}
+	}
+	for i := 0; i < wnum; i++ { // faces around south pole
+		start := uint32((i + 0) * hnum)
+		wnext := uint32((i + 1) % wnum * hnum)
+		geometry.AddFace([]uint32{spole, wnext, start})
+	}
+	for i := 0; i < wnum; i++ { // faces around north pole
+		start := uint32((i+0)*hnum + (hnum - 1))
+		wnext := uint32((i+1)%wnum*hnum + (hnum - 1))
+		geometry.AddFace([]uint32{npole, start, wnext})
+	}
+	return geometry
 }
 
-func (self *Geometry) LoadPyramid(radius float32, segs int, height float32) *Geometry {
-	self.Clear(true, true, true)
-	return self
+func NewGeometry_Globe(radius float32, wsegs int, hsegs int) *Geometry {
+	// Globe (sphere) geometry with UV coordinates per vertex (to be used with a texture image)
+	//   Note that multiple vertices are assigned to north/south poles, as well as 0/360 longitude.
+	//   This approach results in more efficient data buffers than a simple sphere,
+	//   since we can build the buffers with single point per vertex, without any repetition.
+	geometry := NewGeometry()
+	wnum, hnum := wsegs+1, hsegs+1
+	wstep := math.Pi * 2.0 / float32(wsegs)
+	hstep := math.Pi / float32(hsegs)
+	fmt.Printf("wsegs=%d hsegs=%d wnum=%d hnum=%d wstep=%d hstep=%d\n", wsegs, hsegs, wnum, hnum, wstep, hstep)
+	for i := 0; i < wnum; i++ {
+		lon := wstep * float32(i) // longitude (λ)
+		for j := 0; j < hnum; j++ {
+			lat := -math.Pi/2.0 + hstep*float32(j) // latitude (φ)
+			xyz := geography.GetXYZFromLL(lon, lat, radius)
+			geometry.AddVertex(xyz)
+			if pole := (j == 0 || j == hsegs); pole {
+				geometry.AddTextureUV([]float32{(float32(i) + 0.5) / float32(wsegs), 1.0 - float32(j)/float32(hsegs)})
+			} else {
+				geometry.AddTextureUV([]float32{float32(i) / float32(wsegs), 1.0 - float32(j)/float32(hsegs)})
+			}
+		}
+	}
+	for i := 0; i < wnum-1; i++ { // quadratic faces on the side (triangles for south/north poles)
+		for j := 0; j < hnum-1; j++ {
+			start := uint32((i+0)*hnum + j)
+			wnext := uint32((i+1)*hnum + j)
+			if spole := (j == 0); spole {
+				geometry.AddFace([]uint32{start, wnext + 1, start + 1})
+			} else if npole := (j == hsegs-1); npole {
+				geometry.AddFace([]uint32{start, wnext + 0, start + 1})
+			} else {
+				geometry.AddFace([]uint32{start, wnext, wnext + 1, start + 1})
+			}
+			fmt.Printf("adding Face [ %d %d %d %d ]\n", start, wnext, wnext+1, start+1)
+		}
+	}
+	return geometry
+}
+
+func NewGeometry_Cylinder(nsides int, radius float32, height float32, stt_angle float32, solid bool) *Geometry {
+	geometry := NewGeometry()
+	rad_step := math.Pi * 2.0 / float64(nsides)
+	for i := 0; i < nsides; i++ {
+		rad := rad_step*float64(i) + float64(stt_angle)*InRadian
+		cosR, sinR := float32(math.Cos(rad))*radius, float32(math.Sin(rad))*radius
+		geometry.AddVertex([3]float32{cosR, sinR, 0})
+		geometry.AddVertex([3]float32{cosR, sinR, height})
+		i2, next2 := uint32(i*2), uint32((i+1)%nsides)*2
+		geometry.AddFace([]uint32{i2 + 1, i2, next2, next2 + 1}) // face on the side
+	}
+	if solid {
+		btm_face_indices := make([]uint32, nsides)
+		top_face_indices := make([]uint32, nsides)
+		for i := 0; i < nsides; i++ {
+			btm_face_indices[nsides-1-i] = uint32(i * 2) // reversed
+			top_face_indices[i] = uint32(i*2 + 1)        //
+		}
+		geometry.AddFace(btm_face_indices) // face on the bottom (reversed)
+		geometry.AddFace(top_face_indices) // face on the top
+	}
+	return geometry
+}
+
+func NewGeometry_Pyramid(nsides int, radius float32, height float32, stt_angle float32, solid bool) *Geometry {
+	geometry := NewGeometry()
+	rad_step := math.Pi * 2.0 / float64(nsides)
+	apex := uint32(nsides)
+	for i := 0; i < nsides; i++ {
+		rad := rad_step*float64(i) + float64(stt_angle)*InRadian
+		cosR, sinR := float32(math.Cos(rad))*radius, float32(math.Sin(rad))*radius
+		geometry.AddVertex([3]float32{cosR, sinR, 0.0})
+		next := uint32((i + 1) % nsides)
+		geometry.AddFace([]uint32{apex, uint32(i), next}) // face on the side
+	}
+	geometry.AddVertex([3]float32{0, 0, height}) // apex
+	if solid {
+		btm_face_indices := make([]uint32, nsides)
+		for i := 0; i < nsides; i++ {
+			btm_face_indices[nsides-1-i] = uint32(i) // reversed
+		}
+		geometry.AddFace(btm_face_indices) // face on the bottom
+	}
+	return geometry
+}
+
+func NewGeometry_SolidFromFaceAndHeight(face [][3]float32, height float32) *Geometry {
+	geometry := NewGeometry()
+	flen := len(face)
+	btm_list, top_list := make([]uint32, flen), make([]uint32, flen)
+	for i := 0; i < flen; i++ {
+		b := geometry.AddVertex([3]float32{face[i][0], face[i][1], face[i][2]})
+		t := geometry.AddVertex([3]float32{face[i][0], face[i][1], face[i][2] + height})
+		b2, t2 := uint32((int(b)+1)%flen), uint32((int(t)+flen-1)%flen)
+		geometry.AddFace([]uint32{b, b2, t2, t}) // face on the side
+		top_list[i] = t
+		btm_list[flen-1-i] = b
+	}
+	geometry.AddFace(btm_list) // bottom face
+	geometry.AddFace(top_list) // top face
+	return geometry
+}
+
+func NewGeometry_SolidFromCenterAndRadius(nsides int, center [][3]float32, radius []float32) *Geometry {
+	geometry := NewGeometry()
+	// const wrad = Math.PI * 2 / nsides;
+	// geom.addVertex( centers[0] );                   // bottom center
+	// for (let i=1; i < centers.length; i++) {
+	// 	let center = centers[i];
+	// 	let radius = radii[i];
+	// 	let curr = geom.countVertices();
+	// 	if (i == 1) {
+	// 		for (let j = 0; j < nsides; j++) {
+	// 			let θ = wrad * j;
+	// 			let cosθ = Math.cos(θ) * radius, sinθ = Math.sin(θ) * radius;
+	// 			geom.addVertex([ center[0] + cosθ, center[1] + sinθ, center[2] ]);
+	// 			geom.addFace([ 0, curr + (j+1)%nsides, curr + j ]);
+	// 		}
+	// 	} else if (i < centers.length-1) {
+	// 		let prev = curr - nsides;
+	// 		for (let j = 0; j < nsides; j++) {
+	// 			let θ = wrad * j;
+	// 			let cosθ = Math.cos(θ) * radius, sinθ = Math.sin(θ) * radius;
+	// 			geom.addVertex([ center[0] + cosθ, center[1] + sinθ, center[2] ]);
+	// 			geom.addFace([ prev+j, prev + (j+1)%nsides, curr + (j+1)%nsides, curr + j ]);
+	// 		}
+	// 	} else {
+	// 		let prev = curr - nsides;
+	// 		geom.addVertex( centers[i] );           // top center
+	// 		for (let j = 0; j < nsides; j++) {
+	// 			geom.addFace([ curr, prev+j, prev + (j+1)%nsides ]);
+	// 		}
+	// 	}
+	// }
+	return geometry
+}
+
+func NewGeometry_EmptyExample() *Geometry {
+	geometry := NewGeometry()
+	geometry.SetVertices([][3]float32{{0, 0, 0}, {1, 0, 0}, {0, 1, 0}, {0, 0, 1}})
+	geometry.SetFaces([][]uint32{{0, 2, 1}, {0, 1, 3}, {1, 2, 3}, {2, 0, 3}})
+	return geometry
 }

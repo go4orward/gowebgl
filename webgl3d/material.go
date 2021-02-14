@@ -24,5 +24,6 @@ func NewMaterial(color_or_texture string) *Material {
 }
 
 func (self *Material) ShowInfo() {
-	fmt.Printf("Material with color %v\n", self.color)
+	c := self.color
+	fmt.Printf("Material with color [%.2f %.2f %.2f %.2f]\n", c[0], c[1], c[2], c[3])
 }

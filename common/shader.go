@@ -82,14 +82,16 @@ func (self *Shader) ShowInfo() {
 		fmt.Printf("Shader  with Error - %s\n", self.err.Error())
 	}
 	for uname, umap := range self.uniforms {
-		fmt.Printf("  Uniform   %-12s: %v\n", uname, umap)
+		fmt.Printf("  Uniform   %-10s: %v\n", uname, umap)
 	}
 	for aname, amap := range self.attributes {
-		fmt.Printf("  Attribute %-12s: %v\n", aname, amap)
+		fmt.Printf("  Attribute %-10s: %v\n", aname, amap)
 	}
-	for dname, dmap := range self.draw_modes {
-		fmt.Printf("  DrawMode  %-12s: %v\n", dname, dmap)
+	things_to_draw := ""
+	for _, dmode := range self.draw_modes {
+		things_to_draw += dmode + " "
 	}
+	fmt.Printf("  ThingsToDraw : %s\n", things_to_draw)
 }
 
 // ----------------------------------------------------------------------------
@@ -102,11 +104,14 @@ func (self *Shader) InitBindingForUniform(name string, dtype string, autobinding
 	//    (examples: "material.color", "renderer.modelview")
 	// Otherwise, 'shader.SetBindingForUniform()' has to be called manually.
 	switch autobinding {
-	case "material.color":
-	case "renderer.modelview":
+	case "renderer.pvm": //  [mat3](2D) or [mat4](3D) (Proj * View * Model) matrix
+	case "renderer.proj": // [mat3](2D) or [mat4](3D) (Projection) matrix
+	case "renderer.vmod": // [mat3](2D) or [mat4](3D) (View * Model) matrix
+	case "material.color": //  [vec3]     color of all the points
+	case "lighting.dlight": // [mat3](3D) directional light information with (direction[3], color[3], ambient[3])
 	case "":
 	default:
-		fmt.Printf("Invalid autobinding '%s' for uniform '%s'\n", autobinding, name)
+		fmt.Printf("Unsupported autobinding '%s' for uniform '%s'\n", autobinding, name)
 		return
 	}
 	self.uniforms[name] = map[string]interface{}{"dtype": dtype, "autobinding": autobinding}
@@ -133,23 +138,15 @@ func (self *Shader) SetBindingForUniform(name string, dtype string, value interf
 func (self *Shader) InitBindingForAttribute(name string, dtype string, autobinding string) {
 	// Initialize attribute binding with its name, data_type, and auto_binding option.
 	// If 'autobinding' is given, then the binding will be attempted automatically.
-	//    (examples: "geometry.coord:0:0")
+	//    (examples: "geometry.coords", "geometry.textuv", or "geometry.normal")
 	// Otherwise, 'shader.SetBindingForUniform()' has to be called manually.
-	autobinding2 := ""
-	if split := strings.Split(autobinding, ":"); len(split) > 0 {
-		autobinding2 = split[0]
-	}
-	switch autobinding2 {
-	case "geometry.coord":
-		var stride, offset int
-		_, err := fmt.Sscanf(autobinding, "geometry.coord:%d:%d", &stride, &offset)
-		if err != nil {
-			fmt.Printf("Invalid autobinding '%s' for attribute '%s'\n", autobinding, name)
-			return
-		}
+	switch autobinding {
+	case "geometry.coords": // point coordinates
+	case "geometry.textuv": // texture UV coordinates
+	case "geometry.normal": // (3D only) normal vector
 	case "":
 	default:
-		fmt.Printf("Invalid autobinding '%s' for uniform '%s'\n", autobinding, name)
+		fmt.Printf("Invalid autobinding '%s' for uniform '%s' initialization\n", autobinding, name)
 		return
 	}
 	self.attributes[name] = map[string]interface{}{"dtype": dtype, "autobinding": autobinding}

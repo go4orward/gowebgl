@@ -1,5 +1,7 @@
 package geom2d
 
+import "math"
+
 func AddAB(a [2]float32, b [2]float32) [2]float32 {
 	return [2]float32{a[0] + b[0], a[1] + b[1]}
 }
@@ -12,6 +14,15 @@ func CrossAB(a [2]float32, b [2]float32) float32 {
 	return a[0]*b[1] - a[1]*b[0] // in 2D, (ax,ay,0) x (bx,by,0) = (0,0,ax*by-ay*bx)
 }
 
+func Length(v [2]float32) float32 {
+	return float32(math.Sqrt(float64(v[0]*v[0] + v[1]*v[1])))
+}
+
+func Normalize(v [2]float32) [2]float32 {
+	len := Length(v)
+	return [2]float32{v[0] / len, v[1] / len}
+}
+
 func IsCCW(v0 [2]float32, v1 [2]float32, v2 [2]float32) bool {
 	v01 := SubAB(v1, v0)
 	v02 := SubAB(v2, v0)
@@ -22,12 +33,6 @@ func IsPointInside(p [2]float32, v0 [2]float32, v1 [2]float32, v2 [2]float32) bo
 	p0, p1, p2 := SubAB(v0, p), SubAB(v1, p), SubAB(v2, p)
 	c01, c12, c13 := CrossAB(p0, p1), CrossAB(p1, p2), CrossAB(p2, p0)
 	return (c01 > 0 && c12 > 0 && c13 > 0) || (c01 < 0 && c12 < 0 && c13 < 0)
-}
-
-func SpliceUint32(a []uint32, pos int, delete_count int, new_entries ...uint32) []uint32 {
-	head := a[0:pos]
-	tail := a[pos+delete_count:]
-	return append(append(head, new_entries...), tail...)
 }
 
 // public static isPointInTriangle(point: number[], v0: number[], v1: number[], v2: number[], strictly_inside: boolean = false): boolean {

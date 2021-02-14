@@ -3,7 +3,6 @@ package webgl2d
 import (
 	"errors"
 	"fmt"
-	"strings"
 	"syscall/js"
 
 	"github.com/go4orward/gowebgl/common"
@@ -24,22 +23,16 @@ func NewRenderer(wctx *common.WebGLContext) *Renderer {
 // Clear
 // ----------------------------------------------------------------------------
 
-func (self *Renderer) Clear(color string) {
-	// // Enable the depth test
-	// gl.enable(gl.DEPTH_TEST)
-	// gl.depthFunc(gl.LEQUAL) // Near things obscure far things
-	// // Set the view port
-	// gl.viewport(0, 0, gl.canvas.width, gl.canvas.height)
-	// // Clear the color buffer bit
-	// gl.clearColor(clear_color[0], clear_color[1], clear_color[2], 1.0)
-	// gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
+func (self *Renderer) Clear(camera *Camera, color string) {
 	context := self.wctx.GetContext()
 	constants := self.wctx.GetConstants()
+
+	// context.Call("viewport", 0, 0, camera.wh[0], camera.wh[1]) // (LowerLeft.x, LowerLeft.y, width, height)
+	// (if 'viewport' is not updated, rendering may blur after window.resize)
 
 	rgb, _ := common.ParseHexColor(color)
 	context.Call("clearColor", rgb[0], rgb[1], rgb[2], 1.0) // Set clearing color
 	context.Call("clear", constants.COLOR_BUFFER_BIT)       // Clear the canvas
-	// context.Call("enable", constants.DEPTH_TEST)         // Enable the depth test
 }
 
 // ----------------------------------------------------------------------------
@@ -48,9 +41,9 @@ func (self *Renderer) Clear(color string) {
 
 func (self *Renderer) RenderAxes(camera *Camera, length float32) {
 	if self.axes == nil {
-		self.axes = NewSceneObject_ForAxes(self.wctx, length)
+		self.axes = NewSceneObject_2DAxes(self.wctx, length)
 	}
-	self.RenderSceneObject(self.axes, camera.viewmatrix)
+	self.RenderSceneObject(self.axes, &camera.pjvwmatrix) // (Proj * View) matrix
 }
 
 // ----------------------------------------------------------------------------
@@ -59,9 +52,9 @@ func (self *Renderer) RenderAxes(camera *Camera, length float32) {
 
 func (self *Renderer) RenderScene(camera *Camera, scene *Scene) {
 	// Render all the scene objects
-	for _, sobj := range scene.Objects {
-		modelview := camera.viewmatrix.MultiplyRight(sobj.modelmatrix)
-		self.RenderSceneObject(sobj, modelview)
+	for _, sobj := range scene.objects {
+		pvm_matrix := camera.pjvwmatrix.MultiplyRight(&sobj.modelmatrix)
+		self.RenderSceneObject(sobj, pvm_matrix) // (Proj * View * Model) matrix
 	}
 }
 
@@ -69,12 +62,18 @@ func (self *Renderer) RenderScene(camera *Camera, scene *Scene) {
 // Rendering SceneObject
 // ----------------------------------------------------------------------------
 
-func (self *Renderer) RenderSceneObject(sobj *SceneObject, modelview *geom2d.Matrix3) error {
+func (self *Renderer) RenderSceneObject(sobj *SceneObject, pvm *geom2d.Matrix3) error {
 	context := self.wctx.GetContext()
 	constants := self.wctx.GetConstants()
 	// 1. If necessary, then build WebGLBuffers for the SceneObject's Geometry
+	if sobj.geometry.IsDataBufferReady() == false {
+		return errors.New("Failed to RenderSceneObject() : empty geometry data buffer")
+	}
 	if sobj.geometry.IsWebGLBufferReady() == false {
 		sobj.geometry.build_webgl_buffers(self.wctx, true, true, true)
+	}
+	if sobj.poses != nil && sobj.poses.IsWebGLBufferReady() == false {
+		sobj.poses.build_webgl_buffers(self.wctx)
 	}
 	// 2. Decide which Shader to use
 	shader := sobj.shader
@@ -87,87 +86,57 @@ func (self *Renderer) RenderSceneObject(sobj *SceneObject, modelview *geom2d.Mat
 	context.Call("useProgram", shader.GetShaderProgram())
 	// 3. bind the uniforms of the shader program
 	for uname, umap := range shader.GetUniformBindings() {
-		if umap["location"] == nil {
-			err := errors.New("Invalid binding : call 'shader.CheckBinding()' before rendering")
-			fmt.Println(err.Error())
-			return err
-		}
-		location, dtype := umap["location"].(js.Value), umap["dtype"].(string)
-		autobinding, value := umap["autobinding"].(string), umap["value"]
-		var err error = nil
-		if autobinding != "" {
-			err = self.complete_uniform_binding_automatically(location, dtype, autobinding, sobj, modelview)
-		} else if value != nil {
-			err = self.complete_uniform_binding_with_value(location, dtype, value)
-		} else {
-			err = errors.New("Invalid binding : uniform '" + uname + "' failed to bind")
-		}
-		if err != nil {
+		if err := self.bind_uniform(uname, umap, sobj.material, pvm); err != nil {
 			fmt.Println(err.Error())
 			return err
 		}
 	}
 	// 4. bind the attributes of the shader program
 	for aname, amap := range shader.GetAttributeBindings() {
-		if amap["location"] == nil {
-			err := errors.New("Invalid binding : call 'shader.CheckBinding()' before rendering")
-			fmt.Println(err.Error())
-			return err
-		}
-		location, dtype := amap["location"].(js.Value), amap["dtype"].(string)
-		autobinding, buffer := amap["autobinding"].(string), amap["buffer"]
-		var err error = nil
-		if autobinding != "" {
-			err = self.complete_attribute_binding_automatically(location, dtype, autobinding, sobj)
-		} else if buffer != nil {
-			stride, offset := amap["stride"].(int), amap["offset"].(int)
-			err = self.complete_attribute_binding_with_buffer(location, dtype, buffer, stride, offset)
-		} else {
-			err = errors.New("Invalid binding : attribute '" + aname + "' failed to bind")
-		}
-		if err != nil {
+		if err := self.bind_attribute(aname, amap, sobj.geometry, sobj.poses); err != nil {
 			fmt.Println(err.Error())
 			return err
 		}
 	}
 	// 5. draw
 	for _, draw_mode := range shader.GetThingsToDraw() {
+		// Note that ARRAY_BUFFER was binded already in the previous step (during attribute binding)
 		switch draw_mode {
 		case "POINTS":
-			webgl_count := sobj.geometry.GetWebGLCountToDraw("POINTS")
-			context.Call("bindBuffer", constants.ELEMENT_ARRAY_BUFFER, nil)
-			context.Call("drawArrays", constants.POINTS, 0, webgl_count)
+			_, count, _ := sobj.geometry.GetWebGLBuffer("POINTS")
+			context.Call("drawArrays", constants.POINTS, 0, count) // (mode, first, count)
 		case "LINES":
-			webgl_buffer := sobj.geometry.GetWebGLBufferToDraw("LINES")
-			webgl_count := sobj.geometry.GetWebGLCountToDraw("LINES")
-			context.Call("bindBuffer", constants.ELEMENT_ARRAY_BUFFER, webgl_buffer)
-			context.Call("drawElements", constants.LINES, webgl_count, constants.UNSIGNED_INT, 0)
+			buffer, count, _ := sobj.geometry.GetWebGLBuffer("LINES")
+			context.Call("bindBuffer", constants.ELEMENT_ARRAY_BUFFER, buffer)
+			context.Call("drawElements", constants.LINES, count, constants.UNSIGNED_INT, 0) // (mode, count, type, offset)
 		case "TRIANGLES":
-			webgl_buffer := sobj.geometry.GetWebGLBufferToDraw("TRIANGLES")
-			webgl_count := sobj.geometry.GetWebGLCountToDraw("TRIANGLES")
-			context.Call("bindBuffer", constants.ELEMENT_ARRAY_BUFFER, webgl_buffer)
-			context.Call("drawElements", constants.TRIANGLES, webgl_count, constants.UNSIGNED_INT, 0)
-		default:
+			buffer, count, _ := sobj.geometry.GetWebGLBuffer("TRIANGLES")
+			context.Call("bindBuffer", constants.ELEMENT_ARRAY_BUFFER, buffer)
+			context.Call("drawElements", constants.TRIANGLES, count, constants.UNSIGNED_INT, 0) // (mode, count, type, offset)
 		}
 	}
 	// 6. render all the children
 	for _, child := range sobj.children {
-		modelview := modelview.MultiplyRight(child.modelmatrix)
-		self.RenderSceneObject(child, modelview)
+		pvm := pvm.MultiplyRight(&child.modelmatrix)
+		self.RenderSceneObject(child, pvm)
 	}
 	return nil
 }
 
-func (self *Renderer) complete_uniform_binding_automatically(location js.Value, dtype string, autobinding string, sobj *SceneObject, modelview *geom2d.Matrix3) error {
+func (self *Renderer) bind_uniform(uname string, umap map[string]interface{}, material *Material, pvm *geom2d.Matrix3) error {
 	context := self.wctx.GetContext()
+	if umap["location"] == nil {
+		err := errors.New("Invalid binding : call 'shader.CheckBinding()' before rendering")
+		return err
+	}
+	location, dtype := umap["location"].(js.Value), umap["dtype"].(string)
+	autobinding := umap["autobinding"].(string)
 	// fmt.Printf("Uniform (%s) : autobinding= '%s'\n", dtype, autobinding)
 	switch autobinding {
 	case "material.color":
 		c := [4]float32{1, 1, 1, 1}
-		if sobj.material != nil {
-			c = sobj.material.color
-		} else if sobj.parent_material != nil {
-			c = sobj.parent_material.color
+		if material != nil {
+			c = material.color
 		}
 		switch dtype {
 		case "vec3":
@@ -177,69 +146,92 @@ func (self *Renderer) complete_uniform_binding_automatically(location js.Value, 
 			context.Call("uniform4f", location, c[0], c[1], c[2], c[3])
 			return nil
 		}
-	case "renderer.modelview":
+	case "renderer.pvm":
 		switch dtype {
 		case "mat3":
-			// Note that we need Transpose(), since WebGL uses column-major matrix
-			elements := modelview.Transpose().GetElements()
+			elements := pvm.GetElements()
 			e := common.ConvertGoSliceToJsTypedArray(elements[:]) // ModelView matrix, converted to JavaScript 'Float32Array'
 			context.Call("uniformMatrix3fv", location, false, e)  // gl.uniformMatrix3fv(location, transpose, values_array)
 			return nil
 		}
-	}
-	return fmt.Errorf("Invalid binding : uniform (%s) failed to bind with '%s'", dtype, autobinding)
-}
-
-func (self *Renderer) complete_uniform_binding_with_value(location js.Value, dtype string, value interface{}) error {
-	context := self.wctx.GetContext()
-	// fmt.Printf("Uniform (%s) : value= %v (%T)\n", dtype, value, value)
-	switch dtype {
-	case "float":
-		context.Call("uniform1f", location, value.(float32))
-		return nil
-	case "vec2":
-		v := value.([]float32)
-		context.Call("uniform2f", location, v[0], v[1])
-		return nil
-	case "vec3":
-		v := value.([]float32)
-		context.Call("uniform3f", location, v[0], v[1], v[2])
-		return nil
-	case "vec4":
-		v := value.([]float32)
-		context.Call("uniform4f", location, v[0], v[1], v[2], v[3])
-		return nil
-	}
-	return fmt.Errorf("Invalid binding : uniform (%s) failed to bind with value %T", dtype, value)
-}
-
-func (self *Renderer) complete_attribute_binding_automatically(location js.Value, dtype string, autobinding string, sobj *SceneObject) error {
-	context := self.wctx.GetContext()
-	constants := self.wctx.GetConstants()
-	// fmt.Printf("Attribute (%s) : autobinding= '%s'\n", dtype, autobinding)
-	if strings.HasPrefix(autobinding, "geometry.coord") {
-		var stride, offset int
-		_, err := fmt.Sscanf(autobinding, "geometry.coord:%d:%d", &stride, &offset)
-		if err == nil {
-			context.Call("bindBuffer", constants.ARRAY_BUFFER, sobj.geometry.GetWebGLBufferToDraw("POINTS"))
-			context.Call("vertexAttribPointer", location, 2, constants.FLOAT, false, stride, offset)
-			context.Call("enableVertexAttribArray", location)
-			return nil
+	default:
+		value := umap["value"]
+		if value != nil {
+			switch dtype {
+			case "float":
+				context.Call("uniform1f", location, value.(float32))
+				return nil
+			case "vec2":
+				v := value.([]float32)
+				context.Call("uniform2f", location, v[0], v[1])
+				return nil
+			case "vec3":
+				v := value.([]float32)
+				context.Call("uniform3f", location, v[0], v[1], v[2])
+				return nil
+			case "vec4":
+				v := value.([]float32)
+				context.Call("uniform4f", location, v[0], v[1], v[2], v[3])
+				return nil
+			}
 		}
 	}
-	return fmt.Errorf("Invalid binding : attribute (%s) failed to bind with '%s'", dtype, autobinding)
+	return fmt.Errorf("Invalid binding : uniform '%s' (%s) failed to bind with %v", uname, dtype, autobinding, umap)
 }
 
-func (self *Renderer) complete_attribute_binding_with_buffer(location js.Value, dtype string, buffer interface{}, stride int, offset int) error {
+func (self *Renderer) bind_attribute(aname string, amap map[string]interface{}, geometry *Geometry, poses *SceneObjectPoses) error {
 	context := self.wctx.GetContext()
 	constants := self.wctx.GetConstants()
-	// fmt.Printf("Attribute (%s) : buffer= %v (%T)\n", dtype, value, buffer)
-	switch dtype {
-	case "vec2":
-		context.Call("bindBuffer", constants.ARRAY_BUFFER, buffer.(js.Value))
-		context.Call("vertexAttribPointer", location, 2, constants.FLOAT, false, stride, offset)
-		context.Call("enableVertexAttribArray", location)
-		return nil
+	if amap["location"] == nil {
+		err := errors.New("Invalid binding : call 'shader.CheckBinding()' before rendering")
+		return err
 	}
-	return fmt.Errorf("Invalid binding : attribute ('%s') failed to bind with buffer %T", dtype, buffer)
+	location, dtype := amap["location"].(js.Value), amap["dtype"].(string)
+	autobinding := amap["autobinding"].(string)
+	// fmt.Printf("Attribute (%s) : autobinding= '%s'\n", dtype, autobinding)
+	switch autobinding {
+	case "geometry.coords":
+		buffer, _, pinfo := geometry.GetWebGLBuffer("POINTS")
+		context.Call("bindBuffer", constants.ARRAY_BUFFER, buffer)
+		context.Call("vertexAttribPointer", location, 2, constants.FLOAT, false, pinfo[0]*4, pinfo[1]*4)
+		context.Call("enableVertexAttribArray", location)
+		if poses != nil { // context.ext_angle.vertexAttribDivisorANGLE(attribute_loc, divisor);
+			self.wctx.GetExtension("ANGLE").Call("vertexAttribDivisorANGLE", location, 0) // divisor == 0
+		}
+		return nil
+	case "geometry.textuv":
+		buffer, _, pinfo := geometry.GetWebGLBuffer("POINTS")
+		context.Call("bindBuffer", constants.ARRAY_BUFFER, buffer)
+		context.Call("vertexAttribPointer", location, 2, constants.FLOAT, false, pinfo[0]*4, pinfo[2]*4)
+		context.Call("enableVertexAttribArray", location)
+		if poses != nil { // context.ext_angle.vertexAttribDivisorANGLE(attribute_loc, divisor);
+			self.wctx.GetExtension("ANGLE").Call("vertexAttribDivisorANGLE", location, 0) // divisor == 0
+		}
+		return nil
+	case "instance.pose":
+		if poses != nil {
+			buffer, _, pinfo := poses.GetWebGLBuffer("POSES")
+			context.Call("bindBuffer", constants.ARRAY_BUFFER, buffer)
+			context.Call("vertexAttribPointer", location, 2, constants.FLOAT, false, pinfo[0]*4, pinfo[1]*4)
+			context.Call("enableVertexAttribArray", location)
+			// context.ext_angle.vertexAttribDivisorANGLE(attribute_loc, divisor);
+			self.wctx.GetExtension("ANGLE").Call("vertexAttribDivisorANGLE", location, 1) // divisor == 1
+			return nil
+		}
+	default:
+		buffer, stride, offset := amap["buffer"], amap["stride"].(int), amap["offset"].(int)
+		if buffer != nil {
+			switch dtype {
+			case "vec2":
+				context.Call("bindBuffer", constants.ARRAY_BUFFER, buffer.(js.Value))
+				context.Call("vertexAttribPointer", location, 2, constants.FLOAT, false, stride*4, offset*4)
+				context.Call("enableVertexAttribArray", location)
+				if poses != nil { // context.ext_angle.vertexAttribDivisorANGLE(attribute_loc, divisor);
+					self.wctx.GetExtension("ANGLE").Call("vertexAttribDivisorANGLE", location, 0) // divisor == 0
+				}
+				return nil
+			}
+		}
+	}
+	return fmt.Errorf("Invalid binding : attribute '%s' (%s) failed to bind with %v", aname, dtype, amap)
 }

@@ -12,36 +12,57 @@ import (
 func main() {
 	// THIS CODE IS SUPPOSED TO BE BUILT AS WEBASSEMBLY AND RUN INSIDE A BROWSER.
 	// BUILD IT LIKE 'GOOS=js GOARCH=wasm go build -o gowebgl.wasm gowebgl/webgl3d_tester.go'.
-	fmt.Println("Hello WebGL!")                        // print in the browser console
-	wctx, err := common.NewWebGLContext("webglcanvas") // canvas_id, interactivity
+	fmt.Println("Hello WebGL!")                       // print in the browser console
+	wctx, err := common.NewWebGLContext("wasmcanvas") // canvas_id, interactivity
 	if err != nil {
 		js.Global().Call("alert", "Failed to start WebGL : "+err.Error())
 		return
 	}
-	var sobj *webgl3d.SceneObject
+	scene := webgl3d.NewScene()
 	if false {
-		sobj = webgl3d.NewSceneObject_Cylinder_Wireframed(wctx) // One of pre-defined examples of SceneObject
+		scene.Add(webgl3d.NewSceneObject_CylinderWireframe(wctx)) // a pre-defined example of SceneObject
+		// scene.GetObject(0).ShowInfo()
 	} else {
-		geometry := webgl3d.NewGeometry().LoadSphere(0.5, 8, 8) // create geometry (a triangle with radius 0.5)
-		geometry.BuildDataBuffers(true, false, true)            // build data buffers for vertices and faces
-		geometry.BuildWebGLBuffers(wctx, true, false, true)     // build WebGL buffers to draw POINTS and TRIANGLES
-		material := webgl3d.NewMaterial("#bbbbff")              // create material (yellow color)
-		shader := webgl3d.NewShader_Basic(wctx)                 // create a shader, and set its bindings
-		shader.SetBindingToDraw("TRIANGLES", geometry.GetDrawBuffer("TRIANGLES"), geometry.GetDrawCount("TRIANGLES"))
-		shader.CheckBindings()
-		sobj = webgl3d.NewSceneObject(geometry, material, shader)
+		geometry := webgl3d.NewGeometry_Cube(1, 1, 1) // create geometry (a cube of size 1.0)
+		geometry.BuildNormalsPerFace()                // calculate normal vectors for each face
+		geometry.BuildDataBuffers(true, false, true)  // build data buffers for vertices and faces
+		material := webgl3d.NewMaterial("#bbbbff")    // create material (yellow color)
+		shader := webgl3d.NewShader_BasicLight(wctx)  // create a shader, and set its bindings
+		shader.SetThingsToDraw("TRIANGLES")
+		scene.Add(webgl3d.NewSceneObject(geometry, material, shader))
+		// geometry.ShowInfo()
 	}
-	scene := webgl3d.NewScene().Add(sobj) // set up the scene, using the SceneObject
-	camera := webgl3d.NewCamera()         // set up the camera (by default, centered at (0,0) with zoom 1.0)
-	camera.SetPose([3]float32{0.5, 0.5, 0.0}, 30, 1)
+	camera := webgl3d.NewPerspectiveCamera(wctx.GetWH(), 15, 1.0) // fov default is 15 in degree
+	// camera := webgl3d.NewOrthographicCamera(wctx.GetWH(), 2.6, 1.0) // fov default is 2.6 in clip_width
+	camera.SetPose([3]float32{0, 0, 10}, [3]float32{0, 0, 0}, [3]float32{0, 1, 0})
 	renderer := webgl3d.NewRenderer(wctx) // set up the renderer
-	renderer.Clear("#ffffff")             // prepare to render (clearing to white background)
+	renderer.Clear(camera, "#ffffff")     // prepare to render (clearing to white background)
 	renderer.RenderScene(camera, scene)   // render the scene (iterating over all the SceneObjects in it)
-	renderer.RenderAxes(camera, 0.8)      // render the axes (just for visual reference)
-	camera.ShowInfo()
+	renderer.RenderAxes(camera, 1.0)      // render the axes (just for visual reference)
 
 	if true { // interactive
-		wctx.SetEventHandler("processEventFromGo")
-		<-make(chan bool) // wait for events from Javascript (without exiting)
+		// add user interactions (with mouse)
+		wctx.SetupEventHandlers()
+		wctx.RegisterEventHandlerForDoubleClick(func(canvasxy [2]int, keystat [4]bool) {
+			camera.ShowInfo()
+		})
+		wctx.RegisterEventHandlerForMouseDrag(func(canvasxy [2]int, dxy [2]int, keystat [4]bool) {
+		})
+		wctx.RegisterEventHandlerForMouseWheel(func(canvasxy [2]int, scale float32, keystat [4]bool) {
+			camera.SetZoom(scale) // 'scale' in [ 0.01 ~ 1(default) ~ 100.0 ]
+		})
+		wctx.RegisterEventHandlerForWindowResize(func(w int, h int) {
+			camera.SetAspectRatio(w, h)
+		})
+		// add animation
+		wctx.SetupAnimationFrame()
+		wctx.RegisterDrawHandlerForAnimationFrame(func(canvas js.Value) {
+			renderer.Clear(camera, "#ffffff")   // prepare to render (clearing to white background)
+			renderer.RenderScene(camera, scene) // render the scene (iterating over all the SceneObjects in it)
+			renderer.RenderAxes(camera, 0.8)    // render the axes (just for visual reference)
+			scene.Get(0).Rotate([3]float32{0, 0, 1}, 1.0)
+			scene.Get(0).Rotate([3]float32{0, 1, 0}, 1.0)
+		})
+		<-make(chan bool) // wait for events (without exiting)
 	}
 }

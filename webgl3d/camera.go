@@ -2,72 +2,176 @@ package webgl3d
 
 import (
 	"fmt"
+	"math"
 
 	"github.com/go4orward/gowebgl/common/geom3d"
 )
 
-type Camera struct {
-	center     [3]float32      // camera position in world space
-	angle      float32         // camera rotation angle in degree
-	zoom       float32         // camera zoom level
-	viewmatrix *geom3d.Matrix4 // view matrix   Mcw
+type CameraProjection interface {
+	IsPerspective() bool
+	IsOrthographic() bool
+	GetParameters() (wh [2]int, fov float32, zoom float32, nearfar [2]float32)
+	GetMatrix() *geom3d.Matrix4
+	SetAspectRatio(width int, height int)
+	SetZoom(zoom float32)
+
+	MultiplyVector3([3]float32) [3]float32 // only for test
 }
 
-func NewCamera() *Camera {
-	var camera Camera
-	camera.viewmatrix = geom3d.NewMatrix4() // identity
-	camera.center = [3]float32{0, 0, 0}
-	camera.angle = 0.0
-	camera.zoom = 1.0
+type Camera struct {
+	// camera internal parameters
+	projection CameraProjection // projection matrix (transformation from CAMERA to CLIP space)
+	// camera pose
+	viewmatrix geom3d.Matrix4 // view matrix Mcw (transformation from WORLD to CAMERA space)
+	center     [3]float32     // camera position in world space
+	// Ref: http://www.songho.ca/opengl/gl_projectionmatrix.html
+}
+
+func NewPerspectiveCamera(wh [2]int, fov_in_degree float32, zoom float32) *Camera {
+	// 'fov' 15 degree (default) will cover width 2 at distance 10 in full screen)
+	camera := Camera{}
+	camera.projection = NewPerspectiveProjection(wh, fov_in_degree, zoom, [2]float32{1.0, 100.0})
+	camera.SetPose([3]float32{0, 0, 10}, [3]float32{0, 0, 0}, [3]float32{0, 1, 0})
 	return &camera
 }
 
-func (self *Camera) SetAngle(angle_in_degree float32) *Camera {
-	self.angle = angle_in_degree
-	return self.update_view_matrix()
-}
-
-func (self *Camera) SetCenter(cx float32, cy float32) *Camera {
-	self.center[0] = cx
-	self.center[1] = cy
-	return self.update_view_matrix()
-}
-
-func (self *Camera) SetZoom(zoom float32) *Camera {
-	self.zoom = zoom
-	return self.update_view_matrix()
-}
-
-func (self *Camera) SetPose(center [3]float32, angle_in_degree float32, zoom float32) *Camera {
-	if zoom <= 0.0 || zoom >= 1000.0 {
-		fmt.Printf("Camera.SetPose() failed : invalid zoom = %.1f\n", zoom)
-		return self
-	}
-	self.center = center
-	self.angle = angle_in_degree
-	self.zoom = zoom
-	return self.update_view_matrix()
-}
-
-func (self *Camera) update_view_matrix() *Camera {
-	// radian := float64(self.angle) * (math.Pi / 180.0)
-	// cos, sin := float32(math.Cos(radian)), float32(math.Sin(radian))
-	// scaling := geom3d.NewMatrix4().Set(
-	// 	self.zoom, 0.0, 0.0,
-	// 	0.0, self.zoom, 0.0,
-	// 	0.0, 0.0, 1.0)
-	// rotation := geom3d.NewMatrix4().Set(
-	// 	cos, +sin, 0.0,
-	// 	-sin, cos, 0.0,
-	// 	0.0, 0.0, 1.0)
-	// translation := geom3d.NewMatrix4().Set(
-	// 	1.0, 0.0, -self.center[0],
-	// 	0.0, 1.0, -self.center[1],
-	// 	0.0, 0.0, 1.0)
-	// self.viewmatrix.SetMultiplyMatrices(scaling, rotation, translation)
-	return self
+func NewOrthographicCamera(wh [2]int, fov_in_clipwidth float32, zoom float32) *Camera {
+	// 'fov' 2.6 (default) will cover width 2 at any distance in full screen)
+	camera := Camera{}
+	camera.projection = NewOrthographicProjection(wh, fov_in_clipwidth, zoom, [2]float32{1.0, 100.0})
+	camera.SetPose([3]float32{0, 0, 10}, [3]float32{0, 0, 0}, [3]float32{0, 1, 0})
+	return &camera
 }
 
 func (self *Camera) ShowInfo() {
-	fmt.Printf("Camera at (%v,%v) with angle=%.1f zoom=%.2f  %v\n", self.center[0], self.center[1], self.angle, self.zoom, self.viewmatrix)
+	if self.projection.IsPerspective() {
+		wh, fov, zoom, nearfar := self.projection.GetParameters()
+		fmt.Printf("Perspective Camera  centered at [%5.2f %5.2f %5.2f]\n", self.center[0], self.center[1], self.center[2])
+		fmt.Printf("  Parameters : AspectRatio=[%d:%d]  fov=%.0f°  zoom=%.2f  nearfar=[%.2f %.2f]\n", wh[0], wh[1], fov, zoom, nearfar[0], nearfar[1])
+	} else {
+		wh, fov, zoom, nearfar := self.projection.GetParameters()
+		fmt.Printf("Orthographic Camera  centered at [%5.2f %5.2f %5.2f]\n", self.center[0], self.center[1], self.center[2])
+		fmt.Printf("  Parameters : AspectRatio=[%d:%d]  fov=%.1f  zoom=%.2f  nearfar=[%.2f %.2f]\n", wh[0], wh[1], fov, zoom, nearfar[0], nearfar[1])
+	}
+	p := self.projection.GetMatrix().GetElements() // Note that Matrix4 is column-major (just like WebGL)
+	v := self.viewmatrix.GetElements()
+	fmt.Printf("  [ %5.2f %5.2f %5.2f %7.2f ] [ %5.2f %5.2f %5.2f %7.2f ]\n", p[0], p[4], p[8], p[12], v[0], v[4], v[8], v[12])
+	fmt.Printf("  [ %5.2f %5.2f %5.2f %7.2f ] [ %5.2f %5.2f %5.2f %7.2f ]\n", p[1], p[5], p[9], p[13], v[1], v[5], v[9], v[13])
+	fmt.Printf("  [ %5.2f %5.2f %5.2f %7.2f ] [ %5.2f %5.2f %5.2f %7.2f ]\n", p[2], p[6], p[10], p[14], v[2], v[6], v[10], v[14])
+	fmt.Printf("  [ %5.2f %5.2f %5.2f %7.2f ] [ %5.2f %5.2f %5.2f %7.2f ]\n", p[3], p[7], p[11], p[15], v[3], v[7], v[11], v[15])
+}
+
+// ----------------------------------------------------------------------------
+// Camera Internal Parameters
+// ----------------------------------------------------------------------------
+
+func (self *Camera) SetAspectRatio(width int, height int) *Camera {
+	// This function can be called to handle 'window.resize' event
+	self.projection.SetAspectRatio(width, height)
+	return self
+}
+
+func (self *Camera) SetZoom(zoom float32) *Camera {
+	// This function can be called to handle 'wheel' event [ 0.01 ~ 1.0(default) ~ 100.0 ]
+	zoom = float32(math.Max(0.001, math.Min(float64(zoom), 1000.0)))
+	self.projection.SetZoom(zoom)
+	return self
+}
+
+// ----------------------------------------------------------------------------
+// Camera Pose
+// ----------------------------------------------------------------------------
+
+func (self *Camera) SetPose(from [3]float32, lookat [3]float32, up [3]float32) *Camera {
+	camY := geom3d.Normalize(up)
+	camZ := geom3d.Normalize(geom3d.SubAB(from, lookat))
+	camX := geom3d.Normalize(geom3d.CrossAB(camY, camZ)) // Normalize(), because 'up' may not be orthogonal
+	camY = geom3d.CrossAB(camZ, camX)                    // camY ('up' vector) is updated to make it orthogonal
+	self.SetPoseWithCameraAxes(camX, camY, camZ, from)   // update the viewMatrix
+	return self
+}
+
+func (self *Camera) SetPoseWithCameraAxes(camX [3]float32, camY [3]float32, camZ [3]float32, center [3]float32) *Camera {
+	// We are given:
+	//   Rwc : rotation    from camera to world (camera pose   in world coordinates) = [ camX, camY, camZ ]
+	//   Twc : translation from camera to world (camera origin in world coordinates)
+	// Now we get:
+	//   Tcw : translation from world to camera (world origin in camera coordinates)
+	Twc := center
+	Tcw := [3]float32{ // Tcw = - (Rwc)T * Twc
+		-(camX[0]*Twc[0] + camX[1]*Twc[1] + camX[2]*Twc[2]),
+		-(camY[0]*Twc[0] + camY[1]*Twc[1] + camY[2]*Twc[2]),
+		-(camZ[0]*Twc[0] + camZ[1]*Twc[1] + camZ[2]*Twc[2])}
+	// And we get the viewMatrix (transformation from world to camera)
+	//   [ Rcw  Tcw ] = [ Rwc.transpose  - Rwc.transpose * Twc ]
+	//   [  0    1  ]   [    0                1                ]
+	self.viewmatrix.Set(
+		camX[0], camX[1], camX[2], Tcw[0],
+		camY[0], camY[1], camY[2], Tcw[1],
+		camZ[0], camZ[1], camZ[2], Tcw[2],
+		0, 0, 0, 1)
+	self.center = [3]float32{Twc[0], Twc[1], Twc[2]}
+	return self
+}
+
+func (self *Camera) SetPoseWithMcw(Mcw *geom3d.Matrix4) *Camera {
+	// We are given:
+	//   Mcw : transformation from world to camera
+	// And we get  Twc = - (Rcw)T * Tcw
+	me := Mcw.GetElements()
+	Tcw := [3]float32{me[12], me[13], me[14]}
+	x := -(me[0]*Tcw[0] + me[1]*Tcw[1] + me[2]*Tcw[2])
+	y := -(me[4]*Tcw[0] + me[5]*Tcw[1] + me[6]*Tcw[2])
+	z := -(me[8]*Tcw[0] + me[9]*Tcw[1] + me[10]*Tcw[2])
+	self.viewmatrix.SetCopy(Mcw)
+	self.center = [3]float32{x, y, z}
+	return self
+}
+
+func (self *Camera) Rotate(axis [3]float32, angle_in_degree float32) *Camera {
+	rotation := geom3d.NewMatrix4()
+	rotation.SetRotationByAxis(axis, angle_in_degree)
+	self.viewmatrix = *rotation.MultiplyRight(&self.viewmatrix)
+	return self
+}
+
+func (self *Camera) Translate(tx float32, ty float32, tz float32) *Camera {
+	translation := geom3d.NewMatrix4().Set(
+		1.0, 0.0, 0.0, -tx,
+		0.0, 1.0, 0.0, -ty,
+		0.0, 0.0, 1.0, -tz,
+		0.0, 0.0, 0.0, 1.0)
+	self.viewmatrix = *translation.MultiplyRight(&self.viewmatrix)
+	self.center = [3]float32{self.center[0] + tx, self.center[1] + ty, self.center[2] + tz}
+	return self
+}
+
+// ----------------------------------------------------------------------------
+// Testing
+// ----------------------------------------------------------------------------
+
+func (self *Camera) TestDataBuffer(dbuffer []float32, stride int) {
+	vertices := [][3]float32{}
+	for i := 0; i < len(dbuffer); i += stride {
+		v := dbuffer[i : i+3]
+		v_world := [3]float32{v[0], v[1], v[2]}
+		v_camera := self.viewmatrix.MultiplyVector3(v_world)
+		v_clip := self.projection.MultiplyVector3(v_camera)
+		vertices = append(vertices, v_world, v_camera, v_clip)
+	}
+	for j := 0; j < 3; j++ {
+		if j == 0 {
+			fmt.Printf("CameraTest: ")
+		} else {
+			fmt.Printf("            ")
+		}
+		for i := 0; i < len(vertices); i++ {
+			if i%3 == 2 {
+				fmt.Printf("%5.2f  ", vertices[i][j])
+			} else {
+				fmt.Printf("%5.2f ", vertices[i][j])
+			}
+		}
+		fmt.Printf("\n")
+	}
 }
