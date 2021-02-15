@@ -66,20 +66,20 @@ func NewShader_Basic(wctx *common.WebGLContext) *common.Shader {
 		}`
 	shader, _ := common.NewShader(wctx, vertex_shader_code, fragment_shader_code)
 	shader.InitBindingForUniform("pvm", "mat3", "renderer.pvm")     // automatic binding of Proj*View*Model matrix
-	shader.InitBindingForUniform("color", "vec3", "material.color") // automatic binding of uniform variable
+	shader.InitBindingForUniform("color", "vec3", "material.color") // automatic binding of material color
 	shader.InitBindingForAttribute("xy", "vec2", "geometry.coords") // automatic binding of point coordinates
 	return shader
 }
 
-func NewShader_WithInstancePose(wctx *common.WebGLContext) *common.Shader {
+func NewShader_InstancePoses(wctx *common.WebGLContext) *common.Shader {
 	// Shader with instance pose, for rendering multiple instances of a same geometry
 	var vertex_shader_code = `
 		precision mediump float;
 		uniform   mat3 pvm;
-		attribute mat3 pose;
+		attribute vec2 pose;
 		attribute vec2 xy;
 		void main() {
-			vec3 new_pos = pvm * pose * vec3(xy.x, xy.y, 1.0);
+			vec3 new_pos = pvm * vec3(xy.x + pose.x, xy.y + pose.y, 1.0);
 			gl_Position = vec4(new_pos.x, new_pos.y, 0.0, 1.0);
 		}`
 	var fragment_shader_code = `
@@ -89,9 +89,9 @@ func NewShader_WithInstancePose(wctx *common.WebGLContext) *common.Shader {
 			gl_FragColor = vec4(color.r, color.g, color.b, 1.0);
 		}`
 	shader, _ := common.NewShader(wctx, vertex_shader_code, fragment_shader_code)
-	shader.InitBindingForUniform("pvm", "mat3", "renderer.pvm")     // automatic binding of Proj*View*Model matrix
-	shader.InitBindingForUniform("color", "vec3", "material.color") // automatic binding of uniform variable
-	shader.InitBindingForAttribute("xy", "vec2", "geometry.coords") // automatic binding of point coordinates
-	shader.InitBindingForAttribute("pose", "mat3", "instance.pose") // automatic binding of instance pose
+	shader.InitBindingForUniform("pvm", "mat3", "renderer.pvm")         // automatic binding of Proj*View*Model matrix
+	shader.InitBindingForUniform("color", "vec3", "material.color")     // automatic binding of material color
+	shader.InitBindingForAttribute("xy", "vec2", "geometry.coords")     // automatic binding of point coordinates
+	shader.InitBindingForAttribute("pose", "vec2", "instance.pose:2:0") // automatic binding of instance pose
 	return shader
 }

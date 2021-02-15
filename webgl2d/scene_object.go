@@ -14,7 +14,7 @@ type SceneObject struct {
 	shader          *common.Shader    // shader and its bindings
 	parent_material *Material         // shader of the parent SceneObject
 	parent_shader   *common.Shader    // shader of the parent SceneObject
-	poses           *SceneObjectPoses // poses for multiple instances of this (geometry+material)
+	poses           *SceneObjectPoses // poses for multiple instances of this (geometry+material) object
 	modelmatrix     geom2d.Matrix3    // model transformation matrix of this SceneObject
 	children        []*SceneObject    // children of this SceneObject (to be rendered recursively)
 }
@@ -31,6 +31,11 @@ func NewSceneObject(geometry *Geometry, material *Material, shader *common.Shade
 	sobj.parent_material = nil
 	sobj.parent_shader = nil
 	return &sobj
+}
+
+func (self *SceneObject) SetInstancePoses(poses *SceneObjectPoses) *SceneObject {
+	self.poses = poses
+	return self
 }
 
 func (self *SceneObject) AddChild(child *SceneObject) *SceneObject {
@@ -54,6 +59,10 @@ func (self *SceneObject) AddChild(child *SceneObject) *SceneObject {
 func (self *SceneObject) ShowInfo() {
 	fmt.Printf("SceneObject ")
 	self.geometry.ShowInfo()
+	if self.poses != nil {
+		fmt.Printf("SceneObject ")
+		self.poses.ShowInfo()
+	}
 	fmt.Printf("SceneObject ")
 	self.material.ShowInfo()
 	fmt.Printf("SceneObject ")

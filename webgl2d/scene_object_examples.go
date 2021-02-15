@@ -32,3 +32,22 @@ func NewSceneObject_HexagonWireframe(wctx *common.WebGLContext) *SceneObject {
 	shader.SetThingsToDraw("LINES")                   // let it draw "LINES" later, when Renderer runs
 	return NewSceneObject(geometry, material, shader) // set up the scene object
 }
+
+func NewSceneObject_InstancePoses(wctx *common.WebGLContext) *SceneObject {
+	// This example creates 40,000 instances of a single geometry, each with its own pose (tx, ty)
+	geometry := NewGeometry_Rectangle(0.08)            // create a rectangle of size 1.0
+	geometry.BuildDataBuffers(true, false, true)       //
+	material := NewMaterial("#888888")                 // create material
+	shader := NewShader_InstancePoses(wctx)            // create shader, and set its bindings
+	shader.SetThingsToDraw("TRIANGLES")                // let it draw "LINES" later, when Renderer runs
+	sobj := NewSceneObject(geometry, material, shader) // set up the scene object
+	poses := NewSceneObjectPoses(2, 100*100)
+	for i := 0; i < 100; i++ {
+		for j := 0; j < 100; j++ {
+			poses.SetPose(i*100+j, 0, []float32{float32(i) / 10, float32(j) / 10})
+		}
+	}
+	sobj.SetInstancePoses(poses)
+	sobj.Translate(-5.0, -5.0)
+	return sobj
+}

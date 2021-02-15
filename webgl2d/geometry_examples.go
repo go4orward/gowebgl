@@ -9,10 +9,10 @@ func NewGeometry_Triangle(size float32) *Geometry {
 }
 
 func NewGeometry_Rectangle(size float32) *Geometry {
+	hs := size / 2
 	geometry := NewGeometry() // create an empty geometry
-	geometry.SetVertices([][2]float32{{0, 0}, {size, 0}, {size, size}, {0, size}})
+	geometry.SetVertices([][2]float32{{-hs, -hs}, {hs, -hs}, {hs, hs}, {-hs, hs}})
 	geometry.SetFaces([][]uint32{{0, 1, 2}, {0, 2, 3}})
-	geometry.Translate(-size/2, -size/2)
 	return geometry
 }
 

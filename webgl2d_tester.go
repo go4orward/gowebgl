@@ -22,6 +22,7 @@ func main() {
 	scene := webgl2d.NewScene()
 	if false {
 		scene.Add(webgl2d.NewSceneObject_HexagonWireframe(wctx)) // a pre-defined example of SceneObject
+		// scene.Add(webgl2d.NewSceneObject_InstancePoses(wctx)) // a pre-defined example of SceneObject
 	} else {
 		geometry := webgl2d.NewGeometry_Triangle(0.5) // create geometry (a triangle with radius 0.5)
 		geometry.BuildDataBuffers(true, false, true)  // build data buffers for vertices and faces

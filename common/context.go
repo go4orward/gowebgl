@@ -46,7 +46,7 @@ func NewWebGLContext(canvas_id string) (*WebGLContext, error) {
 	}
 	wctx.constants.LoadFromContext(wctx.context) // load WebGL constants
 	wctx.SetupExtension("UINT")                  // extension for UINT32 index
-	// wctx.SetupExtension("ANGLE")              // extension for geometry instancing (Renderer will set it up)
+	wctx.SetupExtension("ANGLE")                 // extension for geometry instancing
 	return &wctx, nil
 }
 
@@ -84,16 +84,6 @@ func (self *WebGLContext) SetupExtension(extname string) {
 	}
 }
 
-func (self *WebGLContext) GetExtension(extname string) js.Value {
-	switch extname {
-	case "UINT": // extension for UINT32 index, to drawElements() with large number of vertices
-		return self.ext_uint
-	case "ANGLE": // extension for geometry instancing
-		return self.ext_angle
-	}
-	return js.Null()
-}
-
 func (self *WebGLContext) IsExtensionReady(extname string) bool {
 	switch extname {
 	case "UINT": // extension for UINT32 index, to drawElements() with large number of vertices
@@ -102,6 +92,16 @@ func (self *WebGLContext) IsExtensionReady(extname string) bool {
 		return !self.ext_angle.IsNull() && !self.ext_angle.IsUndefined()
 	}
 	return false
+}
+
+func (self *WebGLContext) GetExtension(extname string) js.Value {
+	switch extname {
+	case "UINT": // extension for UINT32 index, to drawElements() with large number of vertices
+		return self.ext_uint
+	case "ANGLE": // extension for geometry instancing
+		return self.ext_angle
+	}
+	return js.Null()
 }
 
 // ----------------------------------------------------------------------------

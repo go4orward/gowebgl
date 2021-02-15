@@ -140,14 +140,22 @@ func (self *Shader) InitBindingForAttribute(name string, dtype string, autobindi
 	// If 'autobinding' is given, then the binding will be attempted automatically.
 	//    (examples: "geometry.coords", "geometry.textuv", or "geometry.normal")
 	// Otherwise, 'shader.SetBindingForUniform()' has to be called manually.
-	switch autobinding {
-	case "geometry.coords": // point coordinates
-	case "geometry.textuv": // texture UV coordinates
-	case "geometry.normal": // (3D only) normal vector
-	case "":
-	default:
-		fmt.Printf("Invalid autobinding '%s' for uniform '%s' initialization\n", autobinding, name)
-		return
+	if strings.HasPrefix(autobinding, "instance.pose") {
+		autobinding_split := strings.Split(autobinding, ":")
+		if len(autobinding_split) != 3 {
+			fmt.Printf("Invalid autobinding '%s' for attribute '%s'\n", autobinding, name)
+			return
+		}
+	} else {
+		switch autobinding {
+		case "geometry.coords": // point coordinates
+		case "geometry.textuv": // texture UV coordinates
+		case "geometry.normal": // (3D only) normal vector
+		case "":
+		default:
+			fmt.Printf("Unsupported autobinding '%s' for attribute '%s'\n", autobinding, name)
+			return
+		}
 	}
 	self.attributes[name] = map[string]interface{}{"dtype": dtype, "autobinding": autobinding}
 }
