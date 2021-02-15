@@ -1,6 +1,10 @@
 package webgl2d
 
-import "github.com/go4orward/gowebgl/common"
+import (
+	"math"
+
+	"github.com/go4orward/gowebgl/common"
+)
 
 func NewSceneObject_2DAxes(wctx *common.WebGLContext, length float32) *SceneObject {
 	// This example creates two lines for X (red) and Y (green) axes, with origin at (0,0)
@@ -38,13 +42,16 @@ func NewSceneObject_InstancePoses(wctx *common.WebGLContext) *SceneObject {
 	geometry := NewGeometry_Rectangle(0.08)            // create a rectangle of size 1.0
 	geometry.BuildDataBuffers(true, false, true)       //
 	material := NewMaterial("#888888")                 // create material
-	shader := NewShader_InstancePoses(wctx)            // create shader, and set its bindings
+	shader := NewShader_InstancePoseColor(wctx)        // create shader, and set its bindings
 	shader.SetThingsToDraw("TRIANGLES")                // let it draw "LINES" later, when Renderer runs
 	sobj := NewSceneObject(geometry, material, shader) // set up the scene object
-	poses := NewSceneObjectPoses(2, 100*100)
+	poses := NewSceneObjectPoses(5, 100*100)
 	for i := 0; i < 100; i++ {
 		for j := 0; j < 100; j++ {
-			poses.SetPose(i*100+j, 0, []float32{float32(i) / 10, float32(j) / 10})
+			poses.SetPose(i*100+j, 0, []float32{float32(i) / 10, float32(j) / 10}) // tx, ty
+			ii, jj := math.Abs(float64(i)-50)/50, math.Abs(float64(j)-50)/50
+			r, g, b := float32(ii), float32(jj), 1-float32((ii+jj)/2)
+			poses.SetPose(i*100+j, 2, []float32{r, g, b}) // color
 		}
 	}
 	sobj.SetInstancePoses(poses)

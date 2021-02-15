@@ -71,27 +71,30 @@ func NewShader_Basic(wctx *common.WebGLContext) *common.Shader {
 	return shader
 }
 
-func NewShader_InstancePoses(wctx *common.WebGLContext) *common.Shader {
+func NewShader_InstancePoseColor(wctx *common.WebGLContext) *common.Shader {
 	// Shader with instance pose, for rendering multiple instances of a same geometry
 	var vertex_shader_code = `
 		precision mediump float;
 		uniform   mat3 pvm;
-		attribute vec2 pose;
 		attribute vec2 xy;
+		attribute vec2 txy;
+		attribute vec3 color;
+		varying   vec3 vc;
 		void main() {
-			vec3 new_pos = pvm * vec3(xy.x + pose.x, xy.y + pose.y, 1.0);
+			vec3 new_pos = pvm * vec3(xy.x + txy.x, xy.y + txy.y, 1.0);
 			gl_Position = vec4(new_pos.x, new_pos.y, 0.0, 1.0);
+			vc = color;
 		}`
 	var fragment_shader_code = `
 		precision mediump float;
-		uniform vec3 color;
+		varying   vec3 vc;
 		void main() { 
-			gl_FragColor = vec4(color.r, color.g, color.b, 1.0);
+			gl_FragColor = vec4(vc.r, vc.g, vc.b, 1.0);
 		}`
 	shader, _ := common.NewShader(wctx, vertex_shader_code, fragment_shader_code)
-	shader.InitBindingForUniform("pvm", "mat3", "renderer.pvm")         // automatic binding of Proj*View*Model matrix
-	shader.InitBindingForUniform("color", "vec3", "material.color")     // automatic binding of material color
-	shader.InitBindingForAttribute("xy", "vec2", "geometry.coords")     // automatic binding of point coordinates
-	shader.InitBindingForAttribute("pose", "vec2", "instance.pose:2:0") // automatic binding of instance pose
+	shader.InitBindingForUniform("pvm", "mat3", "renderer.pvm")          // automatic binding of Proj*View*Model matrix
+	shader.InitBindingForAttribute("xy", "vec2", "geometry.coords")      // automatic binding of point coordinates
+	shader.InitBindingForAttribute("txy", "vec2", "instance.pose:5:0")   // automatic binding of instance pose
+	shader.InitBindingForAttribute("color", "vec3", "instance.pose:5:2") // automatic binding of instance color
 	return shader
 }

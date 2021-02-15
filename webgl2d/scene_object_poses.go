@@ -42,7 +42,7 @@ func (self *SceneObjectPoses) SetPose(index int, offset int, values []float32) b
 		return false
 	}
 	pos := index * self.size
-	for i := 0; i < self.size; i++ {
+	for i := 0; i < len(values); i++ {
 		self.data_buffer[pos+offset+i] = values[i]
 	}
 	return true
