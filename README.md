@@ -1,4 +1,4 @@
-# WebGL in Go
+# GoWebGL : Interactive Graphics in Go
 
 Interactive 2D & 3D Graphics Library using Go + WebAssembly + WebGL
 
