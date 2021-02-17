@@ -107,31 +107,37 @@ func (self *Renderer) RenderSceneObject(sobj *SceneObject, pvm *geom2d.Matrix3) 
 	for _, draw_mode := range shader.GetThingsToDraw() {
 		// Note that ARRAY_BUFFER was binded already in the previous step (during attribute binding)
 		switch draw_mode {
-		case "POINTS":
+		case "POINTS", "VERTICES":
 			_, count, _ := sobj.geometry.GetWebGLBuffer("POINTS")
-			if sobj.poses == nil {
-				context.Call("drawArrays", constants.POINTS, 0, count) // (mode, first, count)
-			} else {
-				ext, pose_count := self.wctx.GetExtension("ANGLE"), sobj.poses.GetPoseCount()
-				ext.Call("drawArraysInstancedANGLE", constants.POINTS, 0, count, pose_count)
+			if count > 0 {
+				if sobj.poses == nil {
+					context.Call("drawArrays", constants.POINTS, 0, count) // (mode, first, count)
+				} else {
+					ext, pose_count := self.wctx.GetExtension("ANGLE"), sobj.poses.GetPoseCount()
+					ext.Call("drawArraysInstancedANGLE", constants.POINTS, 0, count, pose_count)
+				}
 			}
-		case "LINES":
+		case "LINES", "EDGES":
 			buffer, count, _ := sobj.geometry.GetWebGLBuffer("LINES")
-			context.Call("bindBuffer", constants.ELEMENT_ARRAY_BUFFER, buffer)
-			if sobj.poses == nil {
-				context.Call("drawElements", constants.LINES, count, constants.UNSIGNED_INT, 0) // (mode, count, type, offset)
-			} else {
-				ext, pose_count := self.wctx.GetExtension("ANGLE"), sobj.poses.GetPoseCount()
-				ext.Call("drawElementsInstancedANGLE", constants.LINES, count, constants.UNSIGNED_INT, 0, pose_count)
+			if count > 0 {
+				context.Call("bindBuffer", constants.ELEMENT_ARRAY_BUFFER, buffer)
+				if sobj.poses == nil {
+					context.Call("drawElements", constants.LINES, count, constants.UNSIGNED_INT, 0) // (mode, count, type, offset)
+				} else {
+					ext, pose_count := self.wctx.GetExtension("ANGLE"), sobj.poses.GetPoseCount()
+					ext.Call("drawElementsInstancedANGLE", constants.LINES, count, constants.UNSIGNED_INT, 0, pose_count)
+				}
 			}
-		case "TRIANGLES":
+		case "TRIANGLES", "FACES":
 			buffer, count, _ := sobj.geometry.GetWebGLBuffer("TRIANGLES")
-			context.Call("bindBuffer", constants.ELEMENT_ARRAY_BUFFER, buffer)
-			if sobj.poses == nil {
-				context.Call("drawElements", constants.TRIANGLES, count, constants.UNSIGNED_INT, 0) // (mode, count, type, offset)
-			} else {
-				ext, pose_count := self.wctx.GetExtension("ANGLE"), sobj.poses.GetPoseCount()
-				ext.Call("drawElementsInstancedANGLE", constants.TRIANGLES, count, constants.UNSIGNED_INT, 0, pose_count)
+			if count > 0 {
+				context.Call("bindBuffer", constants.ELEMENT_ARRAY_BUFFER, buffer)
+				if sobj.poses == nil {
+					context.Call("drawElements", constants.TRIANGLES, count, constants.UNSIGNED_INT, 0) // (mode, count, type, offset)
+				} else {
+					ext, pose_count := self.wctx.GetExtension("ANGLE"), sobj.poses.GetPoseCount()
+					ext.Call("drawElementsInstancedANGLE", constants.TRIANGLES, count, constants.UNSIGNED_INT, 0, pose_count)
+				}
 			}
 		default:
 			err := fmt.Errorf("Unknown mode to draw : %s\n", draw_mode)
@@ -157,6 +163,14 @@ func (self *Renderer) bind_uniform(uname string, umap map[string]interface{}, ma
 	autobinding := umap["autobinding"].(string)
 	// fmt.Printf("Uniform (%s) : autobinding= '%s'\n", dtype, autobinding)
 	switch autobinding {
+	case "renderer.pvm":
+		switch dtype {
+		case "mat3":
+			elements := pvm.GetElements()
+			e := common.ConvertGoSliceToJsTypedArray(elements[:]) // ModelView matrix, converted to JavaScript 'Float32Array'
+			context.Call("uniformMatrix3fv", location, false, e)  // gl.uniformMatrix3fv(location, transpose, values_array)
+			return nil
+		}
 	case "material.color":
 		c := [4]float32{1, 1, 1, 1}
 		if material != nil {
@@ -168,14 +182,6 @@ func (self *Renderer) bind_uniform(uname string, umap map[string]interface{}, ma
 			return nil
 		case "vec4":
 			context.Call("uniform4f", location, c[0], c[1], c[2], c[3])
-			return nil
-		}
-	case "renderer.pvm":
-		switch dtype {
-		case "mat3":
-			elements := pvm.GetElements()
-			e := common.ConvertGoSliceToJsTypedArray(elements[:]) // ModelView matrix, converted to JavaScript 'Float32Array'
-			context.Call("uniformMatrix3fv", location, false, e)  // gl.uniformMatrix3fv(location, transpose, values_array)
 			return nil
 		}
 	default:
@@ -236,10 +242,11 @@ func (self *Renderer) bind_attribute(aname string, amap map[string]interface{}, 
 		return nil
 	case "instance.pose":
 		if poses != nil && len(autobinding_split) == 3 { // it's like "instance.pose:<stride>:<offset>"
+			count := get_count_from_type(dtype)
 			stride, _ := strconv.Atoi(autobinding_split[1])
 			offset, _ := strconv.Atoi(autobinding_split[2])
 			context.Call("bindBuffer", constants.ARRAY_BUFFER, poses.webgl_buffer)
-			context.Call("vertexAttribPointer", location, 2, constants.FLOAT, false, stride*4, offset*4)
+			context.Call("vertexAttribPointer", location, count, constants.FLOAT, false, stride*4, offset*4)
 			context.Call("enableVertexAttribArray", location)
 			// context.ext_angle.vertexAttribDivisorANGLE(attribute_loc, divisor);
 			self.wctx.GetExtension("ANGLE").Call("vertexAttribDivisorANGLE", location, 1) // divisor == 1

@@ -177,7 +177,7 @@ func (self *Shader) SetBindingForAttribute(name string, dtype string, buffer int
 }
 
 func (self *Shader) SetThingsToDraw(modes ...string) {
-	// set things ("POINTS", "LINES", "TRIANGLES") to draw
+	// set things ("POINTS"/"VERTICES", "LINES"/"EDGES", or "TRIANGLES"/"FACES") to draw
 	self.draw_modes = modes
 
 	// check uniform locations before rendering (since gl.getXXX() is expensive)

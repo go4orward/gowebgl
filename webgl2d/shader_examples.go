@@ -27,24 +27,7 @@ func NewShader_2DAxes(wctx *common.WebGLContext) *common.Shader {
 	shader, _ := common.NewShader(wctx, vertex_shader_code, fragment_shader_code)
 	shader.InitBindingForUniform("pvm", "mat3", "renderer.pvm")     // automatic binding of Proj*View*Model matrix
 	shader.InitBindingForAttribute("xy", "vec2", "geometry.coords") // automatic binding of point coordinates
-	return shader
-}
-
-func NewShader_SimplyRed(wctx *common.WebGLContext) *common.Shader {
-	// Shader with with XY coordinates only (assuming Color == RED and PVM == Identity)
-	var vertex_shader_code = `
-		precision mediump float;
-		attribute vec2 xy;
-		void main() {
-			gl_Position = vec4(xy.x, xy.y, 0.0, 1.0);
-		}`
-	var fragment_shader_code = `
-		precision mediump float;
-		void main() {
-			gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);
-		}`
-	shader, _ := common.NewShader(wctx, vertex_shader_code, fragment_shader_code)
-	shader.InitBindingForAttribute("xy", "vec2", "geometry.coords") // automatic binding of point coordinates
+	shader.SetThingsToDraw("LINES")                                 // only for axis LINES
 	return shader
 }
 
@@ -68,6 +51,7 @@ func NewShader_Basic(wctx *common.WebGLContext) *common.Shader {
 	shader.InitBindingForUniform("pvm", "mat3", "renderer.pvm")     // automatic binding of Proj*View*Model matrix
 	shader.InitBindingForUniform("color", "vec3", "material.color") // automatic binding of material color
 	shader.InitBindingForAttribute("xy", "vec2", "geometry.coords") // automatic binding of point coordinates
+	shader.SetThingsToDraw("LINES", "TRIANGLES")                    // can be used for drawing either
 	return shader
 }
 
@@ -96,5 +80,6 @@ func NewShader_InstancePoseColor(wctx *common.WebGLContext) *common.Shader {
 	shader.InitBindingForAttribute("xy", "vec2", "geometry.coords")      // automatic binding of point coordinates
 	shader.InitBindingForAttribute("txy", "vec2", "instance.pose:5:0")   // automatic binding of instance pose
 	shader.InitBindingForAttribute("color", "vec3", "instance.pose:5:2") // automatic binding of instance color
+	shader.SetThingsToDraw("LINES", "TRIANGLES")                         // can be used for drawing either
 	return shader
 }

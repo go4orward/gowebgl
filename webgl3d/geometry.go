@@ -605,15 +605,15 @@ func (self *Geometry) build_webgl_buffers(wctx *common.WebGLContext, for_points 
 
 func (self *Geometry) GetWebGLBuffer(mode string) (js.Value, int, [4]int) {
 	switch mode {
-	case "POINTS":
+	case "POINTS", "VERTICES":
 		if self.data_buffer_fpoints == nil {
 			return self.webgl_buffer_vpoints, len(self.data_buffer_vpoints), self.vpoint_info
 		} else {
 			return self.webgl_buffer_fpoints, len(self.data_buffer_fpoints), self.fpoint_info
 		}
-	case "LINES":
+	case "LINES", "EDGES":
 		return self.webgl_buffer_lines, len(self.data_buffer_lines), self.vpoint_info
-	case "TRIANGLES":
+	case "TRIANGLES", "FACES":
 		if self.data_buffer_fpoints == nil {
 			return self.webgl_buffer_faces, len(self.data_buffer_faces), self.vpoint_info
 		} else {
@@ -624,22 +624,3 @@ func (self *Geometry) GetWebGLBuffer(mode string) (js.Value, int, [4]int) {
 		return js.Null(), 0, [4]int{0, 0, 0, 0}
 	}
 }
-
-// func (self *Geometry) GetWebGLBufferCount(mode string) int {
-// 	switch mode {
-// 	case "COORDS":
-// 		if self.data_buffer_fpoints == nil {
-// 			return len(self.data_buffer_vpoints)
-// 		} else if self.data_buffer_vpoints == nil {
-// 			return len(self.data_buffer_fpoints)
-// 		} else {
-// 			return len(self.data_buffer_fpoints)
-// 		}
-// 	case "LINES":
-// 		return len(self.data_buffer_lines)
-// 	case "TRIANGLES":
-// 		return len(self.data_buffer_faces)
-// 	default:
-// 		return len(self.data_buffer_faces)
-// 	}
-// }

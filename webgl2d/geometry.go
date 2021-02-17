@@ -469,7 +469,7 @@ func (self *Geometry) build_webgl_buffers(wctx *common.WebGLContext, for_points 
 
 func (self *Geometry) GetWebGLBuffer(mode string) (js.Value, int, [3]int) {
 	switch mode {
-	case "POINTS":
+	case "POINTS", "VERTICES":
 		if self.data_buffer_fpoints == nil {
 			return self.webgl_buffer_vpoints, len(self.data_buffer_vpoints), self.vpoint_info
 		} else if self.data_buffer_vpoints == nil {
@@ -477,9 +477,9 @@ func (self *Geometry) GetWebGLBuffer(mode string) (js.Value, int, [3]int) {
 		} else {
 			return self.webgl_buffer_fpoints, len(self.data_buffer_fpoints), self.fpoint_info
 		}
-	case "LINES":
+	case "LINES", "EDGES":
 		return self.webgl_buffer_lines, len(self.data_buffer_lines), [3]int{0, 0, 0}
-	case "TRIANGLES":
+	case "TRIANGLES", "FACES":
 		return self.webgl_buffer_faces, len(self.data_buffer_faces), [3]int{0, 0, 0}
 	default:
 		fmt.Printf("Invalid mode '%s' for GetWebGLBuffer()\n")

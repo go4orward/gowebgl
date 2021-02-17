@@ -20,15 +20,14 @@ func main() {
 		return
 	}
 	scene := webgl2d.NewScene()
-	if false {
-		scene.Add(webgl2d.NewSceneObject_HexagonWireframe(wctx)) // a pre-defined example of SceneObject
-		// scene.Add(webgl2d.NewSceneObject_InstancePoses(wctx)) // a pre-defined example of SceneObject
+	if true {
+		// scene.Add(webgl2d.NewSceneObject_HexagonWireframe(wctx)) // a pre-defined example of SceneObject
+		scene.Add(webgl2d.NewSceneObject_RectInstances(wctx)) // a pre-defined example of SceneObject
 	} else {
 		geometry := webgl2d.NewGeometry_Triangle(0.5) // create geometry (a triangle with radius 0.5)
 		geometry.BuildDataBuffers(true, false, true)  // build data buffers for vertices and faces
 		material := webgl2d.NewMaterial("#bbbbff")    // create material (with sky-blue color)
 		shader := webgl2d.NewShader_Basic(wctx)       // shader with auto-binded color & PVM matrix
-		shader.SetThingsToDraw("TRIANGLES")
 		scene.Add(webgl2d.NewSceneObject(geometry, material, shader))
 	}
 	camera := webgl2d.NewCamera(wctx.GetWH(), 2.0, 1.0)
@@ -43,6 +42,8 @@ func main() {
 		wctx.RegisterEventHandlerForClick(func(canvasxy [2]int, keystat [4]bool) {
 			wxy := camera.UnprojectCanvasToWorld(canvasxy)
 			fmt.Printf("canvas (%d %d)  world (%.2f %.2f)\n", canvasxy[0], canvasxy[1], wxy[0], wxy[1])
+			sobj := webgl2d.SelectByWorldPoint(scene, wxy)
+			sobj.ShowInfo()
 		})
 		wctx.RegisterEventHandlerForDoubleClick(func(canvasxy [2]int, keystat [4]bool) {
 			camera.ShowInfo()

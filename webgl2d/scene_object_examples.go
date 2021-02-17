@@ -13,7 +13,6 @@ func NewSceneObject_2DAxes(wctx *common.WebGLContext, length float32) *SceneObje
 	geometry.SetEdges([][]uint32{{0, 1}, {0, 2}})                        // add two edges
 	geometry.BuildDataBuffers(true, true, false)                         // build data buffers for vertices and edges
 	shader := NewShader_2DAxes(wctx)                                     // create shader, and set its bindings
-	shader.SetThingsToDraw("LINES")                                      // let it draw "LINES" later, when Renderer runs
 	return NewSceneObject(geometry, nil, shader)                         // set up the scene object
 }
 
@@ -21,7 +20,7 @@ func NewSceneObject_RedTriangle(wctx *common.WebGLContext) *SceneObject {
 	// This example creates a red triangle with radius 0.5 at (0,0)
 	geometry := NewGeometry_Triangle(0.5)        // create a triangle with radius 0.5 at (0,0)
 	geometry.BuildDataBuffers(true, false, true) // build data buffers for vertices and faces
-	shader := NewShader_SimplyRed(wctx)          // create shader, and set its bindings
+	shader := NewShader_Basic(wctx)              // create shader, and set its bindings
 	shader.SetThingsToDraw("TRIANGLES")          // let it draw "TRIANGLES" later, when Renderer runs
 	return NewSceneObject(geometry, nil, shader) // set up the scene object
 }
@@ -37,7 +36,7 @@ func NewSceneObject_HexagonWireframe(wctx *common.WebGLContext) *SceneObject {
 	return NewSceneObject(geometry, material, shader) // set up the scene object
 }
 
-func NewSceneObject_InstancePoses(wctx *common.WebGLContext) *SceneObject {
+func NewSceneObject_RectInstances(wctx *common.WebGLContext) *SceneObject {
 	// This example creates 40,000 instances of a single geometry, each with its own pose (tx, ty)
 	geometry := NewGeometry_Rectangle(0.08)            // create a rectangle of size 1.0
 	geometry.BuildDataBuffers(true, false, true)       //

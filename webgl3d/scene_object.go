@@ -9,13 +9,13 @@ import (
 
 type SceneObject struct {
 	geometry        *Geometry
-	material        *Material      // material
-	shader          *common.Shader // shader and its bindings
-	parent_material *Material      // shader of the parent SceneObject
-	parent_shader   *common.Shader // shader of the parent SceneObject
-
-	modelmatrix geom3d.Matrix4 //
-	children    []*SceneObject
+	material        *Material         // material
+	shader          *common.Shader    // shader and its bindings
+	modelmatrix     geom3d.Matrix4    //
+	poses           *SceneObjectPoses // poses for multiple instances of this (geometry+material) object
+	children        []*SceneObject    //
+	parent_material *Material         // shader of the parent SceneObject
+	parent_shader   *common.Shader    // shader of the parent SceneObject
 }
 
 func NewSceneObject(geometry *Geometry, material *Material, shader *common.Shader) *SceneObject {
@@ -25,10 +25,16 @@ func NewSceneObject(geometry *Geometry, material *Material, shader *common.Shade
 	// Note that 'material' & 'shader' can be nil, in which case its parent's 'material' & 'shader' will be used to render.
 	sobj := SceneObject{geometry: geometry, material: material, shader: shader}
 	sobj.modelmatrix.SetIdentity()
+	sobj.poses = nil
 	sobj.children = nil
 	sobj.parent_material = nil
 	sobj.parent_shader = nil
 	return &sobj
+}
+
+func (self *SceneObject) SetInstancePoses(poses *SceneObjectPoses) *SceneObject {
+	self.poses = poses
+	return self
 }
 
 func (self *SceneObject) AddChild(child *SceneObject) *SceneObject {

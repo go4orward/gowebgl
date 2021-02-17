@@ -19,18 +19,16 @@ func main() {
 		return
 	}
 	scene := webgl3d.NewScene()
-	if false {
+	if true {
 		scene.Add(webgl3d.NewSceneObject_CylinderWireframe(wctx)) // a pre-defined example of SceneObject
-		// scene.GetObject(0).ShowInfo()
+		// scene.Add(webgl3d.NewSceneObject_CubeInstances(wctx)) // a pre-defined example of SceneObject
 	} else {
 		geometry := webgl3d.NewGeometry_Cube(1, 1, 1) // create geometry (a cube of size 1.0)
 		geometry.BuildNormalsPerFace()                // calculate normal vectors for each face
 		geometry.BuildDataBuffers(true, false, true)  // build data buffers for vertices and faces
 		material := webgl3d.NewMaterial("#bbbbff")    // create material (yellow color)
-		shader := webgl3d.NewShader_BasicLight(wctx)  // create a shader, and set its bindings
-		shader.SetThingsToDraw("TRIANGLES")
+		shader := webgl3d.NewShader_BasicNormal(wctx) // create a shader, and set its bindings
 		scene.Add(webgl3d.NewSceneObject(geometry, material, shader))
-		// geometry.ShowInfo()
 	}
 	camera := webgl3d.NewPerspectiveCamera(wctx.GetWH(), 15, 1.0) // fov default is 15 in degree
 	// camera := webgl3d.NewOrthographicCamera(wctx.GetWH(), 2.6, 1.0) // fov default is 2.6 in clip_width

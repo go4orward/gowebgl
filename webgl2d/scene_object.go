@@ -12,11 +12,11 @@ type SceneObject struct {
 	geometry        *Geometry         // geometry
 	material        *Material         // material
 	shader          *common.Shader    // shader and its bindings
+	modelmatrix     geom2d.Matrix3    // model transformation matrix of this SceneObject
+	poses           *SceneObjectPoses // poses for multiple instances of this (geometry+material) object
+	children        []*SceneObject    // children of this SceneObject (to be rendered recursively)
 	parent_material *Material         // shader of the parent SceneObject
 	parent_shader   *common.Shader    // shader of the parent SceneObject
-	poses           *SceneObjectPoses // poses for multiple instances of this (geometry+material) object
-	modelmatrix     geom2d.Matrix3    // model transformation matrix of this SceneObject
-	children        []*SceneObject    // children of this SceneObject (to be rendered recursively)
 }
 
 func NewSceneObject(geometry *Geometry, material *Material, shader *common.Shader) *SceneObject {
