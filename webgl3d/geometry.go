@@ -194,7 +194,7 @@ func (self *Geometry) HasTextureFor(mode string) bool {
 }
 
 func (self *Geometry) AddTextureUV(tuv []float32) *Geometry {
-	if len(tuv) == 0 || len(tuv)%2 == 0 {
+	if len(tuv) == 0 || len(tuv)%2 != 0 {
 		fmt.Printf("Invalid texture coordinates to add : %v\n", tuv)
 		return self
 	}
@@ -206,22 +206,6 @@ func (self *Geometry) SetTextureUVs(tuvs [][]float32) *Geometry {
 	self.tuvs = tuvs
 	return self
 }
-
-// func (self *Geometry) AllocTextureUVsPerVertex() {
-// 	self.tuvs = make([][]float32, len(self.verts)) // self.tuvs == [nverts][2]float32
-// 	for i, _ := range self.verts {
-// 		tuv := make([]float32, 2)
-// 		self.tuvs[i] = tuv
-// 	}
-// }
-
-// func (self *Geometry) AllocTextureUVsPerFace() {
-// 	self.tuvs = make([][]float32, len(self.faces)) // self.tuvs == [nfaces][]float32
-// 	for i, face := range self.faces {
-// 		tuv := make([]float32, 2*len(face))
-// 		self.tuvs[i] = tuv
-// 	}
-// }
 
 // ----------------------------------------------------------------------------
 // Normal Vectors

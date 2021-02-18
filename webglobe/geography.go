@@ -1,9 +1,9 @@
-package geographic
+package webglobe
 
 import "math"
 
-const InRadian = (math.Pi / 180.0)
-const InDegree = (180.0 / math.Pi)
+// const InRadian = (math.Pi / 180.0)
+// const InDegree = (180.0 / math.Pi)
 
 // Globe is centered at (0,0) with radius 1.0
 
