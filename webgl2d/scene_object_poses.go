@@ -37,7 +37,7 @@ func (self *SceneObjectPoses) ShowInfo() {
 // Setting Instance Pose
 // ------------------------------------------------------------------------
 
-func (self *SceneObjectPoses) SetPose(index int, offset int, values []float32) bool {
+func (self *SceneObjectPoses) SetPose(index int, offset int, values ...float32) bool {
 	if (offset + len(values)) > self.size {
 		return false
 	}

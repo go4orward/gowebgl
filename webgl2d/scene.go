@@ -1,12 +1,16 @@
 package webgl2d
 
+import "github.com/go4orward/gowebgl/common/geom2d"
+
 type Scene struct {
-	objects []*SceneObject
+	objects []*SceneObject // list of SceneObjects in the Scene
+	bbox    [2][2]float32  // bounding box of all the SceneObjects
 }
 
 func NewScene() *Scene {
 	var scene Scene
 	scene.objects = make([]*SceneObject, 0)
+	scene.bbox = geom2d.BBoxInit()
 	return &scene
 }
 
@@ -38,4 +42,24 @@ func (self *Scene) Get(indices ...int) *SceneObject {
 		}
 	}
 	return nil
+}
+
+// ----------------------------------------------------------------------------
+// Bounding Box
+// ----------------------------------------------------------------------------
+
+func (self *Scene) GetBoundingBox(renew bool) [2][2]float32 {
+	if !geom2d.BBoxIsSet(self.bbox) || renew {
+		bbox := geom2d.BBoxInit()
+		for _, sobj := range self.objects {
+			bbox = geom2d.BBoxMerge(bbox, sobj.GetBoundingBox(nil, renew))
+		}
+		self.bbox = bbox
+	}
+	return self.bbox
+}
+
+func (self *Scene) GetBBoxSizeCenter(renew bool) ([2][2]float32, [2]float32, [2]float32) {
+	bbox := self.GetBoundingBox(renew)
+	return bbox, geom2d.BBoxSize(bbox), geom2d.BBoxCenter(bbox)
 }

@@ -70,6 +70,10 @@ func (self *Matrix3) SetMultiplyMatrices(matrices ...*Matrix3) *Matrix3 {
 // Creating new matrix
 // ----------------------------------------------------------------------------
 
+func (self *Matrix3) Copy() *Matrix3 {
+	return &Matrix3{elements: self.elements}
+}
+
 func (self *Matrix3) Transpose() *Matrix3 {
 	o := &self.elements // reference
 	return &Matrix3{elements: [9]float32{o[0], o[1], o[2], o[3], o[4], o[5], o[6], o[7], o[8]}}

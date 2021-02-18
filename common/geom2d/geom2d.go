@@ -35,14 +35,57 @@ func IsPointInside(p [2]float32, v0 [2]float32, v1 [2]float32, v2 [2]float32) bo
 	return (c01 > 0 && c12 > 0 && c13 > 0) || (c01 < 0 && c12 < 0 && c13 < 0)
 }
 
-// public static isPointInTriangle(point: number[], v0: number[], v1: number[], v2: number[], strictly_inside: boolean = false): boolean {
-// 	let p0 = Point.subAB(v0, point), p1 = Point.subAB(v1, point), p2 = Point.subAB(v2, point);
-// 	let c01 = Point.crossAB(p0, p1), c12 = Point.crossAB(p1, p2), c20 = Point.crossAB(p2, p0);
-// 	let d012 = Point.dotAB(c01,c12), d120 = Point.dotAB(c12, c20), d201 = Point.dotAB(c20, c01);
-// 	if (d012 > 0 && d120 > 0 && d201 > 0) return true;  // point is strictly inside the triangle
-// 	if (strictly_inside || d012 * d120 * d201 != 0) return false;    // point is not on any side
-// 	if (Point.isZero(c01) && d120 < 0) return false;    // point is on side 01, but it's outside
-// 	if (Point.isZero(c12) && d201 < 0) return false;    // point is on side 12, but it's outside
-// 	if (Point.isZero(c20) && d012 < 0) return false;    // point is on side 20, but it's outside
-// 	return true;        // point is on the border, and it's not outside
-// }
+// ----------------------------------------------------------------------------
+// Bounding Box
+// ----------------------------------------------------------------------------
+
+func BBoxInit() [2][2]float32 {
+	return [2][2]float32{{+3.4e38, +3.4e38}, {-3.4e38, -3.4e38}}
+}
+
+func BBoxIsSet(b [2][2]float32) bool {
+	return (b[0][0] <= b[1][0] && b[0][1] <= b[1][1])
+}
+
+func BBoxAddPoint(bbox *[2][2]float32, v [2]float32) {
+	if bbox[0][0] > v[0] {
+		bbox[0][0] = v[0]
+	}
+	if bbox[0][1] > v[1] {
+		bbox[0][1] = v[1]
+	}
+	if bbox[1][0] < v[0] {
+		bbox[1][0] = v[0]
+	}
+	if bbox[1][1] < v[1] {
+		bbox[1][1] = v[1]
+	}
+}
+
+func BBoxMerge(b1 [2][2]float32, b2 [2][2]float32) [2][2]float32 {
+	if b1[0][0] > b2[0][0] {
+		b1[0][0] = b2[0][0]
+	}
+	if b1[0][1] > b2[0][1] {
+		b1[0][1] = b2[0][1]
+	}
+	if b1[1][0] < b2[1][0] {
+		b1[1][0] = b2[1][0]
+	}
+	if b1[1][1] < b2[1][1] {
+		b1[1][1] = b2[1][1]
+	}
+	return b1
+}
+
+func BBoxSize(b [2][2]float32) [2]float32 {
+	return [2]float32{(-b[0][0] + b[1][0]), (-b[0][1] + b[1][1])}
+}
+
+func BBoxCenter(b [2][2]float32) [2]float32 {
+	return [2]float32{(b[0][0] + b[1][0]) / 2, (b[0][1] + b[1][1]) / 2}
+}
+
+func BBoxInside(b [2][2]float32, v [2]float32) bool {
+	return b[0][0] <= v[0] && v[0] <= b[1][0] && b[0][1] <= v[1] && v[1] <= b[1][1]
+}

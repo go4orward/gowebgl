@@ -19,6 +19,7 @@ type Camera struct {
 	// final Projection * View matrix
 	pjvwmatrix geom2d.Matrix3 //
 	// Ref: http://www.songho.ca/opengl/gl_projectionmatrix.html
+	tbbox [2][2]float32 // translation bounding box
 }
 
 func NewCamera(wh_aspect_ratio [2]int, fov_in_clipwidth float32, zoom float32) *Camera {
@@ -26,6 +27,7 @@ func NewCamera(wh_aspect_ratio [2]int, fov_in_clipwidth float32, zoom float32) *
 	camera := Camera{wh: wh_aspect_ratio, fov: fov_in_clipwidth, zoom: zoom}
 	camera.update_proj_matrix()
 	camera.SetPose(0, 0, 0.0)
+	camera.tbbox = geom2d.BBoxInit()
 	return &camera
 }
 
@@ -59,12 +61,10 @@ func (self *Camera) SetZoom(zoom float32) *Camera {
 func (self *Camera) update_proj_matrix() *Camera {
 	// Ref: http://www.songho.ca/opengl/gl_projectionmatrix.html
 	aspect_ratio := float32(self.wh[0]) / float32(self.wh[1])
-	var clip_width, clip_height float32
-	if aspect_ratio > 1.0 {
-		clip_width, clip_height = 2.0*aspect_ratio, float32(2.0) // CLIP space width & height (2.0)
-	} else {
-		clip_width, clip_height = float32(2.0), 2.0/aspect_ratio // CLIP space width (2.0) & height
-	}
+	clip_width, clip_height := float32(2.0), 2.0/aspect_ratio // CLIP space width (2.0) & height
+	// if aspect_ratio > 1.0 {
+	// 	clip_width, clip_height = 2.0*aspect_ratio, float32(2.0) // CLIP space width & height (2.0)
+	// }
 	x := 2 * self.zoom / clip_width
 	y := 2 * self.zoom / clip_height
 	ff := 2.0 / self.fov // fov 2.0 will cover width 2 at any distance in full screen
@@ -110,6 +110,20 @@ func (self *Camera) Rotate(angle_in_degree float32) *Camera {
 }
 
 func (self *Camera) Translate(tx float32, ty float32) *Camera {
+	if geom2d.BBoxIsSet(self.tbbox) { // translation bounding box
+		if (self.center[0] + tx) < self.tbbox[0][0] {
+			tx = self.tbbox[0][0] - self.center[0]
+		}
+		if (self.center[0] + tx) > self.tbbox[1][0] {
+			tx = self.tbbox[1][0] - self.center[0]
+		}
+		if (self.center[1] + ty) < self.tbbox[0][1] {
+			ty = self.tbbox[0][1] - self.center[1]
+		}
+		if (self.center[1] + ty) > self.tbbox[1][1] {
+			ty = self.tbbox[1][1] - self.center[1]
+		}
+	}
 	translation := geom2d.NewMatrix3().Set(
 		1.0, 0.0, -tx,
 		0.0, 1.0, -ty,
@@ -117,6 +131,11 @@ func (self *Camera) Translate(tx float32, ty float32) *Camera {
 	self.viewmatrix = *translation.MultiplyRight(&self.viewmatrix)
 	self.pjvwmatrix.SetMultiplyMatrices(&self.projmatrix, &self.viewmatrix)
 	self.center = [2]float32{self.center[0] + tx, self.center[1] + ty}
+	return self
+}
+
+func (self *Camera) SetTranslationBoundingBox(bbox [2][2]float32) *Camera {
+	self.tbbox = bbox
 	return self
 }
 

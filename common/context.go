@@ -219,13 +219,19 @@ func go_wrapper_for_event_handler() js.Func {
 			mouse_dragging = false
 		case "wheel":
 			if evthandler_for_mouse_wheel != nil {
-				cxy := [2]int{event.Get("clientX").Int(), event.Get("clientY").Int()}
-				mouse_wheel_scale += float64(event.Get("deltaY").Int()) // [ 0 ~ 500(default) ~ 1000 ]
-				mouse_wheel_scale = float64(math.Max(0, math.Min(mouse_wheel_scale, 1000)))
-				scale_exp := (mouse_wheel_scale - 500.0) / 250.0 // [ -2 ~ 0(default) ~ +2 ]
-				scale := math.Pow(10, scale_exp)                 // [ 0.01 ~ 1(default) ~ 100.0 ]
 				keystat := [4]bool{event.Get("altKey").Bool(), event.Get("ctrlKey").Bool(), event.Get("metaKey").Bool(), event.Get("shiftKey").Bool()}
-				evthandler_for_mouse_wheel(cxy, float32(scale), keystat)
+				if keystat[1] { // ZOOM
+					cxy := [2]int{event.Get("clientX").Int(), event.Get("clientY").Int()}
+					mouse_wheel_scale += float64(event.Get("deltaY").Int()) // [ 0 ~ 500(default) ~ 1000 ]
+					mouse_wheel_scale = float64(math.Max(0, math.Min(mouse_wheel_scale, 1000)))
+					scale_exp := (mouse_wheel_scale - 500.0) / 250.0 // [ -2 ~ 0(default) ~ +2 ]
+					scale := math.Pow(10, scale_exp)                 // [ 0.01 ~ 1(default) ~ 100.0 ]
+					evthandler_for_mouse_wheel(cxy, float32(scale), keystat)
+				} else { // SCROLL
+					cxy := [2]int{event.Get("clientX").Int(), event.Get("clientY").Int()}
+					delta := float32(event.Get("deltaY").Int())
+					evthandler_for_mouse_wheel(cxy, delta, keystat)
+				}
 			}
 		case "resize":
 			w := js.Global().Get("window").Get("innerWidth").Int()

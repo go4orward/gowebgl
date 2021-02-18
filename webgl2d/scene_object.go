@@ -17,6 +17,7 @@ type SceneObject struct {
 	children        []*SceneObject    // children of this SceneObject (to be rendered recursively)
 	parent_material *Material         // shader of the parent SceneObject
 	parent_shader   *common.Shader    // shader of the parent SceneObject
+	bbox            [2][2]float32     // bounding box
 }
 
 func NewSceneObject(geometry *Geometry, material *Material, shader *common.Shader) *SceneObject {
@@ -30,6 +31,7 @@ func NewSceneObject(geometry *Geometry, material *Material, shader *common.Shade
 	sobj.children = nil
 	sobj.parent_material = nil
 	sobj.parent_shader = nil
+	sobj.bbox = geom2d.BBoxInit()
 	return &sobj
 }
 
@@ -120,4 +122,43 @@ func (self *SceneObject) Scale(sx float32, sy float32) *SceneObject {
 		0.0, 0.0, 1.0)
 	self.modelmatrix = *scaling.MultiplyRight(&self.modelmatrix)
 	return self
+}
+
+// ----------------------------------------------------------------------------
+// Bounding Box
+// ----------------------------------------------------------------------------
+
+func (self *SceneObject) GetBoundingBox(m *geom2d.Matrix3, renew bool) [2][2]float32 {
+	if !geom2d.BBoxIsSet(self.bbox) || renew {
+		bbox := geom2d.BBoxInit()
+		// apply the transformation matrx
+		var mm *geom2d.Matrix3 = nil
+		if m != nil {
+			mm = m.MultiplyRight(&self.modelmatrix)
+		} else {
+			mm = self.modelmatrix.Copy()
+		}
+		// add all the vertices of the geometry
+		if self.poses == nil {
+			for _, v := range self.geometry.verts {
+				xy := mm.MultiplyVector2(v)
+				geom2d.BBoxAddPoint(&bbox, xy)
+			}
+		} else {
+			for i := 0; i < self.poses.count; i++ {
+				idx := i * self.poses.size
+				txy := self.poses.data_buffer[idx : idx+2]
+				for _, v := range self.geometry.verts {
+					xy := [2]float32{v[0] + txy[0], v[1] + txy[1]}
+					xy = mm.MultiplyVector2(xy)
+					geom2d.BBoxAddPoint(&bbox, xy)
+				}
+			}
+		}
+		for _, sobj := range self.children {
+			bbox = geom2d.BBoxMerge(bbox, sobj.GetBoundingBox(mm, renew))
+		}
+		self.bbox = bbox
+	}
+	return self.bbox
 }

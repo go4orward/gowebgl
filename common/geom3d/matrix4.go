@@ -95,6 +95,10 @@ func (self *Matrix4) SetRotationByAxis(axis [3]float32, angle_in_degree float32)
 // Creating new matrix
 // ----------------------------------------------------------------------------
 
+func (self *Matrix4) Copy() *Matrix4 {
+	return &Matrix4{elements: self.elements}
+}
+
 func (self *Matrix4) Transpose() *Matrix4 {
 	o := &self.elements // reference
 	return &Matrix4{elements: [16]float32{

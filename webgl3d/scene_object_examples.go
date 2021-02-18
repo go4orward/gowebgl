@@ -46,10 +46,10 @@ func NewSceneObject_CubeInstances(wctx *common.WebGLContext) *SceneObject {
 	for i := 0; i < 10; i++ {
 		for j := 0; j < 10; j++ {
 			for k := 0; k < 10; k++ {
-				poses.SetPose(i*100+j*10+k, 0, []float32{float32(i) / 10, float32(j) / 10, float32(k) / 10}) // tx, ty, tz
+				poses.SetPose(i*100+j*10+k, 0, float32(i)/10, float32(j)/10, float32(k)/10) // tx, ty, tz
 				ii, jj, kk := math.Abs(float64(i)-5)/5, math.Abs(float64(j)-5)/5, math.Abs(float64(k)-5)/5
 				r, g, b := float32(ii), float32(jj), float32(kk)
-				poses.SetPose(i*100+j*10+k, 3, []float32{r, g, b}) // color
+				poses.SetPose(i*100+j*10+k, 3, r, g, b) // color
 			}
 		}
 	}
