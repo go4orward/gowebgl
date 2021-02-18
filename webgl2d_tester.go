@@ -20,7 +20,7 @@ func main() {
 		return
 	}
 	scene := webgl2d.NewScene()
-	if true {
+	if false {
 		// scene.Add(webgl2d.NewSceneObject_HexagonWireframe(wctx)) // a pre-defined example of SceneObject
 		scene.Add(webgl2d.NewSceneObject_RectInstances2(wctx)) // a pre-defined example of SceneObject
 	} else {
@@ -30,9 +30,9 @@ func main() {
 		shader := webgl2d.NewShader_Basic(wctx)       // shader with auto-binded color & PVM matrix
 		scene.Add(webgl2d.NewSceneObject(geometry, material, shader))
 	}
-	bbox, size, center := scene.GetBBoxSizeCenter(true)
-	camera := webgl2d.NewCamera(wctx.GetWH(), size[0]*1.1, 1.0).SetPose(center[0], center[1], 0)
-	camera.SetTranslationBoundingBox(bbox)
+	camera := webgl2d.NewCamera(wctx.GetWH(), 2.6, 1.0)
+	// bbox, size, center := scene.GetBBoxSizeCenter(true)
+	// camera.SetFov(size[0]*1.1).SetPose(center[0], center[1], 0.0).SetTranslationBoundingBox(bbox)
 	renderer := webgl2d.NewRenderer(wctx) // set up the renderer
 	renderer.Clear(camera, "#ffffff")     // prepare to render (clearing to white background)
 	renderer.RenderScene(camera, scene)   // render the scene (iterating over all the SceneObjects in it)
@@ -73,7 +73,7 @@ func main() {
 			renderer.Clear(camera, "#ffffff")   // prepare to render (clearing to white background)
 			renderer.RenderScene(camera, scene) // render the scene (iterating over all the SceneObjects in it)
 			renderer.RenderAxes(camera, 0.8)    // render the axes (just for visual reference)
-			// scene.Get(0).Rotate(1.0)
+			scene.Get(0).Rotate(1.0)
 		})
 		<-make(chan bool) // wait for events (without exiting)
 	}

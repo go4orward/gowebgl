@@ -51,6 +51,11 @@ func (self *Camera) SetAspectRatio(width int, height int) *Camera {
 	return self.update_proj_matrix()
 }
 
+func (self *Camera) SetFov(fov float32) *Camera {
+	self.fov = fov
+	return self.update_proj_matrix()
+}
+
 func (self *Camera) SetZoom(zoom float32) *Camera {
 	// This function can be called to handle 'wheel' event [ 0.01 ~ 1.0(default) ~ 100.0 ]
 	zoom = float32(math.Max(0.001, math.Min(float64(zoom), 1000.0)))
