@@ -31,7 +31,7 @@ func main() {
 	renderer := webgl3d.NewRenderer(wctx) // set up the renderer
 	renderer.Clear(camera, "#000000")     // prepare to render (clearing to black background)
 	renderer.RenderScene(camera, scene)   // render the scene (iterating over all the SceneObjects in it)
-	renderer.RenderAxes(camera, 1.0)      // render the axes (just for visual reference)
+	renderer.RenderAxes(camera, 1.2)      // render the axes (just for visual reference)
 
 	if true { // interactive
 		// add user interactions (with mouse)
