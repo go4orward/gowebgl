@@ -33,8 +33,8 @@ func main() {
 
 	//// Geometry ////
 	// var vertices_array = js.TypedArrayOf(vertices)   // Since js.TypedArrayOf() of Go1.11 is no longer supported,
-	// var indices_array = js.TypedArrayOf(indices)     //
-	var vertices_array = common.ConvertGoSliceToJsTypedArray(vertices)                               // We have to use js.CopyBytesToJS() instead
+	// var indices_array = js.TypedArrayOf(indices)     // we have to use js.CopyBytesToJS() instead.
+	var vertices_array = common.ConvertGoSliceToJsTypedArray(vertices)
 	var indices_array = common.ConvertGoSliceToJsTypedArray(indices)                                 //
 	vertexBuffer := context.Call("createBuffer", constants.ARRAY_BUFFER)                             // create buffer
 	context.Call("bindBuffer", constants.ARRAY_BUFFER, vertexBuffer)                                 // bind the buffer
