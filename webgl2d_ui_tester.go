@@ -44,7 +44,7 @@ func main() {
 			camera.Translate(-wdxy[0], -wdxy[1]).ApplyBoundingBox(true, false)
 		})
 		wctx.RegisterEventHandlerForMouseWheel(func(canvasxy [2]int, scale float32, keystat [4]bool) {
-			if keystat[1] { // ZOOM, if CTRL key was pressed
+			if keystat[1] { // ZOOM, if CTRL key was pressed (ALT,CTRL,META,SHIFT)
 				oldxy := camera.UnprojectCanvasToWorld(canvasxy)
 				camera.SetZoom(scale) // 'scale' in [ 0.01 ~ 1(default) ~ 100.0 ]
 				newxy := camera.UnprojectCanvasToWorld(canvasxy)
