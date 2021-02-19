@@ -20,7 +20,7 @@ func main() {
 	}
 	geometry := webgl2d.NewGeometry_Triangle(0.5) // create geometry (a triangle with radius 0.5)
 	geometry.BuildDataBuffers(true, false, true)  // build data buffers for vertices and faces
-	material := webgl2d.NewMaterial("#bbbbff")    // create material (with sky-blue color)
+	material := webgl2d.NewMaterial("#bbbbff")    // create material (with light-blue color)
 	shader := webgl2d.NewShader_Basic(wctx)       // shader with auto-binded color & PVM matrix
 	scnobj := webgl2d.NewSceneObject(geometry, material, shader).Rotate(40)
 	scene := webgl2d.NewScene().Add(scnobj)

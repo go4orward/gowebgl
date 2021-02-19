@@ -19,7 +19,7 @@ type Camera struct {
 	// final Projection * View matrix
 	pjvwmatrix geom2d.Matrix3 //
 	// Ref: http://www.songho.ca/opengl/gl_projectionmatrix.html
-	tbbox [2][2]float32 // translation bounding box
+	cbbox [2][2]float32 // camera bounding box
 }
 
 func NewCamera(wh_aspect_ratio [2]int, fov_in_clipwidth float32, zoom float32) *Camera {
@@ -27,7 +27,7 @@ func NewCamera(wh_aspect_ratio [2]int, fov_in_clipwidth float32, zoom float32) *
 	camera := Camera{wh: wh_aspect_ratio, fov: fov_in_clipwidth, zoom: zoom}
 	camera.update_proj_matrix()
 	camera.SetPose(0, 0, 0.0)
-	camera.tbbox = geom2d.BBoxInit()
+	camera.cbbox = geom2d.BBoxInit()
 	return &camera
 }
 
@@ -48,22 +48,25 @@ func (self *Camera) ShowInfo() {
 func (self *Camera) SetAspectRatio(width int, height int) *Camera {
 	// This function can be called to handle 'window.resize' event
 	self.wh = [2]int{width, height}
-	return self.update_proj_matrix()
+	self.update_proj_matrix()
+	return self
 }
 
 func (self *Camera) SetFov(fov float32) *Camera {
 	self.fov = fov
-	return self.update_proj_matrix()
+	self.update_proj_matrix()
+	return self
 }
 
 func (self *Camera) SetZoom(zoom float32) *Camera {
 	// This function can be called to handle 'wheel' event [ 0.01 ~ 1.0(default) ~ 100.0 ]
 	zoom = float32(math.Max(0.001, math.Min(float64(zoom), 1000.0)))
 	self.zoom = zoom
-	return self.update_proj_matrix()
+	self.update_proj_matrix()
+	return self
 }
 
-func (self *Camera) update_proj_matrix() *Camera {
+func (self *Camera) update_proj_matrix() {
 	// Ref: http://www.songho.ca/opengl/gl_projectionmatrix.html
 	aspect_ratio := float32(self.wh[0]) / float32(self.wh[1])
 	clip_width, clip_height := float32(2.0), 2.0/aspect_ratio // CLIP space width (2.0) & height
@@ -78,7 +81,6 @@ func (self *Camera) update_proj_matrix() *Camera {
 		0.0, ff*y, 0.0,
 		0.0, 0.0, 1.0)
 	self.pjvwmatrix.SetMultiplyMatrices(&self.projmatrix, &self.viewmatrix)
-	return self
 }
 
 // ----------------------------------------------------------------------------
@@ -115,20 +117,6 @@ func (self *Camera) Rotate(angle_in_degree float32) *Camera {
 }
 
 func (self *Camera) Translate(tx float32, ty float32) *Camera {
-	if geom2d.BBoxIsSet(self.tbbox) { // translation bounding box
-		if (self.center[0] + tx) < self.tbbox[0][0] {
-			tx = self.tbbox[0][0] - self.center[0]
-		}
-		if (self.center[0] + tx) > self.tbbox[1][0] {
-			tx = self.tbbox[1][0] - self.center[0]
-		}
-		if (self.center[1] + ty) < self.tbbox[0][1] {
-			ty = self.tbbox[0][1] - self.center[1]
-		}
-		if (self.center[1] + ty) > self.tbbox[1][1] {
-			ty = self.tbbox[1][1] - self.center[1]
-		}
-	}
 	translation := geom2d.NewMatrix3().Set(
 		1.0, 0.0, -tx,
 		0.0, 1.0, -ty,
@@ -139,14 +127,63 @@ func (self *Camera) Translate(tx float32, ty float32) *Camera {
 	return self
 }
 
-func (self *Camera) SetTranslationBoundingBox(bbox [2][2]float32) *Camera {
-	self.tbbox = bbox
+func (self *Camera) SetBoundingBox(bbox [2][2]float32) *Camera {
+	// Camera center will be limited inside the bounding box, if it's set
+	self.cbbox = bbox
+	return self
+}
+
+func (self *Camera) ApplyBoundingBox(position bool, zoomlevel bool) *Camera {
+	if !geom2d.BBoxIsSet(self.cbbox) {
+		return self
+	}
+	if position { // check camera position
+		if self.center[0] < self.cbbox[0][0] {
+			self.Translate(self.cbbox[0][0]-self.center[0], 0)
+		}
+		if self.center[0] > self.cbbox[1][0] {
+			self.Translate(self.cbbox[1][0]-self.center[0], 0)
+		}
+		if self.center[1] < self.cbbox[0][1] {
+			self.Translate(0, self.cbbox[0][1]-self.center[1])
+		}
+		if self.center[1] > self.cbbox[1][1] {
+			self.Translate(0, self.cbbox[1][1]-self.center[1])
+		}
+	}
+	if zoomlevel { // check zoom level
+		hw := (self.cbbox[1][0] - self.cbbox[0][0]) / 2
+		if self.IsPointVisible([2]float32{self.cbbox[0][0], self.center[1]}) &&
+			self.IsPointVisible([2]float32{self.cbbox[1][0], self.center[1]}) {
+			self.Translate(self.cbbox[0][0]+hw-self.center[0], 0)
+		}
+		hh := (self.cbbox[1][1] - self.cbbox[0][1]) / 2
+		if self.IsPointVisible([2]float32{self.center[0], self.cbbox[0][1]}) &&
+			self.IsPointVisible([2]float32{self.center[0], self.cbbox[1][1]}) {
+			self.Translate(0, self.cbbox[0][1]+hh-self.center[1])
+		}
+	}
 	return self
 }
 
 // ----------------------------------------------------------------------------
-// Unprojection
+// Projection / Unprojection
 // ----------------------------------------------------------------------------
+
+func (self *Camera) IsPointVisible(wxy [2]float32) bool {
+	cxy := self.projmatrix.MultiplyVector2(self.viewmatrix.MultiplyVector2(wxy))
+	return (cxy[0] > -1 && cxy[0] < +1 && cxy[1] > -1 && cxy[1] < +1)
+}
+
+func (self *Camera) ProjectWorldToClip(wxy [2]float32) [2]float32 {
+	return self.projmatrix.MultiplyVector2(self.viewmatrix.MultiplyVector2(wxy))
+}
+
+func (self *Camera) ProjectWorldToCanvas(wxy [2]float32) [2]int {
+	cxy := self.projmatrix.MultiplyVector2(self.viewmatrix.MultiplyVector2(wxy))
+	hw, hh := float32(self.wh[0])/2, float32(self.wh[1])/2
+	return [2]int{int(hw + cxy[0]*hw), int(hh - cxy[1]*hh)} // UpperLeft is (0,0)
+}
 
 func (self *Camera) UnprojectCanvasToWorld(canvasxy [2]int) [2]float32 {
 	hw, hh := (float32(self.wh[0]) / 2), (float32(self.wh[1]) / 2)

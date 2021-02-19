@@ -20,10 +20,10 @@ func main() {
 		return
 	}
 	scene := webgl2d.NewScene()
-	scene.Add(webgl2d.NewSceneObject_RectInstances(wctx)) // a pre-defined example of SceneObject
-	camera := webgl2d.NewCamera(wctx.GetWH(), 2.6, 1.0)
+	scene.Add(webgl2d.NewSceneObject_RectInstances(wctx)) // multiple instances of rectangles
 	bbox, size, center := scene.GetBBoxSizeCenter(true)
-	camera.SetFov(size[0]*1.1).SetPose(center[0], center[1], 0.0).SetTranslationBoundingBox(bbox)
+	camera := webgl2d.NewCamera(wctx.GetWH(), size[0]*1.1, 1.0)
+	camera.SetPose(center[0], center[1], 0.0).SetBoundingBox(bbox)
 	renderer := webgl2d.NewRenderer(wctx) // set up the renderer
 	renderer.Clear(camera, "#ffffff")     // prepare to render (clearing to white background)
 	renderer.RenderScene(camera, scene)   // render the scene (iterating over all the SceneObjects in it)
@@ -41,7 +41,7 @@ func main() {
 		})
 		wctx.RegisterEventHandlerForMouseDrag(func(canvasxy [2]int, dxy [2]int, keystat [4]bool) {
 			wdxy := camera.UnprojectCanvasDeltaToWorld(dxy)
-			camera.Translate(-wdxy[0], -wdxy[1])
+			camera.Translate(-wdxy[0], -wdxy[1]).ApplyBoundingBox(true, false)
 		})
 		wctx.RegisterEventHandlerForMouseWheel(func(canvasxy [2]int, scale float32, keystat [4]bool) {
 			if keystat[1] { // ZOOM
@@ -49,10 +49,10 @@ func main() {
 				camera.SetZoom(scale) // 'scale' in [ 0.01 ~ 1(default) ~ 100.0 ]
 				newxy := camera.UnprojectCanvasToWorld(canvasxy)
 				delta := geom2d.SubAB(newxy, oldxy)
-				camera.Translate(-delta[0], -delta[1])
+				camera.Translate(-delta[0], -delta[1]).ApplyBoundingBox(false, true)
 			} else { // SCROLL
 				wdxy := camera.UnprojectCanvasDeltaToWorld([2]int{0, int(scale)})
-				camera.Translate(0.0, wdxy[1])
+				camera.Translate(0.0, wdxy[1]).ApplyBoundingBox(true, false)
 			}
 		})
 		wctx.RegisterEventHandlerForWindowResize(func(w int, h int) {
