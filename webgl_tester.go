@@ -20,9 +20,9 @@ func main() {
 	vertices := []float32{-0.5, 0.5, 0, -0.5, -0.5, 0, 0.5, -0.5, 0}
 	indices := []uint32{2, 1, 0}
 	vertex_shader_code := `
-		attribute vec3 coordinates;
+		attribute vec3 xyz;
 		void main(void) {
-			gl_Position = vec4(coordinates, 1.0);
+			gl_Position = vec4(xyz, 1.0);
 		}`
 	fragment_shader_code := `
 		void main(void) {
@@ -35,7 +35,7 @@ func main() {
 	// var vertices_array = js.TypedArrayOf(vertices)   // Since js.TypedArrayOf() of Go1.11 is no longer supported,
 	// var indices_array = js.TypedArrayOf(indices)     // we have to use js.CopyBytesToJS() instead.
 	var vertices_array = common.ConvertGoSliceToJsTypedArray(vertices)
-	var indices_array = common.ConvertGoSliceToJsTypedArray(indices)                                 //
+	var indices_array = common.ConvertGoSliceToJsTypedArray(indices)
 	vertexBuffer := context.Call("createBuffer", constants.ARRAY_BUFFER)                             // create buffer
 	context.Call("bindBuffer", constants.ARRAY_BUFFER, vertexBuffer)                                 // bind the buffer
 	context.Call("bufferData", constants.ARRAY_BUFFER, vertices_array, constants.STATIC_DRAW)        // pass data to buffer
@@ -49,23 +49,23 @@ func main() {
 	context.Call("compileShader", vertShader)                             // Compile the vertex shader
 	fragShader := context.Call("createShader", constants.FRAGMENT_SHADER) // Create fragment shader object
 	context.Call("shaderSource", fragShader, fragment_shader_code)        // Attach fragment shader source code
-	context.Call("compileShader", fragShader)                             // Compile the fragmentt shader
-	shaderProgram := context.Call("createProgram")                        // Create a shader program object to store the combined shader program
-	context.Call("attachShader", shaderProgram, vertShader)               // Attach a vertex shader
-	context.Call("attachShader", shaderProgram, fragShader)               // Attach a fragment shader
-	context.Call("linkProgram", shaderProgram)                            // Link both the programs
-	context.Call("useProgram", shaderProgram)                             // Use the combined shader program object
+	context.Call("compileShader", fragShader)                             // Compile the fragment shader
+	shaderProgram := context.Call("createProgram")                        // Create a shader program to combine the two shaders
+	context.Call("attachShader", shaderProgram, vertShader)               // Attach the compiled vertex shader
+	context.Call("attachShader", shaderProgram, fragShader)               // Attach the compiled fragment shader
+	context.Call("linkProgram", shaderProgram)                            // Make the shader program linked
+	context.Call("useProgram", shaderProgram)                             // Let the completed shader program to be used
 
 	//// Attributes ////
-	coord := context.Call("getAttribLocation", shaderProgram, "coordinates")    // Get the attribute location
-	context.Call("vertexAttribPointer", coord, 3, constants.FLOAT, false, 0, 0) // Point an attribute to the currently bound VBO
-	context.Call("enableVertexAttribArray", coord)                              // Enable the attribute
+	loc := context.Call("getAttribLocation", shaderProgram, "xyz")            // Get the location of attribute 'xyz' in the shader
+	context.Call("vertexAttribPointer", loc, 3, constants.FLOAT, false, 0, 0) // Point 'xyz' location to the positions of ARRAY_BUFFER
+	context.Call("enableVertexAttribArray", loc)                              // Enable the use of attribute 'xyz' from ARRAY_BUFFER
 
 	//// Draw the scene ////
 	context.Call("clearColor", 1.0, 1.0, 1.0, 1.0)    // Set clearing color
 	context.Call("clear", constants.COLOR_BUFFER_BIT) // Clear the canvas
 	context.Call("enable", constants.DEPTH_TEST)      // Enable the depth test
 
-	// Draw the geometry
+	//// Draw the geometry ////
 	context.Call("drawElements", constants.TRIANGLES, len(indices), constants.UNSIGNED_SHORT, 0)
 }
