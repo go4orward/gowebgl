@@ -115,7 +115,7 @@ func (self *WebGLContext) SetupEventHandlers() {
 	wasm_js_listener := js.Global().Get("wasm_js_listener") // 'wasm_js_listener()' must call 'goEventHandler()'
 	if wasm_js_listener.IsUndefined() {
 		fmt.Println("Setting up EventHandler failed : 'wasm_js_listener' function not found")
-		fmt.Println("  (for example, 'wasm_js_listener = function(event){goEventHandler(event);};')")
+		fmt.Println("  (for example, 'wasm_js_listener = function(event){goEventHandler(event);};' in <script></script>)")
 	} else {
 		self.canvas.Call("addEventListener", "click", wasm_js_listener)
 		self.canvas.Call("addEventListener", "dblclick", wasm_js_listener)
@@ -253,14 +253,17 @@ func go_wrapper_for_event_handler() js.Func {
 // Animation Frame
 // ----------------------------------------------------------------------------
 
-func (self *WebGLContext) SetupAnimationFrame() {
+var handler_draw_animation_frame func(canvas js.Value) = nil
+
+func (self *WebGLContext) SetupAnimationFrame(draw_handler func(canvas js.Value)) {
+	handler_draw_animation_frame = draw_handler
 	// export EventHandling function from Go side
 	js.Global().Set("goSceneRenderer", go_wrapper_for_animation_frame())
 	// add EventListener functions from Javascript side
 	wasm_js_renderer := js.Global().Get("wasm_js_renderer") // 'wasm_js_renderer()' must call 'goSceneRenderer()'
 	if wasm_js_renderer.IsUndefined() {
 		fmt.Println("Setting up EventHandler failed : 'wasm_js_renderer' function not found")
-		fmt.Println("  (for example, 'wasm_js_renderer = function(){goSceneRenderer();}')")
+		fmt.Println("  (for example, 'wasm_js_renderer = function(){goSceneRenderer();}' in <script></script>)")
 	} else {
 		// What it actually does is like:
 		//   requestAnimationFrame(drawSceneForAnimation);
@@ -273,13 +276,6 @@ func (self *WebGLContext) SetupAnimationFrame() {
 		js.Global().Call("requestAnimationFrame", wasm_js_renderer, self.canvas)
 	}
 }
-
-// RegisterDrawSceneCallback
-func (self *WebGLContext) RegisterDrawHandlerForAnimationFrame(function func(canvas js.Value)) {
-	handler_draw_animation_frame = function
-}
-
-var handler_draw_animation_frame func(canvas js.Value) = nil
 
 func go_wrapper_for_animation_frame() js.Func {
 	// NOTE THAT THIS WRAPPER FUNCTION SHOULD BE EXPORTED

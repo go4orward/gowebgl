@@ -48,8 +48,7 @@ func main() {
 			camera.SetAspectRatio(w, h)
 		})
 		// add animation
-		wctx.SetupAnimationFrame()
-		wctx.RegisterDrawHandlerForAnimationFrame(func(canvas js.Value) {
+		wctx.SetupAnimationFrame(func(canvas js.Value) {
 			renderer.Clear(camera, "#ffffff")   // prepare to render (clearing to white background)
 			renderer.RenderScene(camera, scene) // render the scene (iterating over all the SceneObjects in it)
 			renderer.RenderAxes(camera, 0.8)    // render the axes (just for visual reference)
