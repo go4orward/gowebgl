@@ -10,6 +10,10 @@ dev:
 	GOOS=js GOARCH=wasm go build -o wasm_test.wasm webgl2d_tester.go
 	go build -o wasm_test_server wasm_test_server.go
 
+2dui:
+	GOOS=js GOARCH=wasm go build -o wasm_test.wasm webgl2d_ui_tester.go
+	go build -o wasm_test_server wasm_test_server.go
+
 3d:
 	GOOS=js GOARCH=wasm go build -o wasm_test.wasm webgl3d_tester.go
 	go build -o wasm_test_server wasm_test_server.go
