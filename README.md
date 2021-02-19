@@ -15,6 +15,9 @@ $ ./wasm_test_server    # open your browser, and visit http://localhost:8080
 ```bash
 $ make 2d               # source : 'webgl2d_tester.go'
 $ ./wasm_test_server    # open your browser, and visit http://localhost:8080
+or
+$ make 2dui             # source : 'webgl2d_ui_tester.go'
+$ ./wasm_test_server    # open your browser, and visit http://localhost:8080
 ```
 ![webgl2d_teser result](doc/xscreen_webgl2d.png)
 

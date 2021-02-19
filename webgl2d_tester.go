@@ -22,8 +22,8 @@ func main() {
 	geometry.BuildDataBuffers(true, false, true)  // build data buffers for vertices and faces
 	material := webgl2d.NewMaterial("#bbbbff")    // create material (with sky-blue color)
 	shader := webgl2d.NewShader_Basic(wctx)       // shader with auto-binded color & PVM matrix
-	sobj := webgl2d.NewSceneObject(geometry, material, shader).Rotate(15)
-	scene := webgl2d.NewScene().Add(sobj)
+	scnobj := webgl2d.NewSceneObject(geometry, material, shader).Rotate(40)
+	scene := webgl2d.NewScene().Add(scnobj)
 	camera := webgl2d.NewCamera(wctx.GetWH(), 2.6, 1.0)
 	renderer := webgl2d.NewRenderer(wctx) // set up the renderer
 	renderer.Clear(camera, "#ffffff")     // prepare to render (clearing to white background)
