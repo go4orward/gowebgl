@@ -31,4 +31,4 @@ $ ./wasm_test_server    # open your browser, and visit http://localhost:8080
 ## Thanks
 
 I hope this project can help many people to learn WebGL and build awesome 2D & 3D graphics applications.
-Many thanks to Richard Musiol(@neelance), for his vision and contributions for GopherJS and WebAssembly for Go.
+Many thanks to [Richard Musiol](https://github.com/neelance), for his vision and contributions for GopherJS and WebAssembly for Go.
