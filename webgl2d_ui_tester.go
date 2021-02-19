@@ -12,9 +12,9 @@ import (
 
 func main() {
 	// THIS CODE IS SUPPOSED TO BE BUILT AS WEBASSEMBLY AND RUN INSIDE A BROWSER.
-	// BUILD IT LIKE 'GOOS=js GOARCH=wasm go build -o gowebgl.wasm gowebgl/webgl2d_tester.go'.
-	fmt.Println("Hello WebGL!")                       // print in the browser console
-	wctx, err := common.NewWebGLContext("wasmcanvas") // canvas_id, interactivity
+	// BUILD IT LIKE 'GOOS=js GOARCH=wasm go build -o gowebgl.wasm gowebgl/webgl2d_ui_tester.go'.
+	fmt.Println("Hello WebGL!")                       // printed in the browser console
+	wctx, err := common.NewWebGLContext("wasmcanvas") // ID of canvas element
 	if err != nil {
 		js.Global().Call("alert", "Failed to start WebGL : "+err.Error())
 		return
