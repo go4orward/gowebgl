@@ -12,7 +12,7 @@ func NewGeometry_Rectangle(size float32) *Geometry {
 	hs := size / 2
 	geometry := NewGeometry() // create an empty geometry
 	geometry.SetVertices([][2]float32{{-hs, -hs}, {hs, -hs}, {hs, hs}, {-hs, hs}})
-	geometry.SetFaces([][]uint32{{0, 1, 2}, {0, 2, 3}})
+	geometry.SetFaces([][]uint32{{0, 1, 2, 3}})
 	return geometry
 }
 

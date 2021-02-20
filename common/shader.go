@@ -103,13 +103,17 @@ func (self *Shader) InitBindingForUniform(name string, dtype string, autobinding
 	// If 'autobinding' is given, then the binding will be attempted automatically.
 	//    (examples: "material.color", "renderer.modelview")
 	// Otherwise, 'shader.SetBindingForUniform()' has to be called manually.
-	switch autobinding {
+	autobinding_split := strings.Split(autobinding, ":")
+	autobinding0 := autobinding_split[0]
+	switch autobinding0 {
 	case "renderer.pvm": //  [mat3](2D) or [mat4](3D) (Proj * View * Model) matrix
 	case "renderer.proj": // [mat3](2D) or [mat4](3D) (Projection) matrix
-	case "renderer.vmod": // [mat3](2D) or [mat4](3D) (View * Model) matrix
-	case "material.color": //  [vec3]     color of all the points
+	case "renderer.vwmd": // [mat3](2D) or [mat4](3D) (View * Model) matrix
+	case "material.color": //  [vec3] uniform color for all
+	case "material.texture": // [sampler2D] texture sampler(unit), like "material.texture:0"
 	case "lighting.dlight": // [mat3](3D) directional light information with (direction[3], color[3], ambient[3])
-	case "":
+	case "": // It's OK to skip autobinding.
+		// It will be set manually with 'shader.SetBindingForUniform()'.
 	default:
 		fmt.Printf("Unsupported autobinding '%s' for uniform '%s'\n", autobinding, name)
 		return
@@ -140,22 +144,22 @@ func (self *Shader) InitBindingForAttribute(name string, dtype string, autobindi
 	// If 'autobinding' is given, then the binding will be attempted automatically.
 	//    (examples: "geometry.coords", "geometry.textuv", or "geometry.normal")
 	// Otherwise, 'shader.SetBindingForUniform()' has to be called manually.
-	if strings.HasPrefix(autobinding, "instance.pose") {
-		autobinding_split := strings.Split(autobinding, ":")
+	autobinding_split := strings.Split(autobinding, ":")
+	autobinding0 := autobinding_split[0]
+	switch autobinding0 {
+	case "geometry.coords": // point coordinates
+	case "geometry.textuv": // texture UV coordinates
+	case "geometry.normal": // (3D only) normal vector
+	case "instance.pose": // instance pose, like "instance.pose:<stride>:<offset>"
 		if len(autobinding_split) != 3 {
 			fmt.Printf("Invalid autobinding '%s' for attribute '%s'\n", autobinding, name)
 			return
 		}
-	} else {
-		switch autobinding {
-		case "geometry.coords": // point coordinates
-		case "geometry.textuv": // texture UV coordinates
-		case "geometry.normal": // (3D only) normal vector
-		case "":
-		default:
-			fmt.Printf("Unsupported autobinding '%s' for attribute '%s'\n", autobinding, name)
-			return
-		}
+	case "": // It's OK to skip autobinding.
+		// It will be set manually with 'shader.SetBindingForAttribute()'.
+	default:
+		fmt.Printf("Unsupported autobinding '%s' for attribute '%s'\n", autobinding, name)
+		return
 	}
 	self.attributes[name] = map[string]interface{}{"dtype": dtype, "autobinding": autobinding}
 }

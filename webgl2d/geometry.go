@@ -174,9 +174,9 @@ func (self *Geometry) AppyMatrix(matrix *geom2d.Matrix3) *Geometry {
 func (self *Geometry) HasTextureFor(mode string) bool {
 	switch mode {
 	case "VERTEX":
-		return len(self.tuvs) > 0 && len(self.tuvs[0]) == 2
+		return len(self.tuvs) == len(self.verts) && len(self.tuvs[0]) == 2
 	case "FACE":
-		return len(self.tuvs) > 0 && len(self.tuvs[0]) >= 6
+		return len(self.tuvs) == len(self.faces) && len(self.tuvs[0]) >= 6
 	default:
 		return self.HasTextureFor("VERTEX") || self.HasTextureFor("FACE")
 	}
@@ -192,6 +192,12 @@ func (self *Geometry) AddTextureUV(tuv []float32) *Geometry {
 }
 
 func (self *Geometry) SetTextureUVs(tuvs [][]float32) *Geometry {
+	if len(tuvs) == len(self.faces) && len(tuvs[0]) >= 6 { // texture for each face
+	} else if len(tuvs) == len(self.verts) && len(tuvs[0]) == 2 { // texture for each vertex
+	} else {
+		fmt.Printf("Invalid texture UVs : %v\n", tuvs)
+		return self
+	}
 	self.tuvs = tuvs
 	return self
 }
@@ -302,7 +308,7 @@ func (self *Geometry) BuildDataBuffers(for_points bool, for_lines bool, for_face
 		if self.HasTextureFor("FACE") {
 			points_per_face = true
 			self.count_fpoint_vidx_list()
-			self.fpoint_info = [3]int{(2 + 2), (0), (3)} // size, xyz_offset, uv_offset
+			self.fpoint_info = [3]int{(2 + 2), (0), (2)} // size, xyz_offset, uv_offset
 			self.data_buffer_fpoints = make([]float32, self.fpoint_vert_total*self.fpoint_info[0])
 			for fidx, face := range self.faces {
 				for i := 0; i < len(face); i++ {
@@ -311,7 +317,7 @@ func (self *Geometry) BuildDataBuffers(for_points bool, for_lines bool, for_face
 				}
 			}
 		} else if self.HasTextureFor("VERTEX") {
-			self.fpoint_info = [3]int{(2 + 2), (0), (3)} // size, xyz_offset, uv_offset
+			self.fpoint_info = [3]int{(2 + 2), (0), (2)} // size, xyz_offset, uv_offset
 			self.data_buffer_fpoints = make([]float32, len(self.verts)*self.fpoint_info[0])
 			for vidx := 0; vidx < len(self.verts); vidx++ {
 				self.copy_buffer(self.data_buffer_fpoints, vidx, vidx, 2, vidx)

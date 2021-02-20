@@ -37,10 +37,6 @@ func (self *Renderer) Clear(camera *Camera, color string) {
 	context.Call("clear", constants.COLOR_BUFFER_BIT)       // Clear the canvas
 }
 
-// ----------------------------------------------------------------------------
-// Rendering Axes
-// ----------------------------------------------------------------------------
-
 func (self *Renderer) RenderAxes(camera *Camera, length float32) {
 	if self.axes == nil {
 		self.axes = NewSceneObject_2DAxes(self.wctx, length)
@@ -155,6 +151,7 @@ func (self *Renderer) RenderSceneObject(sobj *SceneObject, pvm *geom2d.Matrix3) 
 
 func (self *Renderer) bind_uniform(uname string, umap map[string]interface{}, material *Material, pvm *geom2d.Matrix3) error {
 	context := self.wctx.GetContext()
+	constants := self.wctx.GetConstants()
 	if umap["location"] == nil {
 		err := errors.New("Failed to bind uniform : call 'shader.CheckBinding()' before rendering")
 		return err
@@ -162,7 +159,9 @@ func (self *Renderer) bind_uniform(uname string, umap map[string]interface{}, ma
 	location, dtype := umap["location"].(js.Value), umap["dtype"].(string)
 	autobinding := umap["autobinding"].(string)
 	// fmt.Printf("Uniform (%s) : autobinding= '%s'\n", dtype, autobinding)
-	switch autobinding {
+	autobinding_split := strings.Split(autobinding, ":")
+	autobinding0 := autobinding_split[0]
+	switch autobinding0 {
 	case "renderer.pvm":
 		switch dtype {
 		case "mat3":
@@ -184,10 +183,23 @@ func (self *Renderer) bind_uniform(uname string, umap map[string]interface{}, ma
 			context.Call("uniform4f", location, c[0], c[1], c[2], c[3])
 			return nil
 		}
+	case "material.texture":
+		txt_unit := 0
+		if len(autobinding_split) >= 2 {
+			txt_unit, _ = strconv.Atoi(autobinding_split[1])
+		}
+		texture_unit := js.ValueOf(constants.TEXTURE0.Int() + txt_unit)
+		context.Call("activeTexture", texture_unit)                              // activate texture unit N
+		context.Call("bindTexture", constants.TEXTURE_2D, material.GetTexture()) // bind the texture
+		context.Call("uniform1i", location, txt_unit)                            // give shader the unit number
+		return nil
 	default:
 		value := umap["value"]
 		if value != nil {
 			switch dtype {
+			case "int":
+				context.Call("uniform1i", location, value.(int))
+				return nil
 			case "float":
 				context.Call("uniform1f", location, value.(float32))
 				return nil
@@ -206,7 +218,7 @@ func (self *Renderer) bind_uniform(uname string, umap map[string]interface{}, ma
 			}
 		}
 	}
-	return fmt.Errorf("Failed to bind uniform '%s' (%s) with %v", uname, dtype, autobinding, umap)
+	return fmt.Errorf("Failed to bind uniform '%s' (%s) with %v", uname, dtype, autobinding)
 }
 
 func (self *Renderer) bind_attribute(aname string, amap map[string]interface{}, geometry *Geometry, poses *SceneObjectPoses) error {
@@ -220,8 +232,8 @@ func (self *Renderer) bind_attribute(aname string, amap map[string]interface{}, 
 	autobinding := amap["autobinding"].(string)
 	// fmt.Printf("Attribute (%s) : autobinding= '%s'\n", dtype, autobinding)
 	autobinding_split := strings.Split(autobinding, ":")
-	autobinding = autobinding_split[0]
-	switch autobinding {
+	autobinding0 := autobinding_split[0]
+	switch autobinding0 {
 	case "geometry.coords":
 		buffer, _, pinfo := geometry.GetWebGLBuffer("POINTS")
 		context.Call("bindBuffer", constants.ARRAY_BUFFER, buffer)

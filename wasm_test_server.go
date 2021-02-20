@@ -10,35 +10,38 @@ import (
 )
 
 func main() {
-	// load data for '/wasm_test.html'
-	htmlData, err := ioutil.ReadFile("./wasm_test.html")
+	// HTML file
+	html, err := ioutil.ReadFile("./wasm_test.html")
 	if err != nil {
 		log.Fatalf("Could not read wasm_test.html file: %s\n", err)
 	}
-	// load data for '/wasm/wasm_exec.js'
-	wasmExecData, err := ioutil.ReadFile(runtime.GOROOT() + "/misc/wasm/wasm_exec.js")
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		w.Write(html)
+	})
+
+	// texture images
+	http.Handle("/assets/", http.FileServer(http.Dir(".")))
+
+	// 'wasm_exec.js'
+	exjs, err := ioutil.ReadFile(runtime.GOROOT() + "/misc/wasm/wasm_exec.js")
 	if err != nil {
 		log.Fatalf("Could not read wasm_exec.js file: %s\n", err)
 	}
-	// load data for '/wasm/gowebgl.wasm'
-	wasmData, err := ioutil.ReadFile("wasm_test.wasm")
+	http.HandleFunc("/wasm_exec.js", func(w http.ResponseWriter, r *http.Request) {
+		w.Write(exjs)
+	})
+
+	// 'wasm_test.wasm'
+	wasm, err := ioutil.ReadFile("wasm_test.wasm")
 	if err != nil {
 		log.Fatalf("Could not read wasm file: %s\n", err)
 	}
-
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		w.Write(htmlData)
-	})
-
-	http.HandleFunc("/wasm/wasm_exec.js", func(w http.ResponseWriter, r *http.Request) {
-		w.Write(wasmExecData)
-	})
-
-	http.HandleFunc("/wasm/wasm_test.wasm", func(w http.ResponseWriter, r *http.Request) {
+	http.HandleFunc("/wasm_test.wasm", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/wasm")
 		w.WriteHeader(http.StatusOK)
-		w.Write(wasmData)
+		w.Write(wasm)
 	})
 
+	// start the server
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }

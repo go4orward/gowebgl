@@ -2,12 +2,12 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <script src="wasm/wasm_exec.js"></script>
+    <script src="wasm_exec.js"></script>
     <script>
         wasm_js_listener = function(event) { goEventHandler(event); };
         wasm_js_renderer = function(canvas) { goSceneRenderer(canvas); }
         const go = new Go();
-        WebAssembly.instantiateStreaming(fetch("wasm/wasm_test.wasm"), go.importObject).then((result) => {
+        WebAssembly.instantiateStreaming(fetch("wasm_test.wasm"), go.importObject).then((result) => {
             go.run(result.instance);
         });
     </script>

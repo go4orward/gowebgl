@@ -80,15 +80,15 @@ func NewShader_BasicNormal(wctx *common.WebGLContext) *common.Shader {
 	var vertex_shader_code = `
 		precision mediump float;
 		uniform mat4 proj;
-		uniform mat4 vm;
+		uniform mat4 vwmd;
 		attribute vec3 xyz;
 		attribute vec3 nor;
 		uniform mat3 light;		// [0]: direction, [1]: color, [2]: ambient_color   (column-major)
 		varying vec3 vlight;    // (varying) lighting intensity for the point
 		void main() {
-			gl_Position = proj * vm * vec4(xyz.x, xyz.y, xyz.z, 1.0);
-			float s = sqrt( vm[0][0]*vm[0][0] + vm[0][1]*vm[0][1] + vm[0][2]*vm[0][2]);  // scaling 
-			mat3  mvRot = mat3( vm[0][0]/s, vm[0][1]/s, vm[0][2]/s, vm[1][0]/s, vm[1][1]/s, vm[1][2]/s, vm[2][0]/s, vm[2][1]/s, vm[2][2]/s );
+			gl_Position = proj * vwmd * vec4(xyz.x, xyz.y, xyz.z, 1.0);
+			float s = sqrt( vwmd[0][0]*vwmd[0][0] + vwmd[0][1]*vwmd[0][1] + vwmd[0][2]*vwmd[0][2]);  // scaling 
+			mat3  mvRot = mat3( vwmd[0][0]/s, vwmd[0][1]/s, vwmd[0][2]/s, vwmd[1][0]/s, vwmd[1][1]/s, vwmd[1][2]/s, vwmd[2][0]/s, vwmd[2][1]/s, vwmd[2][2]/s );
 			vec3  normal    = mvRot * nor;               		// normal vector in camera space
 			float intensity = max(dot(normal, light[0]), 0.0);	// light_intensity = dot(face_normal,light_direction)
 			vlight = intensity * light[1] + light[2];        	// intensity * light_color + ambient_color
@@ -102,7 +102,7 @@ func NewShader_BasicNormal(wctx *common.WebGLContext) *common.Shader {
 		}`
 	shader, _ := common.NewShader(wctx, vertex_shader_code, fragment_shader_code)
 	shader.InitBindingForUniform("proj", "mat4", "renderer.proj")    // automatic binding of (Projection) matrix
-	shader.InitBindingForUniform("vm", "mat4", "renderer.vmod")      // automatic binding of (View * Models) matrix
+	shader.InitBindingForUniform("vwmd", "mat4", "renderer.vwmd")    // automatic binding of (View * Models) matrix
 	shader.InitBindingForUniform("color", "vec4", "material.color")  // automatic binding of material color
 	shader.InitBindingForUniform("light", "mat3", "lighting.dlight") // automatic binding of directional lighting
 	shader.InitBindingForAttribute("xyz", "vec3", "geometry.coords") // automatic binding of point XYZ coordinates
@@ -116,7 +116,7 @@ func NewShader_InstancePoseColor(wctx *common.WebGLContext) *common.Shader {
 	var vertex_shader_code = `
 		precision mediump float;
 		uniform mat4 proj;
-		uniform mat4 vm;
+		uniform mat4 vwmd;
 		attribute vec3 xyz;
 		attribute vec3 nor;
 		attribute vec3 txyz;	// instance position
@@ -125,9 +125,9 @@ func NewShader_InstancePoseColor(wctx *common.WebGLContext) *common.Shader {
 		varying vec3 vcolor;    // (varying) instance color
 		varying vec3 vlight;    // (varying) lighting intensity for the point
 		void main() {
-			gl_Position = proj * vm * vec4(xyz.x + txyz[0], xyz.y + txyz[1], xyz.z + txyz[2], 1.0);
-			float s = sqrt( vm[0][0]*vm[0][0] + vm[0][1]*vm[0][1] + vm[0][2]*vm[0][2]);  // scaling 
-			mat3  mvRot = mat3( vm[0][0]/s, vm[0][1]/s, vm[0][2]/s, vm[1][0]/s, vm[1][1]/s, vm[1][2]/s, vm[2][0]/s, vm[2][1]/s, vm[2][2]/s );
+			gl_Position = proj * vwmd * vec4(xyz.x + txyz[0], xyz.y + txyz[1], xyz.z + txyz[2], 1.0);
+			float s = sqrt( vwmd[0][0]*vwmd[0][0] + vwmd[0][1]*vwmd[0][1] + vwmd[0][2]*vwmd[0][2]);  // scaling 
+			mat3  mvRot = mat3( vwmd[0][0]/s, vwmd[0][1]/s, vwmd[0][2]/s, vwmd[1][0]/s, vwmd[1][1]/s, vwmd[1][2]/s, vwmd[2][0]/s, vwmd[2][1]/s, vwmd[2][2]/s );
 			vec3  normal    = mvRot * nor;               		// normal vector in camera space
 			float intensity = max(dot(normal, light[0]), 0.0);	// light_intensity = dot(face_normal,light_direction)
 			vlight = intensity * light[1] + light[2];        	// intensity * light_color + ambient_color
@@ -142,7 +142,7 @@ func NewShader_InstancePoseColor(wctx *common.WebGLContext) *common.Shader {
 		}`
 	shader, _ := common.NewShader(wctx, vertex_shader_code, fragment_shader_code)
 	shader.InitBindingForUniform("proj", "mat4", "renderer.proj")        // automatic binding of (Projection) matrix
-	shader.InitBindingForUniform("vm", "mat4", "renderer.vmod")          // automatic binding of (View * Models) matrix
+	shader.InitBindingForUniform("vwmd", "mat4", "renderer.vwmd")        // automatic binding of (View * Models) matrix
 	shader.InitBindingForUniform("light", "mat3", "lighting.dlight")     // automatic binding of directional lighting
 	shader.InitBindingForAttribute("xyz", "vec3", "geometry.coords")     // automatic binding of point XYZ coordinates
 	shader.InitBindingForAttribute("nor", "vec3", "geometry.normal")     // automatic binding of point normal vectors

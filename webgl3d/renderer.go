@@ -176,7 +176,7 @@ func (self *Renderer) bind_uniform(uname string, umap map[string]interface{}, ma
 		m := common.ConvertGoSliceToJsTypedArray(e)          // Projection matrix, converted to JavaScript 'Float32Array'
 		context.Call("uniformMatrix4fv", location, false, m) // gl.uniformMatrix4fv(location, transpose, values_array)
 		return nil
-	case "renderer.vmod": // mat4
+	case "renderer.vwmd": // mat4
 		e := (*viewm.GetElements())[:]
 		m := common.ConvertGoSliceToJsTypedArray(e)          // View * Models matrix, converted to JavaScript 'Float32Array'
 		context.Call("uniformMatrix4fv", location, false, m) // gl.uniformMatrix4fv(location, transpose, values_array)

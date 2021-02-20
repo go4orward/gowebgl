@@ -30,7 +30,7 @@ func NewSceneObject_HexagonWireframe(wctx *common.WebGLContext) *SceneObject {
 	// (This example demonstrates how 'triangulation of face' works - for faces with more than 3 vertices)
 	geometry := NewGeometry_Polygon(6, 0.5, 30)       // create a hexagon with radius 0.5, with 1st vertex at 30 degree from X axis
 	geometry.BuildDataBuffersForWireframe()           // extract wireframe edges from faces
-	material := NewMaterial("#888888")                // create material
+	material := NewMaterial(wctx, "#888888")          // create material
 	shader := NewShader_Basic(wctx)                   // create shader, and set its bindings
 	shader.SetThingsToDraw("LINES")                   // let it draw "LINES" later, when Renderer runs
 	return NewSceneObject(geometry, material, shader) // set up the scene object
@@ -40,7 +40,7 @@ func NewSceneObject_RectInstances(wctx *common.WebGLContext) *SceneObject {
 	// This example creates 40,000 instances of a single geometry, each with its own pose (tx, ty)
 	geometry := NewGeometry_Rectangle(0.8)             // create a rectangle of size 1.0
 	geometry.BuildDataBuffers(true, false, true)       //
-	material := NewMaterial("#888888")                 // create material
+	material := NewMaterial(wctx, "#888888")           // create material
 	shader := NewShader_InstancePoseColor(wctx)        // create shader, and set its bindings
 	shader.SetThingsToDraw("TRIANGLES")                // let it draw "LINES" later, when Renderer runs
 	sobj := NewSceneObject(geometry, material, shader) // set up the scene object

@@ -55,6 +55,35 @@ func NewShader_Basic(wctx *common.WebGLContext) *common.Shader {
 	return shader
 }
 
+func NewShader_BasicTexture(wctx *common.WebGLContext) *common.Shader {
+	// Shader with auto-binded color and (Proj * View * Model) matrix
+	var vertex_shader_code = `
+		precision mediump float;
+		uniform   mat3 pvm;
+		attribute vec2 xy;
+		attribute vec2 uv;
+		varying vec2 v_uv;
+		void main() {
+			vec3 new_pos = pvm * vec3(xy.x, xy.y, 1.0);
+			gl_Position = vec4(new_pos.x, new_pos.y, 0.0, 1.0);
+			v_uv = uv;
+		}`
+	var fragment_shader_code = `
+		precision mediump float;
+		varying vec2 v_uv;
+		uniform sampler2D text;
+		void main() { 
+			gl_FragColor = texture2D(text, v_uv);
+		}`
+	shader, _ := common.NewShader(wctx, vertex_shader_code, fragment_shader_code)
+	shader.InitBindingForUniform("pvm", "mat3", "renderer.pvm")           // automatic binding of Proj*View*Model matrix
+	shader.InitBindingForUniform("text", "sampler2D", "material.texture") // automatic binding of texture sampler (unit:0)
+	shader.InitBindingForAttribute("xy", "vec2", "geometry.coords")       // automatic binding of point coordinates
+	shader.InitBindingForAttribute("uv", "vec2", "geometry.textuv")       // automatic binding of texture UV coordinates
+	shader.SetThingsToDraw("LINES", "TRIANGLES")                          // can be used for drawing either
+	return shader
+}
+
 func NewShader_InstancePoseColor(wctx *common.WebGLContext) *common.Shader {
 	// Shader with instance pose, for rendering multiple instances of a same geometry
 	var vertex_shader_code = `
