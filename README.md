@@ -26,9 +26,21 @@ $ ./wasm_test_server    # open your browser, and visit http://localhost:8080
 $ make 3d               # source : 'webgl3d_tester.go'
 $ ./wasm_test_server    # open your browser, and visit http://localhost:8080
 ```
-![webgl2d_teser result](assets/xscreen_webgl3d.png)
+![webgl3d_teser result](assets/xscreen_webgl3d.png)
+
+Globe example: &emsp; _(with perspective & orthographic camera)_
+```bash
+$ make globe            # source : 'webglobe_tester.go'
+$ ./wasm_test_server    # open your browser, and visit http://localhost:8080
+```
+![webglobe_teser result](assets/xscreen_webglobe.png)
 
 ## Thanks
 
 I hope this project can help many people to learn WebGL and build awesome 2D & 3D graphics applications.  
 Many thanks to [Richard Musiol](https://github.com/neelance), for his vision and contributions for GopherJS and WebAssembly for Go.
+
+Resources from:
+- [Go Gopher images](https://golang.org/doc/gopher/) originally created by Renee French
+- [VisibleEarth by NASA](https://visibleearth.nasa.gov/collection/1484/blue-marble) : world satellite images
+- [NaturalEarth](https://www.naturalearthdata.com/) : public domain map dataset
