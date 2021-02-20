@@ -9,7 +9,7 @@ Simplest example: &emsp; _(for explaining how WebGL works)_
 $ make                  # source : 'webgl_tester.go'
 $ ./wasm_test_server    # open your browser, and visit http://localhost:8080
 ```
-![webgl_teser result](doc/xscreen_webgl.png)
+![webgl_teser result](assets/xscreen_webgl.png)
 
 2D example: &emsp; _(with animation & user interactions)_
 ```bash
@@ -19,14 +19,14 @@ or
 $ make 2dui             # source : 'webgl2d_ui_tester.go'
 $ ./wasm_test_server    # open your browser, and visit http://localhost:8080
 ```
-![webgl2d_teser result](doc/xscreen_webgl2d.png)
+![webgl2d_teser result](assets/xscreen_webgl2d.png)
 
 3D example: &emsp; _(with perspective & orthographic camera)_
 ```bash
 $ make 3d               # source : 'webgl3d_tester.go'
 $ ./wasm_test_server    # open your browser, and visit http://localhost:8080
 ```
-![webgl2d_teser result](doc/xscreen_webgl3d.png)
+![webgl2d_teser result](assets/xscreen_webgl3d.png)
 
 ## Thanks
 
