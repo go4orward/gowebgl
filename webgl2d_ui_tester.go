@@ -32,8 +32,8 @@ func main() {
 		scene.Add(scnobj)
 		geometry.ShowInfo()
 	}
-	bbox, size, center := scene.GetBBoxSizeCenter(true)
-	camera := webgl2d.NewCamera(wctx.GetWH(), size[0]*1.1, 1.0)
+	bbox, size, center := scene.GetBBoxSizeCenter(true)         // BoundingBox, Size(W&H) of BBox, Center of BBox
+	camera := webgl2d.NewCamera(wctx.GetWH(), size[0]*1.1, 1.0) // FOV covers the Width of BBox, ZoomLevel is 1.0
 	camera.SetPose(center[0], center[1], 0.0).SetBoundingBox(bbox)
 	renderer := webgl2d.NewRenderer(wctx) // set up the renderer
 	renderer.Clear(camera, "#ffffff")     // prepare to render (clearing to white background)
