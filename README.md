@@ -40,7 +40,7 @@ $ ./wasm_test_server    # open your browser, and visit http://localhost:8080
 I hope this project can help many people to learn WebGL and to build awesome 2D & 3D graphics applications.  
 Many thanks to [Richard Musiol](https://github.com/neelance), for his vision and contributions for GopherJS and WebAssembly for Go.
 
-Resources from:
+Resources taken from:
 - [Go Gopher images](https://golang.org/doc/gopher/) : originally created by Renee French
 - [VisibleEarth by NASA](https://visibleearth.nasa.gov/collection/1484/blue-marble) : world satellite images
 - [NaturalEarth](https://www.naturalearthdata.com/) : public domain map dataset
