@@ -32,6 +32,13 @@ func NewGeometry_Cube(xsize float32, ysize float32, zsize float32) *Geometry {
 	return geometry
 }
 
+func NewGeometry_CubeWithTexture(xsize float32, ysize float32, zsize float32) *Geometry {
+	geometry := NewGeometry_Cube(xsize, ysize, zsize)
+	geometry.SetTextureUVs([][]float32{
+		{0, 0, 1, 0, 1, 1, 0, 1}, {0, 0, 1, 0, 1, 1, 0, 1}, {0, 0, 1, 0, 1, 1, 0, 1}, {0, 0, 1, 0, 1, 1, 0, 1}, {0, 0, 1, 0, 1, 1, 0, 1}, {0, 0, 1, 0, 1, 1, 0, 1}})
+	return geometry
+}
+
 func NewGeometry_Sphere(radius float32, wsegs int, hsegs int) *Geometry {
 	//   Sphere with the minimum number of vertices (to be used with face normal vectors)
 	geometry := NewGeometry()

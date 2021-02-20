@@ -80,12 +80,20 @@ func (self *Geometry) ShowInfo() {
 	}
 	fmt.Printf("Geometry with %d verts %d edges %d faces\n", len(self.verts), len(self.edges), len(self.faces))
 	if len(self.tuvs) > 0 {
-		fmt.Printf("  texture UV coords   : [%d][]float32\n", len(self.tuvs))
+		if self.HasTextureFor("VERTEX") {
+			fmt.Printf("  texture UV coords   : [%d][]float32   for each vertex\n", len(self.tuvs))
+		} else if self.HasTextureFor("FACE") {
+			fmt.Printf("  texture UV coords   : [%d][]float32   for each face\n", len(self.tuvs))
+		} else {
+			fmt.Printf("  texture UV coords   : [%d][]float32   \n", len(self.tuvs))
+		}
 	}
-	fmt.Printf("  data_buffer_vpoints : %4d (WebGL:%s)  psize=%v\n", len(self.data_buffer_vpoints), wblen(self.webgl_buffer_vpoints), self.vpoint_info)
-	fmt.Printf("  data_buffer_fpoints : %4d (WebGL:%s)  psize=%v\n", len(self.data_buffer_fpoints), wblen(self.webgl_buffer_fpoints), self.fpoint_info)
+	fmt.Printf("  data_buffer_vpoints : %4d (WebGL:%s)  pinfo=%v\n", len(self.data_buffer_vpoints), wblen(self.webgl_buffer_vpoints), self.vpoint_info)
+	fmt.Printf("  data_buffer_fpoints : %4d (WebGL:%s)  pinfo=%v\n", len(self.data_buffer_fpoints), wblen(self.webgl_buffer_fpoints), self.fpoint_info)
 	fmt.Printf("  data_buffer_lines   : %4d (WebGL:%s)\n", len(self.data_buffer_lines), wblen(self.webgl_buffer_lines))
 	fmt.Printf("  data_buffer_faces   : %4d (WebGL:%s)\n", len(self.data_buffer_faces), wblen(self.webgl_buffer_faces))
+	// fmt.Printf("  data_buffer_vpoints : %v\n", self.data_buffer_vpoints)
+	// fmt.Printf("  data_buffer_fpoints : %v\n", self.data_buffer_fpoints)
 }
 
 // ----------------------------------------------------------------------------
@@ -202,20 +210,6 @@ func (self *Geometry) SetTextureUVs(tuvs [][]float32) *Geometry {
 	return self
 }
 
-// func (self *Geometry) AllocTextureUVsPerVertex() {
-// 	self.tuvs = make([][]float32, len(self.verts)) // self.tuvs == [nverts][2]float32
-// 	for i, _ := range self.verts {
-// 		self.tuvs[i] = make([]float32, 2)
-// 	}
-// }
-
-// func (self *Geometry) AllocTextureUVsPerFace() {
-// 	self.tuvs = make([][]float32, len(self.faces)) // self.tuvs == [nfaces][fvcount*2]float32
-// 	for i, face := range self.faces {
-// 		self.tuvs[i] = make([]float32, 2*len(face))
-// 	}
-// }
-
 // ----------------------------------------------------------------------------
 // Triangulation
 // ----------------------------------------------------------------------------
@@ -287,16 +281,19 @@ func (self *Geometry) get_fpoint_new_vidx(fidx int, i int) int {
 	return int(self.fpoint_vidx_list[fidx]) + i
 }
 
-func (self *Geometry) copy_buffer(buf []float32, new_vidx int, vidx int, tuv_size int, tuv_idx int) {
-	pos := new_vidx * (2 + tuv_size)
-	if true {
-		buf[pos+0], buf[pos+1] = self.verts[vidx][0], self.verts[vidx][1]
-		pos += 2
-	}
-	if tuv_size == 2 {
-		buf[pos+0], buf[pos+1] = self.tuvs[tuv_idx][0], self.tuvs[tuv_idx][1]
-		pos += 2
-	}
+func (self *Geometry) buffer_copy_xy(buf []float32, pinfo [3]int, new_vidx int, vidx int) {
+	stride, offset := pinfo[0], pinfo[1] // XY coordinates
+	pos := new_vidx*stride + offset
+	buf[pos+0] = self.verts[vidx][0]
+	buf[pos+1] = self.verts[vidx][1]
+}
+
+func (self *Geometry) buffer_copy_uv(buf []float32, pinfo [3]int, new_vidx int, tuv_idx int, tuv_offset int) {
+	stride, offset := pinfo[0], pinfo[2] // UV texture coordinates
+	u := uint32(self.tuvs[tuv_idx][tuv_offset+0] * 65535)
+	v := uint32(self.tuvs[tuv_idx][tuv_offset+1] * 65535)
+	pos := new_vidx*stride + offset
+	buf[pos] = math.Float32frombits(u + v<<16) // LittleEndian (lower byte comes first)
 }
 
 func (self *Geometry) BuildDataBuffers(for_points bool, for_lines bool, for_faces bool) {
@@ -308,27 +305,29 @@ func (self *Geometry) BuildDataBuffers(for_points bool, for_lines bool, for_face
 		if self.HasTextureFor("FACE") {
 			points_per_face = true
 			self.count_fpoint_vidx_list()
-			self.fpoint_info = [3]int{(2 + 2), (0), (2)} // size, xyz_offset, uv_offset
+			self.fpoint_info = [3]int{(2 + 1), 0, 2} // stride, xyz_offset, uv_offset
 			self.data_buffer_fpoints = make([]float32, self.fpoint_vert_total*self.fpoint_info[0])
-			for fidx, face := range self.faces {
-				for i := 0; i < len(face); i++ {
-					new_vidx, vidx := self.get_fpoint_new_vidx(fidx, i), int(face[i])
-					self.copy_buffer(self.data_buffer_fpoints, new_vidx, vidx, 2, fidx)
+			for fidx, face_vlist := range self.faces {
+				for i := 0; i < len(face_vlist); i++ {
+					new_vidx, vidx := self.get_fpoint_new_vidx(fidx, i), int(face_vlist[i])
+					self.buffer_copy_xy(self.data_buffer_fpoints, self.fpoint_info, new_vidx, vidx)
+					self.buffer_copy_uv(self.data_buffer_fpoints, self.fpoint_info, new_vidx, fidx, i*2)
 				}
 			}
 		} else if self.HasTextureFor("VERTEX") {
-			self.fpoint_info = [3]int{(2 + 2), (0), (2)} // size, xyz_offset, uv_offset
+			self.fpoint_info = [3]int{(2 + 1), 0, 2} // stride, xyz_offset, uv_offset
 			self.data_buffer_fpoints = make([]float32, len(self.verts)*self.fpoint_info[0])
 			for vidx := 0; vidx < len(self.verts); vidx++ {
-				self.copy_buffer(self.data_buffer_fpoints, vidx, vidx, 2, vidx)
+				self.buffer_copy_xy(self.data_buffer_fpoints, self.fpoint_info, vidx, vidx)
+				self.buffer_copy_uv(self.data_buffer_fpoints, self.fpoint_info, vidx, vidx, 0)
 			}
 			self.data_buffer_vpoints = self.data_buffer_fpoints
 			self.vpoint_info = self.fpoint_info
 		} else {
-			self.fpoint_info = [3]int{(2 + 0), (0), (0)} // size, xyz_offset, uv_offset
+			self.fpoint_info = [3]int{(2 + 0), 0, 0} // stride, xyz_offset, uv_offset
 			self.data_buffer_fpoints = make([]float32, len(self.verts)*self.fpoint_info[0])
 			for vidx := 0; vidx < len(self.verts); vidx++ {
-				self.copy_buffer(self.data_buffer_fpoints, vidx, vidx, 0, 0)
+				self.buffer_copy_xy(self.data_buffer_fpoints, self.fpoint_info, vidx, vidx)
 			}
 			self.data_buffer_vpoints = self.data_buffer_fpoints
 			self.vpoint_info = self.fpoint_info
@@ -340,7 +339,7 @@ func (self *Geometry) BuildDataBuffers(for_points bool, for_lines bool, for_face
 		self.vpoint_info = [3]int{2, 0, 0}
 		self.data_buffer_vpoints = make([]float32, len(self.verts)*self.vpoint_info[0])
 		for vidx := 0; vidx < len(self.verts); vidx++ {
-			self.copy_buffer(self.data_buffer_vpoints, vidx, vidx, 0, 0)
+			self.buffer_copy_xy(self.data_buffer_vpoints, self.vpoint_info, vidx, vidx)
 		}
 	}
 	// if self.fpoint_info[0] == 0 {

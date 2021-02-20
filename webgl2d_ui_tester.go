@@ -23,13 +23,14 @@ func main() {
 	if false {
 		scene.Add(webgl2d.NewSceneObject_RectInstances(wctx)) // multiple instances of rectangles
 	} else {
-		geometry := webgl2d.NewGeometry_Rectangle(0.5) // create geometry (a triangle with radius 0.5)
-		geometry.SetTextureUVs([][]float32{{0, 0}, {1, 0}, {1, 1}, {0, 1}})
+		geometry := webgl2d.NewGeometry_Rectangle(2.0) // create geometry (a triangle with radius 0.5)
+		geometry.SetTextureUVs([][]float32{{0, 0, 1, 0, 1, 1, 0, 1}})
 		geometry.BuildDataBuffers(true, false, true)                // build data buffers for vertices and faces
 		material := webgl2d.NewMaterial(wctx, "/assets/gopher.png") // create material (with texture image)
 		shader := webgl2d.NewShader_BasicTexture(wctx)              // shader with auto-binded color & PVM matrix
 		scnobj := webgl2d.NewSceneObject(geometry, material, shader)
 		scene.Add(scnobj)
+		geometry.ShowInfo()
 	}
 	bbox, size, center := scene.GetBBoxSizeCenter(true)
 	camera := webgl2d.NewCamera(wctx.GetWH(), size[0]*1.1, 1.0)

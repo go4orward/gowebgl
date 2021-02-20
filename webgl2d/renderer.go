@@ -234,7 +234,7 @@ func (self *Renderer) bind_attribute(aname string, amap map[string]interface{}, 
 	autobinding_split := strings.Split(autobinding, ":")
 	autobinding0 := autobinding_split[0]
 	switch autobinding0 {
-	case "geometry.coords":
+	case "geometry.coords": // 2 * float32 in 8 bytes (2 float32)
 		buffer, _, pinfo := geometry.GetWebGLBuffer("POINTS")
 		context.Call("bindBuffer", constants.ARRAY_BUFFER, buffer)
 		context.Call("vertexAttribPointer", location, 2, constants.FLOAT, false, pinfo[0]*4, pinfo[1]*4)
@@ -243,10 +243,10 @@ func (self *Renderer) bind_attribute(aname string, amap map[string]interface{}, 
 			self.wctx.GetExtension("ANGLE").Call("vertexAttribDivisorANGLE", location, 0) // divisor == 0
 		}
 		return nil
-	case "geometry.textuv":
+	case "geometry.textuv": // 2 * uint16 in 4 bytes (1 float32)
 		buffer, _, pinfo := geometry.GetWebGLBuffer("POINTS")
 		context.Call("bindBuffer", constants.ARRAY_BUFFER, buffer)
-		context.Call("vertexAttribPointer", location, 2, constants.FLOAT, false, pinfo[0]*4, pinfo[2]*4)
+		context.Call("vertexAttribPointer", location, 2, constants.UNSIGNED_SHORT, true, pinfo[0]*4, pinfo[2]*4)
 		context.Call("enableVertexAttribArray", location)
 		if poses != nil { // context.ext_angle.vertexAttribDivisorANGLE(attribute_loc, divisor);
 			self.wctx.GetExtension("ANGLE").Call("vertexAttribDivisorANGLE", location, 0) // divisor == 0
@@ -287,12 +287,6 @@ func get_count_from_type(dtype string) int {
 		return 3
 	case "vec4":
 		return 4
-	case "mat2":
-		return 4
-	case "mat3":
-		return 9
-	case "mat4":
-		return 16
 	default:
 		return 0
 	}

@@ -17,21 +17,22 @@ func NewSceneObject_3DAxes(wctx *common.WebGLContext, length float32) *SceneObje
 }
 
 func NewSceneObject_CylinderWireframe(wctx *common.WebGLContext) *SceneObject {
-	// This example creates a hexagon at (0,0), to be rendered as 'wireframe'
-	// (This example demonstrates how 'triangulation of face' works - for faces with more than 3 vertices)
+	// This example creates a cylinder, to be rendered as 'wireframe'
+	// (This example demonstrates how 'triangulation of face' works)
 	geometry := NewGeometry_Cylinder(6, 0.5, 1.0, 0, true) // create a cylinder with radius 0.5 and heigt 1.0
 	geometry.BuildDataBuffersForWireframe()                // extract wireframe edges from faces
-	material := NewMaterial("#888888")                     // create material with yellow color
-	shader := NewShader_Basic(wctx)                        // create shader, and set its bindings
+	material := NewMaterial(wctx, "#888888")               // create material with yellow color
+	shader := NewShader_NoLight(wctx)                      // create shader, and set its bindings
 	return NewSceneObject(geometry, material, shader)      // set up the scene object
 }
 
-func NewSceneObject_SimplePolygon(wctx *common.WebGLContext) *SceneObject {
-	geometry := NewGeometry_EmptyExample()
-	geometry.BuildDataBuffers(true, false, true)      // build data buffers for vertices and edges
-	material := NewMaterial("#888888")                // create material with yellow color
-	shader := NewShader_BasicNormal(wctx)             // create shader, and set its bindings
-	return NewSceneObject(geometry, material, shader) // set up the scene object
+func NewSceneObject_CubeWithTexture(wctx *common.WebGLContext) *SceneObject {
+	geometry := NewGeometry_CubeWithTexture(1.0, 1.0, 1.0)
+	geometry.BuildNormalsPerFace()
+	geometry.BuildDataBuffers(true, false, true)        // build data buffers for vertices and faces
+	material := NewMaterial(wctx, "/assets/gopher.png") // create material with a texture image
+	shader := NewShader_BasicTexture(wctx)              // create shader, and set its bindings
+	return NewSceneObject(geometry, material, shader)   // set up the scene object
 }
 
 func NewSceneObject_CubeInstances(wctx *common.WebGLContext) *SceneObject {
@@ -39,7 +40,7 @@ func NewSceneObject_CubeInstances(wctx *common.WebGLContext) *SceneObject {
 	geometry := NewGeometry_Cube(0.08, 0.08, 0.08)     // create a cube of size 0.08
 	geometry.BuildNormalsPerFace()                     // prepare face normal vectors
 	geometry.BuildDataBuffers(true, false, true)       //
-	material := NewMaterial("#888888")                 // create material
+	material := NewMaterial(wctx, "#888888")           // create material
 	shader := NewShader_InstancePoseColor(wctx)        // create shader, and set its bindings
 	sobj := NewSceneObject(geometry, material, shader) // set up the scene object
 	poses := NewSceneObjectPoses(6, 10*10*10)

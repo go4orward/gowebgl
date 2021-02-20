@@ -6,6 +6,7 @@ import (
 
 type Constants struct {
 	ARRAY_BUFFER         js.Value //
+	BYTE                 js.Value //
 	CLAMP_TO_EDGE        js.Value //
 	COLOR_BUFFER_BIT     js.Value //
 	COMPILE_STATUS       js.Value //
@@ -38,6 +39,7 @@ type Constants struct {
 func (self *Constants) LoadFromContext(context js.Value) {
 	// get WebGL constants
 	self.ARRAY_BUFFER = context.Get("ARRAY_BUFFER")
+	self.BYTE = context.Get("BYTE")
 	self.CLAMP_TO_EDGE = context.Get("CLAMP_TO_EDGE")
 	self.COLOR_BUFFER_BIT = context.Get("COLOR_BUFFER_BIT")
 	self.COMPILE_STATUS = context.Get("COMPILE_STATUS")

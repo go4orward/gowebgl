@@ -163,6 +163,7 @@ func (self *Renderer) RenderSceneObject(sobj *SceneObject, proj *geom3d.Matrix4,
 
 func (self *Renderer) bind_uniform(uname string, umap map[string]interface{}, material *Material, proj *geom3d.Matrix4, viewm *geom3d.Matrix4) error {
 	context := self.wctx.GetContext()
+	constants := self.wctx.GetConstants()
 	if umap["location"] == nil {
 		err := errors.New("Failed to bind uniform : call 'shader.CheckBinding()' before rendering")
 		return err
@@ -170,7 +171,9 @@ func (self *Renderer) bind_uniform(uname string, umap map[string]interface{}, ma
 	location, dtype := umap["location"].(js.Value), umap["dtype"].(string)
 	autobinding := umap["autobinding"].(string)
 	// fmt.Printf("Uniform (%s) : autobinding= '%s'\n", dtype, autobinding)
-	switch autobinding {
+	autobinding_split := strings.Split(autobinding, ":")
+	autobinding0 := autobinding_split[0]
+	switch autobinding0 {
 	case "renderer.proj": // mat4
 		e := (*proj.GetElements())[:]
 		m := common.ConvertGoSliceToJsTypedArray(e)          // Projection matrix, converted to JavaScript 'Float32Array'
@@ -200,6 +203,16 @@ func (self *Renderer) bind_uniform(uname string, umap map[string]interface{}, ma
 			context.Call("uniform4f", location, c[0], c[1], c[2], c[3])
 			return nil
 		}
+	case "material.texture":
+		txt_unit := 0
+		if len(autobinding_split) >= 2 {
+			txt_unit, _ = strconv.Atoi(autobinding_split[1])
+		}
+		texture_unit := js.ValueOf(constants.TEXTURE0.Int() + txt_unit)
+		context.Call("activeTexture", texture_unit)                              // activate texture unit N
+		context.Call("bindTexture", constants.TEXTURE_2D, material.GetTexture()) // bind the texture
+		context.Call("uniform1i", location, txt_unit)                            // give shader the unit number
+		return nil
 	case "lighting.dlight": // mat3
 		dlight := geom2d.NewMatrix3().Set(0, 1, 0, 0, 1, 0, 1, 1, 0) // directional light (in camera space)
 		e := (*dlight.GetElements())[:]                              // (direction[3] + intensity[3] + ambient[3])
@@ -242,9 +255,9 @@ func (self *Renderer) bind_attribute(aname string, amap map[string]interface{}, 
 	autobinding := amap["autobinding"].(string)
 	// fmt.Printf("Attribute (%s) : autobinding= '%s'\n", dtype, autobinding)
 	autobinding_split := strings.Split(autobinding, ":")
-	autobinding = autobinding_split[0]
-	switch autobinding {
-	case "geometry.coords":
+	autobinding0 := autobinding_split[0]
+	switch autobinding0 {
+	case "geometry.coords": // 3 * float32 in 12 bytes (3 float32)
 		buffer, _, pinfo := geometry.GetWebGLBuffer("POINTS")
 		context.Call("bindBuffer", constants.ARRAY_BUFFER, buffer)
 		context.Call("vertexAttribPointer", location, 3, constants.FLOAT, false, pinfo[0]*4, pinfo[1]*4)
@@ -253,10 +266,10 @@ func (self *Renderer) bind_attribute(aname string, amap map[string]interface{}, 
 			self.wctx.GetExtension("ANGLE").Call("vertexAttribDivisorANGLE", location, 0) // divisor == 0
 		}
 		return nil
-	case "geometry.textuv":
+	case "geometry.textuv": // 2 * uint16 in 4 bytes (1 float32)
 		buffer, _, pinfo := geometry.GetWebGLBuffer("POINTS")
 		context.Call("bindBuffer", constants.ARRAY_BUFFER, buffer)
-		context.Call("vertexAttribPointer", location, 2, constants.FLOAT, false, pinfo[0]*4, pinfo[2]*4)
+		context.Call("vertexAttribPointer", location, 2, constants.UNSIGNED_SHORT, true, pinfo[0]*4, pinfo[2]*4)
 		context.Call("enableVertexAttribArray", location)
 		if pinfo[1] == pinfo[2] {
 			fmt.Printf("Renderer Warning : Texture UV coordinates not found (pinfo=%v)\n", pinfo)
@@ -265,10 +278,11 @@ func (self *Renderer) bind_attribute(aname string, amap map[string]interface{}, 
 			self.wctx.GetExtension("ANGLE").Call("vertexAttribDivisorANGLE", location, 0) // divisor == 0
 		}
 		return nil
-	case "geometry.normal":
+	case "geometry.normal": // 3 * byte in 4 bytes (1 float32)
 		buffer, _, pinfo := geometry.GetWebGLBuffer("POINTS")
+		count := get_count_from_type(dtype)
 		context.Call("bindBuffer", constants.ARRAY_BUFFER, buffer)
-		context.Call("vertexAttribPointer", location, 3, constants.FLOAT, false, pinfo[0]*4, pinfo[3]*4)
+		context.Call("vertexAttribPointer", location, count, constants.BYTE, true, pinfo[0]*4, pinfo[3]*4)
 		context.Call("enableVertexAttribArray", location)
 		if pinfo[1] == pinfo[3] {
 			fmt.Printf("Renderer Warning : Normal vectors not found (pinfo=%v)\n", pinfo)
@@ -312,12 +326,6 @@ func get_count_from_type(dtype string) int {
 		return 3
 	case "vec4":
 		return 4
-	case "mat2":
-		return 4
-	case "mat3":
-		return 9
-	case "mat4":
-		return 16
 	default:
 		return 0
 	}
