@@ -2,7 +2,6 @@ package webgl2d
 
 import (
 	"fmt"
-	"math"
 
 	"github.com/go4orward/gowebgl/common"
 	"github.com/go4orward/gowebgl/common/geom2d"
@@ -77,50 +76,28 @@ func (self *SceneObject) ShowInfo() {
 // ----------------------------------------------------------------------------
 
 func (self *SceneObject) SetTransformation(txy [2]float32, angle_in_degree float32, sxy [2]float32) *SceneObject {
-	translation := geom2d.NewMatrix3().Set(
-		1.0, 0.0, txy[0],
-		0.0, 1.0, txy[1],
-		0.0, 0.0, 1.0)
-	radian := float64(angle_in_degree) * (math.Pi / 180.0)
-	cos, sin := float32(math.Cos(radian)), float32(math.Sin(radian))
-	rotation := geom2d.NewMatrix3().Set(
-		cos, -sin, 0.0,
-		+sin, cos, 0.0,
-		0.0, 0.0, 1.0)
-	scaling := geom2d.NewMatrix3().Set(
-		sxy[0], 0.0, 0.0,
-		0.0, sxy[1], 0.0,
-		0.0, 0.0, 1.0)
+	translation := geom2d.NewMatrix3().SetTranslation(txy[0], txy[1])
+	rotation := geom2d.NewMatrix3().SetRotation(angle_in_degree)
+	scaling := geom2d.NewMatrix3().SetScaling(sxy[0], sxy[1])
 	self.modelmatrix.SetMultiplyMatrices(translation, rotation, scaling)
 	return self
 }
 
 func (self *SceneObject) Rotate(angle_in_degree float32) *SceneObject {
-	radian := float64(angle_in_degree) * (math.Pi / 180.0)
-	cos, sin := float32(math.Cos(radian)), float32(math.Sin(radian))
-	rotation := geom2d.NewMatrix3().Set(
-		cos, -sin, 0.0,
-		+sin, cos, 0.0,
-		0.0, 0.0, 1.0)
-	self.modelmatrix = *rotation.MultiplyRight(&self.modelmatrix)
+	rotation := geom2d.NewMatrix3().SetRotation(angle_in_degree)
+	self.modelmatrix.SetMultiplyMatrices(rotation, &self.modelmatrix)
 	return self
 }
 
 func (self *SceneObject) Translate(tx float32, ty float32) *SceneObject {
-	translation := geom2d.NewMatrix3().Set(
-		1.0, 0.0, tx,
-		0.0, 1.0, ty,
-		0.0, 0.0, 1.0)
-	self.modelmatrix = *translation.MultiplyRight(&self.modelmatrix)
+	translation := geom2d.NewMatrix3().SetTranslation(tx, ty)
+	self.modelmatrix.SetMultiplyMatrices(translation, &self.modelmatrix)
 	return self
 }
 
 func (self *SceneObject) Scale(sx float32, sy float32) *SceneObject {
-	scaling := geom2d.NewMatrix3().Set(
-		sx, 0.0, 0.0,
-		0.0, sy, 0.0,
-		0.0, 0.0, 1.0)
-	self.modelmatrix = *scaling.MultiplyRight(&self.modelmatrix)
+	scaling := geom2d.NewMatrix3().SetScaling(sx, sy)
+	self.modelmatrix.SetMultiplyMatrices(scaling, &self.modelmatrix)
 	return self
 }
 
@@ -134,9 +111,9 @@ func (self *SceneObject) GetBoundingBox(m *geom2d.Matrix3, renew bool) [2][2]flo
 		// apply the transformation matrx
 		var mm *geom2d.Matrix3 = nil
 		if m != nil {
-			mm = m.MultiplyRight(&self.modelmatrix)
+			mm = m.MultiplyToTheRight(&self.modelmatrix)
 		} else {
-			mm = self.modelmatrix.Copy()
+			mm = self.modelmatrix.Copy() // new matrix
 		}
 		// add all the vertices of the geometry
 		if self.poses == nil {

@@ -51,7 +51,7 @@ func (self *Renderer) RenderAxes(camera *Camera, length float32) {
 func (self *Renderer) RenderScene(camera *Camera, scene *Scene) {
 	// Render all the scene objects
 	for _, sobj := range scene.objects {
-		pvm_matrix := camera.pjvwmatrix.MultiplyRight(&sobj.modelmatrix)
+		pvm_matrix := camera.pjvwmatrix.MultiplyToTheRight(&sobj.modelmatrix)
 		self.RenderSceneObject(sobj, pvm_matrix) // (Proj * View * Model) matrix
 	}
 }
@@ -143,8 +143,8 @@ func (self *Renderer) RenderSceneObject(sobj *SceneObject, pvm *geom2d.Matrix3) 
 	}
 	// 6. render all the children
 	for _, child := range sobj.children {
-		pvm := pvm.MultiplyRight(&child.modelmatrix)
-		self.RenderSceneObject(child, pvm)
+		new_pvm := pvm.MultiplyToTheRight(&child.modelmatrix)
+		self.RenderSceneObject(child, new_pvm)
 	}
 	return nil
 }

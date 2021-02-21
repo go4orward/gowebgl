@@ -1,5 +1,7 @@
 package geom2d
 
+import "math"
+
 type Matrix3 struct {
 	elements [9]float32 // COLUMN-MAJOR (just like WebGL)
 }
@@ -43,25 +45,40 @@ func (self *Matrix3) SetTranspose() *Matrix3 {
 	return self
 }
 
-func (self *Matrix3) SetMultiplyLeft(matrix *Matrix3) *Matrix3 {
-	new_matrix := self.MultiplyLeft(matrix)
-	self.elements = new_matrix.elements
+func (self *Matrix3) SetTranslation(tx float32, ty float32) *Matrix3 {
+	self.Set(
+		1.0, 0.0, tx,
+		0.0, 1.0, ty,
+		0.0, 0.0, 1.0)
 	return self
 }
 
-func (self *Matrix3) SetMultiplyRight(matrix *Matrix3) *Matrix3 {
-	new_matrix := self.MultiplyRight(matrix)
-	self.elements = new_matrix.elements
+func (self *Matrix3) SetScaling(sx float32, sy float32) *Matrix3 {
+	self.Set(
+		sx, 0.0, 0,
+		0.0, sy, 0,
+		0.0, 0.0, 1.0)
+	return self
+}
+
+func (self *Matrix3) SetRotation(angle_in_degree float32) *Matrix3 {
+	// Based on http://www.gamedev.net/reference/articles/article1199.asp
+	cos := float32(math.Cos(float64(angle_in_degree) * (math.Pi / 180.0)))
+	sin := float32(math.Sin(float64(angle_in_degree) * (math.Pi / 180.0)))
+	self.Set(
+		cos, -sin, 0.0,
+		+sin, cos, 0.0,
+		0.0, 0.0, 1.0)
 	return self
 }
 
 func (self *Matrix3) SetMultiplyMatrices(matrices ...*Matrix3) *Matrix3 {
-	for i, m := range matrices {
-		if i == 0 {
-			self.SetCopy(m)
-		} else {
-			self.SetMultiplyRight(m)
+	if len(matrices) > 0 {
+		m := matrices[0] // multiply all the matrices first,
+		for i := 1; i < len(matrices); i++ {
+			m = m.MultiplyToTheRight(matrices[i])
 		}
+		self.SetCopy(m) // and then copy (overwriting old values)
 	}
 	return self
 }
@@ -79,7 +96,7 @@ func (self *Matrix3) Transpose() *Matrix3 {
 	return &Matrix3{elements: [9]float32{o[0], o[1], o[2], o[3], o[4], o[5], o[6], o[7], o[8]}}
 }
 
-func (self *Matrix3) MultiplyLeft(matrix *Matrix3) *Matrix3 {
+func (self *Matrix3) MultiplyToTheLeft(matrix *Matrix3) *Matrix3 {
 	o := &self.elements   // reference
 	m := &matrix.elements // reference
 	return &Matrix3{elements: [9]float32{
@@ -94,7 +111,7 @@ func (self *Matrix3) MultiplyLeft(matrix *Matrix3) *Matrix3 {
 		o[6]*m[2] + o[7]*m[5] + o[8]*m[8]}}
 }
 
-func (self *Matrix3) MultiplyRight(matrix *Matrix3) *Matrix3 {
+func (self *Matrix3) MultiplyToTheRight(matrix *Matrix3) *Matrix3 {
 	o := &self.elements   // reference
 	m := &matrix.elements // reference
 	return &Matrix3{elements: [9]float32{

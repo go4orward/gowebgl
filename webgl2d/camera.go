@@ -111,7 +111,7 @@ func (self *Camera) Rotate(angle_in_degree float32) *Camera {
 		cos, +sin, 0.0,
 		-sin, cos, 0.0,
 		0.0, 0.0, 1.0)
-	self.viewmatrix = *rotation.MultiplyRight(&self.viewmatrix)
+	self.viewmatrix.SetMultiplyMatrices(rotation, &self.viewmatrix)
 	self.pjvwmatrix.SetMultiplyMatrices(&self.projmatrix, &self.viewmatrix)
 	return self
 }
@@ -121,7 +121,7 @@ func (self *Camera) Translate(tx float32, ty float32) *Camera {
 		1.0, 0.0, -tx,
 		0.0, 1.0, -ty,
 		0.0, 0.0, 1.0)
-	self.viewmatrix = *translation.MultiplyRight(&self.viewmatrix)
+	self.viewmatrix.SetMultiplyMatrices(translation, &self.viewmatrix)
 	self.pjvwmatrix.SetMultiplyMatrices(&self.projmatrix, &self.viewmatrix)
 	self.center = [2]float32{self.center[0] + tx, self.center[1] + ty}
 	return self

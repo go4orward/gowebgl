@@ -2,10 +2,9 @@ package webglobe
 
 import "math"
 
+// Globe is centered at (0,0) with radius 1.0
 // const InRadian = (math.Pi / 180.0)
 // const InDegree = (180.0 / math.Pi)
-
-// Globe is centered at (0,0) with radius 1.0
 
 // ------------------------------------------------------------------------
 // Longitude/Latitude  =>  X/Y/Z

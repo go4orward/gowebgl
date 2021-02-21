@@ -63,8 +63,8 @@ func (self *Renderer) RenderAxes(camera *Camera, length float32) {
 func (self *Renderer) RenderScene(camera *Camera, scene *Scene) {
 	// Render all the SceneObjects in the Scene
 	for _, sobj := range scene.objects {
-		viewmodel := camera.viewmatrix.MultiplyRight(&sobj.modelmatrix)
-		self.RenderSceneObject(sobj, camera.projection.GetMatrix(), viewmodel)
+		new_viewmodel := camera.viewmatrix.MultiplyToTheRight(&sobj.modelmatrix)
+		self.RenderSceneObject(sobj, camera.projection.GetMatrix(), new_viewmodel)
 	}
 }
 
@@ -155,8 +155,8 @@ func (self *Renderer) RenderSceneObject(sobj *SceneObject, proj *geom3d.Matrix4,
 	}
 	// 6. render all the children
 	for _, child := range sobj.children {
-		viewm := viewm.MultiplyRight(&child.modelmatrix)
-		self.RenderSceneObject(child, proj, viewm)
+		new_viewmodel := viewm.MultiplyToTheRight(&child.modelmatrix)
+		self.RenderSceneObject(child, proj, new_viewmodel)
 	}
 	return nil
 }
@@ -185,8 +185,8 @@ func (self *Renderer) bind_uniform(uname string, umap map[string]interface{}, ma
 		context.Call("uniformMatrix4fv", location, false, m) // gl.uniformMatrix4fv(location, transpose, values_array)
 		return nil
 	case "renderer.pvm": // mat4
-		pvm := proj.MultiplyRight(viewm) // (Proj * View * Models) matrix
-		e := (*pvm.GetElements())[:]
+		pvm := proj.MultiplyToTheRight(viewm)                // (Proj * View * Models) matrix
+		e := (*pvm.GetElements())[:]                         //
 		m := common.ConvertGoSliceToJsTypedArray(e)          // P*V*M matrix, converted to JavaScript 'Float32Array'
 		context.Call("uniformMatrix4fv", location, false, m) // gl.uniformMatrix4fv(location, transpose, values_array)
 		return nil

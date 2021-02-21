@@ -70,45 +70,27 @@ func (self *SceneObject) ShowInfo() {
 // ----------------------------------------------------------------------------
 
 func (self *SceneObject) SetTransformation(txyz [3]float32, axis [3]float32, angle_in_degree float32, sxyz [3]float32) *SceneObject {
-	translation := geom3d.NewMatrix4().Set(
-		1.0, 0.0, 0.0, txyz[0],
-		0.0, 1.0, 0.0, txyz[1],
-		0.0, 0.0, 1.0, txyz[2],
-		0.0, 0.0, 0.0, 1.0)
-	rotation := geom3d.NewMatrix4()
-	rotation.SetRotationByAxis(axis, angle_in_degree)
-	scaling := geom3d.NewMatrix4().Set(
-		sxyz[0], 0.0, 0.0, 0.0,
-		0.0, sxyz[1], 0.0, 0.0,
-		0.0, 0.0, sxyz[2], 0.0,
-		0.0, 0.0, 0.0, 1.0)
+	translation := geom3d.NewMatrix4().SetTranslation(txyz[0], txyz[1], txyz[2])
+	rotation := geom3d.NewMatrix4().SetRotationByAxis(axis, angle_in_degree)
+	scaling := geom3d.NewMatrix4().SetScaling(sxyz[0], sxyz[1], sxyz[2])
 	self.modelmatrix.SetMultiplyMatrices(translation, rotation, scaling)
 	return self
 }
 
-func (self *SceneObject) Rotate(axis [3]float32, angle_in_degree float32) *SceneObject {
-	rotation := geom3d.NewMatrix4()
-	rotation.SetRotationByAxis(axis, angle_in_degree)
-	self.modelmatrix = *rotation.MultiplyRight(&self.modelmatrix)
+func (self *SceneObject) Translate(tx float32, ty float32, tz float32) *SceneObject {
+	translation := geom3d.NewMatrix4().SetTranslation(tx, ty, tz)
+	self.modelmatrix.SetMultiplyMatrices(translation, &self.modelmatrix)
 	return self
 }
 
-func (self *SceneObject) Translate(tx float32, ty float32, tz float32) *SceneObject {
-	translation := geom3d.NewMatrix4().Set(
-		1.0, 0.0, 0.0, tx,
-		0.0, 1.0, 0.0, ty,
-		0.0, 0.0, 1.0, tz,
-		0.0, 0.0, 0.0, 1.0)
-	self.modelmatrix = *translation.MultiplyRight(&self.modelmatrix)
+func (self *SceneObject) Rotate(axis [3]float32, angle_in_degree float32) *SceneObject {
+	rotation := geom3d.NewMatrix4().SetRotationByAxis(axis, angle_in_degree)
+	self.modelmatrix.SetMultiplyMatrices(rotation, &self.modelmatrix)
 	return self
 }
 
 func (self *SceneObject) Scale(sx float32, sy float32, sz float32) *SceneObject {
-	scaling := geom3d.NewMatrix4().Set(
-		sx, 0.0, 0.0, 0.0,
-		0.0, sy, 0.0, 0.0,
-		0.0, 0.0, sz, 0.0,
-		0.0, 0.0, 0.0, 1.0)
-	self.modelmatrix = *scaling.MultiplyRight(&self.modelmatrix)
+	scaling := geom3d.NewMatrix4().SetScaling(sx, sy, sz)
+	self.modelmatrix.SetMultiplyMatrices(scaling, &self.modelmatrix)
 	return self
 }

@@ -94,6 +94,36 @@ func NewShader_BasicTexture(wctx *common.WebGLContext) *common.Shader {
 		precision mediump float;
 		uniform mat4 proj;			// Projection matrix
 		uniform mat4 vwmd;			// ModelView matrix
+		attribute vec3 xyz;			// XYZ coordinates
+		attribute vec2 tuv;			// texture coordinates
+		varying vec2 v_tuv;			// (varying) texture coordinates
+		void main() {
+			gl_Position = proj * vwmd * vec4(xyz.x, xyz.y, xyz.z, 1.0);
+			v_tuv = tuv;
+		}`
+	var fragment_shader_code = `
+		precision mediump float;
+		uniform sampler2D text;		// texture sampler (unit)
+		varying vec2 v_tuv;			// (varying) texture coordinates
+		void main() { 
+			gl_FragColor = texture2D(text, v_tuv);
+		}`
+	shader, _ := common.NewShader(wctx, vertex_shader_code, fragment_shader_code)
+	shader.InitBindingForUniform("proj", "mat4", "renderer.proj")         // automatic binding of (Projection) matrix
+	shader.InitBindingForUniform("vwmd", "mat4", "renderer.vwmd")         // automatic binding of (View * Models) matrix
+	shader.InitBindingForUniform("text", "sampler2D", "material.texture") // automatic binding of texture sampler (unit:0)
+	shader.InitBindingForAttribute("xyz", "vec3", "geometry.coords")      // automatic binding of point XYZ coordinates
+	shader.InitBindingForAttribute("tuv", "vec2", "geometry.textuv")      // automatic binding of point UV coordinates (texture)
+	shader.SetThingsToDraw("TRIANGLES")                                   // can be used for drawing TRIANGLES
+	return shader
+}
+
+func NewShader_BasicTextureWithLight(wctx *common.WebGLContext) *common.Shader {
+	// Shader for (XYZ + UV + NORMAL) Geometry & (TEXTURE) Material & (DIRECTIONAL) Lighting
+	var vertex_shader_code = `
+		precision mediump float;
+		uniform mat4 proj;			// Projection matrix
+		uniform mat4 vwmd;			// ModelView matrix
 		uniform mat3 light;			// directional light ([0]:direction, [1]:color, [2]:ambient) COLUMN-MAJOR!
 		attribute vec3 xyz;			// XYZ coordinates
 		attribute vec2 tuv;			// texture coordinates

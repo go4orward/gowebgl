@@ -30,8 +30,7 @@ func main() {
 		shader := webgl3d.NewShader_BasicTexture(wctx)              // create a shader, and set its bindings
 		scene.Add(webgl3d.NewSceneObject(geometry, material, shader))
 	}
-	camera := webgl3d.NewPerspectiveCamera(wctx.GetWH(), 15, 1.0) // fov default is 15 in degree
-	// camera := webgl3d.NewOrthographicCamera(wctx.GetWH(), 2.6, 1.0) // fov default is 2.6 in clip_width
+	camera := webgl3d.NewPerspectiveCamera(wctx.GetWH(), 15, 1.0) // FOV default is 15 in degree
 	camera.SetPose([3]float32{0, 0, 10}, [3]float32{0, 0, 0}, [3]float32{0, 1, 0})
 	renderer := webgl3d.NewRenderer(wctx) // set up the renderer
 	renderer.Clear(camera, "#ffffff")     // prepare to render (clearing to white background)
@@ -45,6 +44,7 @@ func main() {
 			camera.ShowInfo()
 		})
 		wctx.RegisterEventHandlerForMouseDrag(func(canvasxy [2]int, dxy [2]int, keystat [4]bool) {
+			camera.RotateAroundPoint(10, float32(dxy[0])*0.2, float32(dxy[1])*0.2)
 		})
 		wctx.RegisterEventHandlerForMouseWheel(func(canvasxy [2]int, scale float32, keystat [4]bool) {
 			camera.SetZoom(scale) // 'scale' in [ 0.01 ~ 1(default) ~ 100.0 ]

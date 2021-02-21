@@ -128,21 +128,42 @@ func (self *Camera) SetPoseWithMcw(Mcw *geom3d.Matrix4) *Camera {
 	return self
 }
 
-func (self *Camera) Rotate(axis [3]float32, angle_in_degree float32) *Camera {
-	rotation := geom3d.NewMatrix4()
-	rotation.SetRotationByAxis(axis, angle_in_degree)
-	self.viewmatrix = *rotation.MultiplyRight(&self.viewmatrix)
+func (self *Camera) Translate(tx float32, ty float32, tz float32) *Camera {
+	translation := geom3d.NewMatrix4().SetTranslation(-tx, -ty, -tz)
+	self.viewmatrix.SetMultiplyMatrices(translation, &self.viewmatrix)
+	self.center = [3]float32{self.center[0] + tx, self.center[1] + ty, self.center[2] + tz}
 	return self
 }
 
-func (self *Camera) Translate(tx float32, ty float32, tz float32) *Camera {
-	translation := geom3d.NewMatrix4().Set(
-		1.0, 0.0, 0.0, -tx,
-		0.0, 1.0, 0.0, -ty,
-		0.0, 0.0, 1.0, -tz,
-		0.0, 0.0, 0.0, 1.0)
-	self.viewmatrix = *translation.MultiplyRight(&self.viewmatrix)
-	self.center = [3]float32{self.center[0] + tx, self.center[1] + ty, self.center[2] + tz}
+func (self *Camera) RotateByPitch(angle_in_degree float32) *Camera {
+	// Rotate around CAMERA's +X axis
+	return self
+}
+
+func (self *Camera) RotateByRoll(angle_in_degree float32) *Camera {
+	// Rotate around CAMERA's -Z axis
+	return self
+}
+
+func (self *Camera) RotateByYaw(angle_in_degree float32) *Camera {
+	// Rotate around CAMERA's -Y axis
+	return self
+}
+
+func (self *Camera) RotateAroundAxis(axis [3]float32, angle_in_degree float32) *Camera {
+	rotation := geom3d.NewMatrix4()
+	rotation.SetRotationByAxis(axis, angle_in_degree)
+	self.viewmatrix.SetMultiplyMatrices(rotation, &self.viewmatrix)
+	return self
+}
+
+func (self *Camera) RotateAroundPoint(distance float32, h_angle float32, v_angle float32) *Camera {
+	// Rotate camera around the point (0, 0, -distance) in CAMERA space
+	trn0 := geom3d.NewMatrix4().SetTranslation(0, 0, distance)
+	rotY := geom3d.NewMatrix4().SetRotationByAxis([3]float32{0, 1, 0}, +h_angle)
+	rotX := geom3d.NewMatrix4().SetRotationByAxis([3]float32{1, 0, 0}, +v_angle)
+	trn1 := geom3d.NewMatrix4().SetTranslation(0, 0, -distance)
+	self.viewmatrix.SetMultiplyMatrices(trn1, rotX, rotY, trn0, &self.viewmatrix)
 	return self
 }
 

@@ -220,7 +220,7 @@ func go_wrapper_for_event_handler() js.Func {
 		case "wheel":
 			if evthandler_for_mouse_wheel != nil {
 				keystat := [4]bool{event.Get("altKey").Bool(), event.Get("ctrlKey").Bool(), event.Get("metaKey").Bool(), event.Get("shiftKey").Bool()}
-				if keystat[1] { // ZOOM
+				if keystat[3] { // ZOOM, if SHIFT is was pressed
 					cxy := [2]int{event.Get("clientX").Int(), event.Get("clientY").Int()}
 					mouse_wheel_scale += float64(event.Get("deltaY").Int()) // [ 0 ~ 500(default) ~ 1000 ]
 					mouse_wheel_scale = float64(math.Max(0, math.Min(mouse_wheel_scale, 1000)))

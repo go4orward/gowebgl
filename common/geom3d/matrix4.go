@@ -37,6 +37,11 @@ func (self *Matrix4) SetIdentity() *Matrix4 {
 	return self
 }
 
+func (self *Matrix4) SetCopy(m *Matrix4) *Matrix4 {
+	self.elements = m.elements
+	return self
+}
+
 func (self *Matrix4) SetTranspose() *Matrix4 {
 	e := &self.elements // reference
 	e[1], e[4] = e[4], e[1]
@@ -48,35 +53,25 @@ func (self *Matrix4) SetTranspose() *Matrix4 {
 	return self
 }
 
-func (self *Matrix4) SetCopy(m *Matrix4) *Matrix4 {
-	self.elements = m.elements
+func (self *Matrix4) SetTranslation(tx float32, ty float32, tz float32) *Matrix4 {
+	self.Set(
+		1.0, 0.0, 0.0, tx,
+		0.0, 1.0, 0.0, ty,
+		0.0, 0.0, 1.0, tz,
+		0.0, 0.0, 0.0, 1.0)
 	return self
 }
 
-func (self *Matrix4) SetMultiplyLeft(matrix *Matrix4) *Matrix4 {
-	new_matrix := self.MultiplyLeft(matrix)
-	self.elements = new_matrix.elements // copy
+func (self *Matrix4) SetScaling(sx float32, sy float32, sz float32) *Matrix4 {
+	self.Set(
+		sx, 0.0, 0.0, 0,
+		0.0, sy, 0.0, 0,
+		0.0, 0.0, sz, 0,
+		0.0, 0.0, 0.0, 1.0)
 	return self
 }
 
-func (self *Matrix4) SetMultiplyRight(matrix *Matrix4) *Matrix4 {
-	new_matrix := self.MultiplyRight(matrix)
-	self.elements = new_matrix.elements // copy
-	return self
-}
-
-func (self *Matrix4) SetMultiplyMatrices(matrices ...*Matrix4) *Matrix4 {
-	for i, m := range matrices {
-		if i == 0 {
-			self.SetCopy(m)
-		} else {
-			self.SetMultiplyRight(m)
-		}
-	}
-	return self
-}
-
-func (self *Matrix4) SetRotationByAxis(axis [3]float32, angle_in_degree float32) {
+func (self *Matrix4) SetRotationByAxis(axis [3]float32, angle_in_degree float32) *Matrix4 {
 	axis = Normalize(axis)
 	// Based on http://www.gamedev.net/reference/articles/article1199.asp
 	c := float32(math.Cos(float64(angle_in_degree) * (math.Pi / 180.0)))
@@ -89,6 +84,18 @@ func (self *Matrix4) SetRotationByAxis(axis [3]float32, angle_in_degree float32)
 		tx*y+s*z, ty*y+c, ty*z-s*x, 0,
 		tx*z-s*y, ty*z+s*x, t*z*z+c, 0,
 		0, 0, 0, 1)
+	return self
+}
+
+func (self *Matrix4) SetMultiplyMatrices(matrices ...*Matrix4) *Matrix4 {
+	if len(matrices) > 0 {
+		m := matrices[0] // multiply all the matrices first,
+		for i := 1; i < len(matrices); i++ {
+			m = m.MultiplyToTheRight(matrices[i])
+		}
+		self.SetCopy(m) // and then copy (overwriting old values)
+	}
+	return self
 }
 
 // ----------------------------------------------------------------------------
@@ -108,7 +115,7 @@ func (self *Matrix4) Transpose() *Matrix4 {
 		o[12], o[13], o[14], o[15]}}
 }
 
-func (self *Matrix4) MultiplyLeft(matrix *Matrix4) *Matrix4 {
+func (self *Matrix4) MultiplyToTheLeft(matrix *Matrix4) *Matrix4 {
 	o := &self.elements   // reference       (M*O)T = OT * MT
 	m := &matrix.elements // reference
 	return &Matrix4{elements: [16]float32{
@@ -130,7 +137,7 @@ func (self *Matrix4) MultiplyLeft(matrix *Matrix4) *Matrix4 {
 		o[12]*m[3] + o[13]*m[7] + o[14]*m[11] + o[15]*m[15]}}
 }
 
-func (self *Matrix4) MultiplyRight(matrix *Matrix4) *Matrix4 {
+func (self *Matrix4) MultiplyToTheRight(matrix *Matrix4) *Matrix4 {
 	o := &self.elements   // reference        (O*M)T = MT * OT
 	m := &matrix.elements // reference
 	return &Matrix4{elements: [16]float32{

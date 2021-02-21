@@ -4,6 +4,7 @@ import (
 	"math"
 
 	"github.com/go4orward/gowebgl/webgl3d"
+	// "github.com/go4orward/gowebgl/webgl3d/geography"
 )
 
 const InRadian = (math.Pi / 180.0)
@@ -24,11 +25,7 @@ func NewGeometry_Globe(radius float32, wsegs int, hsegs int) *webgl3d.Geometry {
 			lat := -math.Pi/2.0 + hstep*float32(j) // latitude (φ)
 			xyz := GetXYZFromLL(lon, lat, radius)
 			geometry.AddVertex(xyz)
-			if pole := (j == 0 || j == hsegs); pole {
-				geometry.AddTextureUV([]float32{(float32(i) + 0.5) / float32(wsegs), 1.0 - float32(j)/float32(hsegs)})
-			} else {
-				geometry.AddTextureUV([]float32{float32(i) / float32(wsegs), 1.0 - float32(j)/float32(hsegs)})
-			}
+			geometry.AddTextureUV([]float32{float32(i) / float32(wsegs), float32(j) / float32(hsegs)})
 		}
 	}
 	for i := 0; i < wnum-1; i++ { // quadratic faces on the side (triangles for south/north poles)
