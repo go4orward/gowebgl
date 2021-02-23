@@ -6,34 +6,40 @@ Interactive 2D & 3D Graphics Library using Go + WebAssembly + WebGL
 
 Simplest example: &emsp; _(for explaining how WebGL works)_
 ```bash
-$ make                  # source : 'webgl1st_tester.go'
+$ make                  # source : 'webgl1st_example.go'
 $ ./wasm_test_server    # open your browser, and visit http://localhost:8080
 ```
-![webgl_tester result](assets/xscreen_webgl.png)
+![webgl_example result](assets/xscreen_webgl.png)
 
 2D example: &emsp; _(with animation & user interactions)_
 ```bash
-$ make 2d               # source : 'webgl2d_tester.go'
+$ make 2d               # source : 'webgl2d_example.go'
 $ ./wasm_test_server    # open your browser, and visit http://localhost:8080
 or
-$ make 2dui             # source : 'webgl2d_ui_tester.go'
+$ make 2dui             # source : 'webgl2d_ui_example.go'
 $ ./wasm_test_server    # open your browser, and visit http://localhost:8080
 ```
-![webgl2d_tester result](assets/xscreen_webgl2d.png)
+![webgl2d_example result](assets/xscreen_webgl2d.png)
 
 3D example: &emsp; _(with perspective & orthographic camera)_
 ```bash
-$ make 3d               # source : 'webgl3d_tester.go'
+$ make 3d               # source : 'webgl3d_example.go'
 $ ./wasm_test_server    # open your browser, and visit http://localhost:8080
 ```
-![webgl3d_tester result](assets/xscreen_webgl3d.png)
+![webgl3d_example result](assets/xscreen_webgl3d.png)
 
 Globe example: &emsp; _(with perspective & orthographic camera)_
 ```bash
-$ make globe            # source : 'webglobe_tester.go'
+$ make globe            # source : 'webglobe_example.go'
 $ ./wasm_test_server    # open your browser, and visit http://localhost:8080
 ```
-![webglobe_tester result](assets/xscreen_webglobe.png)
+![webglobe_example result](assets/xscreen_webglobe.png)
+
+## ToDo List
+
+- user selection using collision detection with a ray from camera
+- dynamic switching of world map projections (Mercator, Stereographic, etc)
+- graticules on the globe
 
 ## Thanks
 
