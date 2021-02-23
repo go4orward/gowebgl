@@ -39,7 +39,7 @@ $ ./wasm_test_server    # open your browser, and visit http://localhost:8080
 
 - user selection using collision detection with a ray from camera
 - dynamic switching of world map projections (Mercator, Stereographic, etc)
-- coast lines and country border lines to the world map
+- coast lines and country border lines on the world map
 - graticules on the globe
 
 ## Thanks
