@@ -1,5 +1,5 @@
 all: 
-	GOOS=js GOARCH=wasm go build -o wasm_test.wasm webgl_tester.go
+	GOOS=js GOARCH=wasm go build -o wasm_test.wasm webgl1st_tester.go
 	go build -o wasm_test_server wasm_test_server.go
 
 dev:
