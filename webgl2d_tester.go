@@ -21,7 +21,7 @@ func main() {
 	geometry := webgl2d.NewGeometry_Triangle(0.5)    // create geometry (a triangle with radius 0.5)
 	geometry.BuildDataBuffers(true, false, true)     // build data buffers for vertices and faces
 	material := webgl2d.NewMaterial(wctx, "#bbbbff") // create material (with light-blue color)
-	shader := webgl2d.NewShader_Basic(wctx)          // shader with auto-binded color & PVM matrix
+	shader := webgl2d.NewShader_Color(wctx)          // shader with auto-binded color & PVM matrix
 	scnobj := webgl2d.NewSceneObject(geometry, material, shader).Rotate(40)
 	scene := webgl2d.NewScene().Add(scnobj)         // scene holds all the SceneObjects to be rendered
 	camera := webgl2d.NewCamera(wctx.GetWH(), 2, 1) // FOV 2 means range of [-1,+1] in X, ZoomLevel is 1.0

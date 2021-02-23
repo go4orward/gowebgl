@@ -31,7 +31,7 @@ func NewSceneObject_CubeWithTexture(wctx *common.WebGLContext) *SceneObject {
 	geometry.BuildNormalsPerFace()
 	geometry.BuildDataBuffers(true, false, true)        // build data buffers for vertices and faces
 	material := NewMaterial(wctx, "/assets/gopher.png") // create material with a texture image
-	shader := NewShader_BasicTexture(wctx)              // create shader, and set its bindings
+	shader := NewShader_Basic(wctx)                     // create shader, and set its bindings
 	return NewSceneObject(geometry, material, shader)   // set up the scene object
 }
 

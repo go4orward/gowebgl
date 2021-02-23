@@ -43,6 +43,14 @@ func NewOrthographicCamera(wh [2]int, fov_in_clipwidth float32, zoom float32) *C
 	return &camera
 }
 
+func (self *Camera) GetProjMatrix() *geom3d.Matrix4 {
+	return self.projection.GetMatrix()
+}
+
+func (self *Camera) GetViewMatrix() *geom3d.Matrix4 {
+	return &self.viewmatrix
+}
+
 func (self *Camera) ShowInfo() {
 	if self.projection.IsPerspective() {
 		wh, fov, zoom, nearfar := self.projection.GetParameters()
@@ -137,16 +145,22 @@ func (self *Camera) Translate(tx float32, ty float32, tz float32) *Camera {
 
 func (self *Camera) RotateByPitch(angle_in_degree float32) *Camera {
 	// Rotate around CAMERA's +X axis
+	rotation := geom3d.NewMatrix4().SetRotationByAxis([3]float32{1, 0, 0}, -angle_in_degree)
+	self.viewmatrix.SetMultiplyMatrices(rotation, &self.viewmatrix)
 	return self
 }
 
 func (self *Camera) RotateByRoll(angle_in_degree float32) *Camera {
 	// Rotate around CAMERA's -Z axis
+	rotation := geom3d.NewMatrix4().SetRotationByAxis([3]float32{0, 0, 1}, +angle_in_degree)
+	self.viewmatrix.SetMultiplyMatrices(rotation, &self.viewmatrix)
 	return self
 }
 
 func (self *Camera) RotateByYaw(angle_in_degree float32) *Camera {
 	// Rotate around CAMERA's -Y axis
+	rotation := geom3d.NewMatrix4().SetRotationByAxis([3]float32{0, 1, 0}, +angle_in_degree)
+	self.viewmatrix.SetMultiplyMatrices(rotation, &self.viewmatrix)
 	return self
 }
 

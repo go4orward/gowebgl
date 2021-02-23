@@ -261,7 +261,7 @@ func (self *Geometry) GetFaceNormal(fidx int) [3]float32 {
 	v0, v1, v2 := self.verts[i0], self.verts[i1], self.verts[i2]
 	v01 := geom3d.Normalize(geom3d.SubAB(v1, v0))
 	v02 := geom3d.Normalize(geom3d.SubAB(v2, v0))
-	return geom3d.CrossAB(v01, v02)
+	return geom3d.Normalize(geom3d.CrossAB(v01, v02))
 }
 
 func (self *Geometry) GetVertexNormal(vidx int) [3]float32 {

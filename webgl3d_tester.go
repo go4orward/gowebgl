@@ -27,10 +27,10 @@ func main() {
 		geometry.BuildNormalsPerFace()                              // calculate normal vectors for each face
 		geometry.BuildDataBuffers(true, false, true)                // build data buffers for vertices and faces
 		material := webgl3d.NewMaterial(wctx, "/assets/gopher.png") // create material (with texture image)
-		shader := webgl3d.NewShader_BasicTexture(wctx)              // create a shader, and set its bindings
+		shader := webgl3d.NewShader_Basic(wctx)                     // create a shader, and set its bindings
 		scene.Add(webgl3d.NewSceneObject(geometry, material, shader))
 	}
-	camera := webgl3d.NewPerspectiveCamera(wctx.GetWH(), 15, 1.0) // FOV default is 15 in degree
+	camera := webgl3d.NewPerspectiveCamera(wctx.GetWH(), 15, 1.0) // FOV default is 15° (in degree)
 	camera.SetPose([3]float32{0, 0, 10}, [3]float32{0, 0, 0}, [3]float32{0, 1, 0})
 	renderer := webgl3d.NewRenderer(wctx) // set up the renderer
 	renderer.Clear(camera, "#ffffff")     // prepare to render (clearing to white background)
@@ -38,6 +38,7 @@ func main() {
 	renderer.RenderAxes(camera, 1.0)      // render the axes (just for visual reference)
 
 	if true { // interactive
+		fmt.Println("Try mouse drag & wheel with SHIFT key pressed") // printed in the browser console
 		// add user interactions (with mouse)
 		wctx.SetupEventHandlers()
 		wctx.RegisterEventHandlerForDoubleClick(func(canvasxy [2]int, keystat [4]bool) {

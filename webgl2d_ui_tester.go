@@ -41,6 +41,7 @@ func main() {
 	renderer.RenderAxes(camera, 1.0)      // render the axes (just for visual reference)
 
 	if true { // ONLY FOR INTERACTIVE UI
+		fmt.Println("Try mouse drag & wheel with SHIFT key pressed") // printed in the browser console
 		// add user interactions (with mouse)
 		wctx.SetupEventHandlers()
 		wctx.RegisterEventHandlerForClick(func(canvasxy [2]int, keystat [4]bool) {
@@ -60,7 +61,7 @@ func main() {
 				camera.SetZoom(scale) // 'scale' in [ 0.01 ~ 1(default) ~ 100.0 ]
 				newxy := camera.UnprojectCanvasToWorld(canvasxy)
 				delta := geom2d.SubAB(newxy, oldxy)
-				camera.Translate(-delta[0], -delta[1]).ApplyBoundingBox(false, true)
+				camera.Translate(-delta[0], -delta[1]).ApplyBoundingBox(true, true)
 			} else { // SCROLL
 				wdxy := camera.UnprojectCanvasDeltaToWorld([2]int{0, int(scale)})
 				camera.Translate(0.0, wdxy[1]).ApplyBoundingBox(true, false)

@@ -27,13 +27,13 @@ func NewWebGLContext(canvas_id string) (*WebGLContext, error) {
 		return nil, errors.New("Canvas not found (ID:'" + canvas_id + "')")
 	}
 	wctx.canvas_id = canvas_id
-	if true {
-		wctx.width = wctx.canvas.Get("clientWidth").Int()
-		wctx.height = wctx.canvas.Get("clientHeight").Int()
-	} else {
-		wctx.width = doc.Get("body").Get("clientWidth").Int()
-		wctx.height = doc.Get("body").Get("clientHeight").Int()
-	}
+	wctx.width = wctx.canvas.Get("clientWidth").Int()
+	wctx.height = wctx.canvas.Get("clientHeight").Int()
+	// wctx.width = doc.Get("body").Get("clientWidth").Int()
+	// wctx.height = doc.Get("body").Get("clientHeight").Int()
+	// Contrary to the usual html elements, a Canvas element needs it's width and height attributes for logical size.
+	// (CSS width and height you set in HTML only stretches the result, and it may cause blurry image)
+	// Ref: https://stackoverflow.com/questions/4938346/canvas-width-and-height-in-html5
 	wctx.canvas.Set("width", wctx.width)   // IMPORTANT!
 	wctx.canvas.Set("height", wctx.height) // IMPORTANT!
 	// create WebGL context
@@ -45,7 +45,7 @@ func NewWebGLContext(canvas_id string) (*WebGLContext, error) {
 		}
 	}
 	wctx.constants.LoadFromContext(wctx.context) // load WebGL constants
-	wctx.SetupExtension("UINT")                  // extension for UINT32 index
+	wctx.SetupExtension("UINT32")                // extension for UINT32 index
 	wctx.SetupExtension("ANGLE")                 // extension for geometry instancing
 	return &wctx, nil
 }
@@ -77,7 +77,7 @@ func (self *WebGLContext) ShowInfo() {
 
 func (self *WebGLContext) SetupExtension(extname string) {
 	switch extname {
-	case "UINT": // extension for UINT32 index, to drawElements() with large number of vertices
+	case "UINT32": // extension for UINT32 index, to drawElements() with large number of vertices
 		self.ext_uint = self.context.Call("getExtension", "OES_element_index_uint")
 	case "ANGLE": // extension for geometry instancing
 		self.ext_angle = self.context.Call("getExtension", "ANGLE_instanced_arrays")
@@ -86,7 +86,7 @@ func (self *WebGLContext) SetupExtension(extname string) {
 
 func (self *WebGLContext) IsExtensionReady(extname string) bool {
 	switch extname {
-	case "UINT": // extension for UINT32 index, to drawElements() with large number of vertices
+	case "UINT32": // extension for UINT32 index, to drawElements() with large number of vertices
 		return !self.ext_uint.IsNull() && !self.ext_uint.IsUndefined()
 	case "ANGLE": // extension for geometry instancing
 		return !self.ext_angle.IsNull() && !self.ext_angle.IsUndefined()
@@ -96,7 +96,7 @@ func (self *WebGLContext) IsExtensionReady(extname string) bool {
 
 func (self *WebGLContext) GetExtension(extname string) js.Value {
 	switch extname {
-	case "UINT": // extension for UINT32 index, to drawElements() with large number of vertices
+	case "UINT32": // extension for UINT32 index, to drawElements() with large number of vertices
 		return self.ext_uint
 	case "ANGLE": // extension for geometry instancing
 		return self.ext_angle

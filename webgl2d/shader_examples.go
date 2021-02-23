@@ -31,7 +31,7 @@ func NewShader_2DAxes(wctx *common.WebGLContext) *common.Shader {
 	return shader
 }
 
-func NewShader_Basic(wctx *common.WebGLContext) *common.Shader {
+func NewShader_Color(wctx *common.WebGLContext) *common.Shader {
 	// Shader with auto-binded color and (Proj * View * Model) matrix
 	var vertex_shader_code = `
 		precision mediump float;
@@ -55,7 +55,7 @@ func NewShader_Basic(wctx *common.WebGLContext) *common.Shader {
 	return shader
 }
 
-func NewShader_BasicTexture(wctx *common.WebGLContext) *common.Shader {
+func NewShader_Texture(wctx *common.WebGLContext) *common.Shader {
 	// Shader with auto-binded color and (Proj * View * Model) matrix
 	var vertex_shader_code = `
 		precision mediump float;

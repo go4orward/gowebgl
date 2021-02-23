@@ -3,8 +3,8 @@ package webglobe
 import "math"
 
 // Globe is centered at (0,0) with radius 1.0
-// const InRadian = (math.Pi / 180.0)
-// const InDegree = (180.0 / math.Pi)
+const InRadian = (math.Pi / 180.0)
+const InDegree = (180.0 / math.Pi)
 
 // ------------------------------------------------------------------------
 // Longitude/Latitude  =>  X/Y/Z
@@ -17,11 +17,12 @@ func GetXYZFromLonLat(lon_in_degree float32, lat_in_degree float32, radius float
 
 func GetXYZFromLL(lon_in_radian float32, lat_in_radian float32, radius float32) [3]float32 {
 	// Get XYZ world coordinates from longitude(λ)/latitude(φ) in radian
-	lon, lat := float64(lon_in_radian), float64(lat_in_radian)
+	lon := float64(lon_in_radian) // λ(lambda; longitude)
+	lat := float64(lat_in_radian) // φ(phi;    latitude )
 	return [3]float32{
-		radius * float32(math.Cos(lon)*math.Cos(lat)),
-		radius * float32(math.Sin(lon)*math.Cos(lat)),
-		radius * float32(math.Sin(lat))}
+		radius * float32(math.Cos(lon)*math.Cos(lat)), // dist * cosλ * cosφ;
+		radius * float32(math.Sin(lon)*math.Cos(lat)), // dist * sinλ * cosφ;
+		radius * float32(math.Sin(lat))}               // dist * sinφ;
 }
 
 // ------------------------------------------------------------------------

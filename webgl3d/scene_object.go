@@ -55,6 +55,14 @@ func (self *SceneObject) AddChild(child *SceneObject) *SceneObject {
 	return self
 }
 
+func (self *SceneObject) GetModelMatrix() *geom3d.Matrix4 {
+	return &self.modelmatrix
+}
+
+func (self *SceneObject) GetChildren() []*SceneObject {
+	return self.children
+}
+
 func (self *SceneObject) ShowInfo() {
 	fmt.Printf("SceneObject ")
 	self.geometry.ShowInfo()
