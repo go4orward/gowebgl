@@ -6,7 +6,7 @@ Interactive 2D & 3D Graphics Library using Go + WebAssembly + WebGL
 
 Simplest example: &emsp; _(for explaining how WebGL works)_
 ```bash
-$ make                  # source : 'webgl_tester.go'
+$ make                  # source : 'webgl1st_tester.go'
 $ ./wasm_test_server    # open your browser, and visit http://localhost:8080
 ```
 ![webgl_tester result](assets/xscreen_webgl.png)
