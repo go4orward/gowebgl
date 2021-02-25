@@ -35,7 +35,7 @@ func NewGeometry_Cube(xsize float32, ysize float32, zsize float32) *Geometry {
 func NewGeometry_CubeWithTexture(xsize float32, ysize float32, zsize float32) *Geometry {
 	geometry := NewGeometry_Cube(xsize, ysize, zsize)
 	geometry.SetTextureUVs([][]float32{
-		{0, 0, 1, 0, 1, 1, 0, 1}, {0, 0, 1, 0, 1, 1, 0, 1}, {0, 0, 1, 0, 1, 1, 0, 1}, {0, 0, 1, 0, 1, 1, 0, 1}, {0, 0, 1, 0, 1, 1, 0, 1}, {0, 0, 1, 0, 1, 1, 0, 1}})
+		{0, 1, 1, 1, 1, 0, 0, 0}, {0, 1, 1, 1, 1, 0, 0, 0}, {0, 1, 1, 1, 1, 0, 0, 0}, {0, 1, 1, 1, 1, 0, 0, 0}, {0, 1, 1, 1, 1, 0, 0, 0}, {0, 1, 1, 1, 1, 0, 0, 0}})
 	return geometry
 }
 

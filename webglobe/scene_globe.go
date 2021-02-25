@@ -28,7 +28,7 @@ func NewSceneObject_GlobeWithoutLight(wctx *common.WebGLContext) *webgl3d.SceneO
 	// This Globe model has texture only (without normal vectors and directional lighting).
 	geometry := NewGeometry_Globe(1.0, 64, 32)                 // create geometry (a cube of size 1.0)
 	geometry.BuildDataBuffers(true, false, true)               // build data buffers for vertices and faces
-	material := webgl3d.NewMaterial(wctx, "/assets/world.jpg") // create material (yellow color)
+	material := webgl3d.NewMaterial(wctx, "/assets/world.png") // create material (yellow color)
 	shader := webgl3d.NewShader_Texture(wctx)                  // create a shader, and set its bindings
 	return webgl3d.NewSceneObject(geometry, material, shader)  // set up the scene object
 }
@@ -38,7 +38,7 @@ func NewSceneObject_Globe(wctx *common.WebGLContext) *webgl3d.SceneObject {
 	geometry := NewGeometry_Globe(1.0, 64, 32)                 // create geometry (a cube of size 1.0)
 	geometry.BuildNormalsPerVertex()                           // calculate normal vectors for each vertex
 	geometry.BuildDataBuffers(true, false, true)               // build data buffers for vertices and faces
-	material := webgl3d.NewMaterial(wctx, "/assets/world.jpg") // create material (yellow color)
+	material := webgl3d.NewMaterial(wctx, "/assets/world.png") // create material (yellow color)
 	shader := webgl3d.NewShader_Basic(wctx)                    // create a shader, and set its bindings
 	return webgl3d.NewSceneObject(geometry, material, shader)  // set up the scene object
 }
@@ -58,7 +58,7 @@ func NewGeometry_Globe(radius float32, wsegs int, hsegs int) *webgl3d.Geometry {
 			lat := -math.Pi/2.0 + hstep*float32(j) // latitude (φ)
 			xyz := GetXYZFromLL(lon, lat, radius)
 			geometry.AddVertex(xyz)
-			geometry.AddTextureUV([]float32{float32(i) / float32(wsegs), float32(j) / float32(hsegs)})
+			geometry.AddTextureUV([]float32{float32(i) / float32(wsegs), 1.0 - float32(j)/float32(hsegs)})
 		}
 	}
 	for i := 0; i < wnum-1; i++ { // quadratic faces on the side (triangles for south/north poles)

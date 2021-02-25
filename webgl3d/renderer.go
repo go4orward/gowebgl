@@ -100,7 +100,9 @@ func (self *Renderer) RenderSceneObject(sobj *SceneObject, proj *geom3d.Matrix4,
 	// 3. bind the uniforms of the shader program
 	for uname, umap := range shader.GetUniformBindings() {
 		if err := self.bind_uniform(uname, umap, sobj.material, proj, viewm); err != nil {
-			fmt.Println(err.Error())
+			if err.Error() != "Texture is not ready" {
+				fmt.Println(err.Error())
+			}
 			return err
 		}
 	}
@@ -204,6 +206,9 @@ func (self *Renderer) bind_uniform(uname string, umap map[string]interface{}, ma
 			return nil
 		}
 	case "material.texture":
+		if material == nil || !material.IsTextureReady() {
+			return errors.New("Texture is not ready")
+		}
 		txt_unit := 0
 		if len(autobinding_split) >= 2 {
 			txt_unit, _ = strconv.Atoi(autobinding_split[1])

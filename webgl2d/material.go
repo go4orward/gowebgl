@@ -8,6 +8,7 @@ import (
 	"image/jpeg"
 	"image/png"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"path/filepath"
 	"syscall/js"
@@ -47,6 +48,10 @@ func (self *Material) GetTexture() js.Value {
 	return self.texture
 }
 
+func (self *Material) IsTextureReady() bool {
+	return (self.texture_wh[0] > 1 || self.texture_wh[1] > 1)
+}
+
 // ----------------------------------------------------------------------------
 // Loading Texture Image
 // ----------------------------------------------------------------------------
@@ -73,46 +78,55 @@ func (self *Material) LoadTexture(path string) *Material {
 	}
 	if path != "" {
 		go func() {
+			// log.Printf("Texture started GET %s\n", path)
 			resp, err := http.Get(path)
 			if err != nil {
-				fmt.Printf("Failed to GET %s : %v\n", path, err)
+				log.Printf("Failed to GET %s : %v\n", path, err)
 				return
 			}
 			defer resp.Body.Close()
 			response_body, err := ioutil.ReadAll(resp.Body)
 			if err != nil {
-				fmt.Printf("Failed to GET %s : %v\n", path, err)
+				log.Printf("Failed to GET %s : %v\n", path, err)
 			} else if resp.StatusCode < 200 || resp.StatusCode > 299 { // response with error message
-				fmt.Printf("Failed to GET %s : (%d) %s\n", path, resp.StatusCode, string(response_body))
+				log.Printf("Failed to GET %s : (%d) %s\n", path, resp.StatusCode, string(response_body))
 			} else { // successful response with texture image
-				var image image.Image
-				var err error
 				// log.Printf("Texture image downloaded from server\n")
+				var img image.Image
+				var err error
 				switch filepath.Ext(path) {
 				case ".png", ".PNG":
-					image, err = png.Decode(bytes.NewBuffer(response_body))
+					img, err = png.Decode(bytes.NewBuffer(response_body))
 				case ".jpg", ".JPG":
-					image, err = jpeg.Decode(bytes.NewBuffer(response_body))
+					img, err = jpeg.Decode(bytes.NewBuffer(response_body))
 				default:
 					fmt.Printf("Invalid image format for %s\n", path)
 					return
 				}
 				if err != nil {
-					fmt.Printf("Failed to decode %s : %v\n", path, err)
+					log.Printf("Failed to decode %s : %v\n", path, err)
 				} else {
-					// log.Printf("Texture image decoded (by png/jpg)\n")
-					size := image.Bounds().Size()
-					pbuffer := make([]uint8, size.X*size.Y*4)
-					for y := 0; y < size.Y; y++ {
-						y_idx := (size.Y - 1 - y) * size.X * 4
-						for x := 0; x < size.X; x++ {
-							rgba := color.RGBAModel.Convert(image.At(x, y)).(color.RGBA)
-							idx := y_idx + x*4
-							set_pbuffer_with_rgba(pbuffer, idx, rgba.R, rgba.G, rgba.B, rgba.A)
+					size := img.Bounds().Size()
+					// log.Printf("Texture image (%dx%d) decoded as %T\n", size.X, size.Y, img)
+					var pixbuf []uint8
+					switch img.(type) {
+					case *image.RGBA: // traditional 32-bit alpha-premultiplied R/G/B/A color
+						pixbuf = img.(*image.RGBA).Pix
+					case *image.NRGBA: // non-alpha-premultiplied 32-bit R/G/B/A color
+						pixbuf = img.(*image.NRGBA).Pix
+					default:
+						pixbuf = make([]uint8, size.X*size.Y*4)
+						for y := 0; y < size.Y; y++ {
+							y_idx := y * size.X * 4
+							for x := 0; x < size.X; x++ {
+								rgba := color.RGBAModel.Convert(img.At(x, y)).(color.RGBA)
+								idx := y_idx + x*4
+								set_pbuffer_with_rgba(pixbuf, idx, rgba.R, rgba.G, rgba.B, rgba.A)
+							}
 						}
+						// log.Printf("Texture pixel buffer converted to RGBA\n")
 					}
-					// log.Printf("Texture pixel buffer converted to RGBA\n")
-					self.LoadTextureFromBufferRGBA(pbuffer, size.X, size.Y)
+					self.LoadTextureFromBufferRGBA(pixbuf, size.X, size.Y)
 					// log.Printf("Texture ready for WebGL\n")
 				}
 			}
