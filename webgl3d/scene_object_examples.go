@@ -28,7 +28,7 @@ func NewSceneObject_CylinderWireframe(wctx *common.WebGLContext) *SceneObject {
 
 func NewSceneObject_CubeWithTexture(wctx *common.WebGLContext) *SceneObject {
 	geometry := NewGeometry_CubeWithTexture(1.0, 1.0, 1.0)
-	geometry.BuildNormalsPerFace()
+	geometry.BuildNormalsForFace()
 	geometry.BuildDataBuffers(true, false, true)        // build data buffers for vertices and faces
 	material := NewMaterial(wctx, "/assets/gopher.png") // create material with a texture image
 	shader := NewShader_Basic(wctx)                     // create shader, and set its bindings
@@ -38,7 +38,7 @@ func NewSceneObject_CubeWithTexture(wctx *common.WebGLContext) *SceneObject {
 func NewSceneObject_CubeInstances(wctx *common.WebGLContext) *SceneObject {
 	// This example creates 40,000 instances of a single geometry, each with its own pose (tx, ty)
 	geometry := NewGeometry_Cube(0.08, 0.08, 0.08)     // create a cube of size 0.08
-	geometry.BuildNormalsPerFace()                     // prepare face normal vectors
+	geometry.BuildNormalsForFace()                     // prepare face normal vectors
 	geometry.BuildDataBuffers(true, false, true)       //
 	material := NewMaterial(wctx, "#888888")           // create material
 	shader := NewShader_InstancePoseColor(wctx)        // create shader, and set its bindings

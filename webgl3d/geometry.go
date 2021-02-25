@@ -240,7 +240,7 @@ func (self *Geometry) SetNormals(normals [][3]float32) *Geometry {
 	return self
 }
 
-func (self *Geometry) BuildNormalsPerVertex() {
+func (self *Geometry) BuildNormalsForVertex() {
 	// self.norms == [nverts][3]float32
 	self.norms = make([][3]float32, len(self.verts)) // self.norms == [nverts][3]float32
 	for i, _ := range self.verts {
@@ -248,7 +248,7 @@ func (self *Geometry) BuildNormalsPerVertex() {
 	}
 }
 
-func (self *Geometry) BuildNormalsPerFace() {
+func (self *Geometry) BuildNormalsForFace() {
 	self.norms = make([][3]float32, len(self.faces)) // self.norms == [nfaces][3]float32
 	for i, _ := range self.faces {
 		self.norms[i] = self.GetFaceNormal(i)
@@ -275,6 +275,11 @@ func (self *Geometry) GetVertexNormal(vidx int) [3]float32 {
 		}
 	}
 	return geom3d.Normalize(geom3d.AverageAll(normals))
+}
+
+func (self *Geometry) ChangeNormal(idx int, normal_vector [3]float32) *Geometry {
+	self.norms[idx] = normal_vector
+	return self
 }
 
 // ----------------------------------------------------------------------------

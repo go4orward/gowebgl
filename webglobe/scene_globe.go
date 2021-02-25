@@ -35,8 +35,12 @@ func NewSceneObject_GlobeWithoutLight(wctx *common.WebGLContext) *webgl3d.SceneO
 
 func NewSceneObject_Globe(wctx *common.WebGLContext) *webgl3d.SceneObject {
 	// This Globe model has texture AND normal vectors (with directional lighting).
-	geometry := NewGeometry_Globe(1.0, 64, 32)                 // create geometry (a cube of size 1.0)
-	geometry.BuildNormalsPerVertex()                           // calculate normal vectors for each vertex
+	geometry := NewGeometry_Globe(1.0, 64, 32) // create geometry (a cube of size 1.0)
+	geometry.BuildNormalsForVertex()           // calculate normal vectors for each vertex
+	for i := 0; i <= 64; i++ {
+		geometry.ChangeNormal(i*33+0, [3]float32{0, 0, -1})  // adjust normal vector at south pole
+		geometry.ChangeNormal(i*33+32, [3]float32{0, 0, +1}) // adjust normal vector at north pole
+	}
 	geometry.BuildDataBuffers(true, false, true)               // build data buffers for vertices and faces
 	material := webgl3d.NewMaterial(wctx, "/assets/world.png") // create material (yellow color)
 	shader := webgl3d.NewShader_Basic(wctx)                    // create a shader, and set its bindings

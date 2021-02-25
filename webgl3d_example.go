@@ -24,7 +24,7 @@ func main() {
 		// scene.Add(webgl3d.NewSceneObject_CubeInstances(wctx)) // a pre-defined example of SceneObject
 	} else {
 		geometry := webgl3d.NewGeometry_CubeWithTexture(1, 1, 1)    // create geometry (a cube of size 1.0)
-		geometry.BuildNormalsPerFace()                              // calculate normal vectors for each face
+		geometry.BuildNormalsForFace()                              // calculate normal vectors for each face
 		geometry.BuildDataBuffers(true, false, true)                // build data buffers for vertices and faces
 		material := webgl3d.NewMaterial(wctx, "/assets/gopher.png") // create material (with texture image)
 		shader := webgl3d.NewShader_Basic(wctx)                     // create a shader, and set its bindings
