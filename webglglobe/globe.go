@@ -79,20 +79,20 @@ func (self *Globe) Scale(scale float32) *Globe {
 
 func NewSceneObject_GlobeWithoutLight(wctx *common.WebGLContext) *webgl3d.SceneObject {
 	// Globe model with texture UV coordinates (without normal vectors and directional lighting)
-	gsphere := build_globe_geometry(1.0, 64, 32, false)        // create globe geometry with texture UVs only
-	gsphere.BuildDataBuffers(true, false, true)                // build data buffers for vertices and faces
+	geometry := build_globe_geometry(1.0, 64, 32, false)       // create globe geometry with texture UVs only
+	geometry.BuildDataBuffers(true, false, true)               // build data buffers for vertices and faces
 	material := webgl3d.NewMaterial(wctx, "/assets/world.png") // create material with a texture of world image
 	shader := webgl3d.NewShader_TextureOnly(wctx)              // use the standard TEXTURE_ONLY shader
-	return webgl3d.NewSceneObject(gsphere, material, shader)   // set up the scene object
+	return webgl3d.NewSceneObject(geometry, material, shader)  // set up the scene object
 }
 
 func NewSceneObject_Globe(wctx *common.WebGLContext) *webgl3d.SceneObject {
 	// Globe model with texture AND normal vectors (for directional lighting)
-	gsphere := build_globe_geometry(1.0, 64, 32, true)         // create globe geometry with vertex normal vectors
-	gsphere.BuildDataBuffers(true, false, true)                // build data buffers for vertices and faces
+	geometry := build_globe_geometry(1.0, 64, 32, true)        // create globe geometry with vertex normal vectors
+	geometry.BuildDataBuffers(true, false, true)               // build data buffers for vertices and faces
 	material := webgl3d.NewMaterial(wctx, "/assets/world.png") // create material with a texture of world image
 	shader := webgl3d.NewShader_NormalTexture(wctx)            // use the standard NORMAL+TEXTURE shader
-	return webgl3d.NewSceneObject(gsphere, material, shader)   // set up the scene object
+	return webgl3d.NewSceneObject(geometry, material, shader)  // set up the scene object
 }
 
 func build_globe_geometry(radius float32, wsegs int, hsegs int, use_normals bool) *webgl3d.Geometry {
@@ -139,12 +139,12 @@ func build_globe_geometry(radius float32, wsegs int, hsegs int, use_normals bool
 func NewSceneObject_GlowRing(wctx *common.WebGLContext) *webgl3d.SceneObject {
 	// GlowRing around the globe, to make the globe stand out against black background.
 	// (Note that GlowRing should be rendered in CAMERA space by Renderer)
-	glowring := build_glowring_geometry(1.0, 1.2, 64)             // create geometry (a ring around the globe)
-	glowring.BuildDataBuffers(true, false, true)                  // build data buffers for vertices and faces
-	material := webgl3d.NewMaterialForGlowEffect(wctx, "#ffff00") // texture material for glow effect
+	geometry := build_glowring_geometry(1.0, 1.12, 64)            // create geometry (a ring around the globe)
+	geometry.BuildDataBuffers(true, false, true)                  // build data buffers for vertices and faces
+	material := webgl3d.NewMaterialForGlowEffect(wctx, "#445566") // texture material for glow effect
 	shader := webgl3d.NewShader_TextureOnly(wctx)                 // use the standard TEXTURE_ONLY shader
-	scnobj := webgl3d.NewSceneObject(glowring, material, shader)  // set up the scene object
-	scnobj.UseBlend = true
+	scnobj := webgl3d.NewSceneObject(geometry, material, shader)  // set up the scene object
+	scnobj.UseBlend = true                                        // default is false
 	return scnobj
 }
 
@@ -155,8 +155,8 @@ func build_glowring_geometry(in_radius float32, out_radius float32, nsegs int) *
 		cos, sin := float32(math.Cos(rad*float64(i))), float32(math.Sin(rad*float64(i)))
 		geometry.AddVertex([3]float32{in_radius * cos, in_radius * sin, 0})
 		geometry.AddVertex([3]float32{out_radius * cos, out_radius * sin, 0})
-		geometry.AddTextureUV([]float32{0.0, 1})
-		geometry.AddTextureUV([]float32{1.0, 1})
+		geometry.AddTextureUV([]float32{0.0, 0}) // diminishing glow starts
+		geometry.AddTextureUV([]float32{1.0, 0}) // diminishing glow ends
 		ii, jj := uint32(i), uint32((i+1)%nsegs)
 		geometry.AddFace([]uint32{2*ii + 0, 2*jj + 0, 2*jj + 1, 2*ii + 1})
 	}

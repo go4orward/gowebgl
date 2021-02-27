@@ -8,7 +8,7 @@ type Constants struct {
 	ARRAY_BUFFER         js.Value //
 	BLEND                js.Value // for gl.enable(gl.BLEND)
 	BYTE                 js.Value //
-	CLAMP_TO_EDGE        js.Value //
+	CLAMP_TO_EDGE        js.Value // for gl.texParameteri()
 	COLOR_BUFFER_BIT     js.Value //
 	COMPILE_STATUS       js.Value //
 	DEPTH_BUFFER_BIT     js.Value //
@@ -17,22 +17,22 @@ type Constants struct {
 	FLOAT                js.Value //
 	FRAGMENT_SHADER      js.Value //
 	LEQUAL               js.Value //
-	LINEAR               js.Value //
+	LINEAR               js.Value // for gl.texParameteri()
 	LINES                js.Value //
 	LINK_STATUS          js.Value //
-	NEAREST              js.Value //
+	NEAREST              js.Value // for gl.texParameteri()
 	ONE                  js.Value // for gl.blendFunc()
 	ONE_MINUS_SRC_ALPHA  js.Value // for gl.blendFunc()
 	POINTS               js.Value //
 	RGBA                 js.Value //
 	SRC_ALPHA            js.Value // for gl.blendFunc()
 	STATIC_DRAW          js.Value //
-	TEXTURE_2D           js.Value //
+	TEXTURE_2D           js.Value // for gl.texParameteri()
 	TEXTURE0             js.Value //
 	TEXTURE1             js.Value //
-	TEXTURE_MIN_FILTER   js.Value //
-	TEXTURE_WRAP_S       js.Value //
-	TEXTURE_WRAP_T       js.Value //
+	TEXTURE_MIN_FILTER   js.Value // for gl.texParameteri()
+	TEXTURE_WRAP_S       js.Value // for gl.texParameteri()
+	TEXTURE_WRAP_T       js.Value // for gl.texParameteri()
 	TRIANGLES            js.Value //
 	UNSIGNED_BYTE        js.Value //
 	UNSIGNED_INT         js.Value //
