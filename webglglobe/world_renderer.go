@@ -49,8 +49,8 @@ func (self *WorldRenderer) RenderAxes(wcamera *WorldCamera, length float32) {
 func (self *WorldRenderer) RenderWorld(globe *Globe, wcamera *WorldCamera) {
 	if globe.IsReadyToRender() {
 		// Render the Globe
-		// new_viewmodel := wcamera.gcam.GetViewMatrix().MultiplyToTheRight(&globe.modelmatrix)
-		// self.renderer.RenderSceneObject(globe.GSphere, wcamera.gcam.GetProjMatrix(), new_viewmodel)
+		new_viewmodel := wcamera.gcam.GetViewMatrix().MultiplyToTheRight(&globe.modelmatrix)
+		self.renderer.RenderSceneObject(globe.GSphere, wcamera.gcam.GetProjMatrix(), new_viewmodel)
 		// Render the GlowRing (in CAMERA space)
 		distance := geom3d.Length(wcamera.gcam.GetCenter())
 		translation := geom3d.NewMatrix4().SetTranslation(0, 0, -distance)
