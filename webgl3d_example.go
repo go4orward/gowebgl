@@ -11,7 +11,7 @@ import (
 
 func main() {
 	// THIS CODE IS SUPPOSED TO BE BUILT AS WEBASSEMBLY AND RUN INSIDE A BROWSER.
-	// BUILD IT LIKE 'GOOS=js GOARCH=wasm go build -o gowebgl.wasm gowebgl/webgl3d_tester.go'.
+	// BUILD IT LIKE 'GOOS=js GOARCH=wasm go build -o gowebgl.wasm gowebgl/webgl3d_example.go'.
 	fmt.Println("Hello WebGL!")                       // printed in the browser console
 	wctx, err := common.NewWebGLContext("wasmcanvas") // ID of canvas element
 	if err != nil {
