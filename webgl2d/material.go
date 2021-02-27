@@ -9,6 +9,7 @@ import (
 	"image/png"
 	"io/ioutil"
 	"log"
+	"math"
 	"net/http"
 	"path/filepath"
 	"syscall/js"
@@ -32,6 +33,17 @@ func NewMaterial(wctx *common.WebGLContext, source string) *Material {
 			mat.LoadTextureOfSinglePixel(mat.color)
 		} else { // TEXTURE image path
 			mat.LoadTexture(source)
+		}
+	}
+	return &mat
+}
+
+func NewMaterialForGlowEffect(wctx *common.WebGLContext, color string) *Material {
+	mat := Material{wctx: wctx, color: [4]uint8{0, 255, 255, 255}, texture: js.Null(), texture_wh: [2]int{0, 0}}
+	if len(color) > 0 {
+		if color[0] == '#' { // COLOR RGB value
+			mat.SetColor(color)
+			mat.LoadTextureForGlowEffect(mat.color)
 		}
 	}
 	return &mat
@@ -133,12 +145,12 @@ func (self *Material) LoadTexture(path string) *Material {
 							for x := 0; x < size.X; x++ {
 								rgba := color.RGBAModel.Convert(img.At(x, y)).(color.RGBA)
 								idx := y_idx + x*4
-								set_pbuffer_with_rgba(pixbuf, idx, rgba.R, rgba.G, rgba.B, rgba.A)
+								set_pixbuf_with_rgba(pixbuf, idx, rgba.R, rgba.G, rgba.B, rgba.A)
 							}
 						}
 						// log.Printf("Texture pixel buffer converted to RGBA\n")
 					}
-					self.LoadTextureFromBufferRGBA(pixbuf, size.X, size.Y)
+					self.LoadTextureFromBufferRGBA(pixbuf, size.X, size.Y, true)
 					// log.Printf("Texture ready for WebGL\n")
 				}
 			}
@@ -147,7 +159,29 @@ func (self *Material) LoadTexture(path string) *Material {
 	return self
 }
 
-func (self *Material) LoadTextureFromBufferRGBA(buffer []uint8, width int, height int) *Material {
+func (self *Material) LoadTextureForGlowEffect(color [4]uint8) *Material {
+	// Load texture for glow effect
+	const width, height = 34, 2 // it has to be non-power-of-two texture with gl.NEAREST
+	pixbuf := make([]uint8, (width*height)*4)
+	// Note that the first (i==0) and last (i==width-1) pixel is ZERO
+	for u := 1; u < width-1; u++ {
+		ratio := (float64(u-1) / float64(width-2))
+		if true { // diminishing glow for the second row (v == 0)  [ 1.0 ~ 0.5 ~ 0.0 ]
+			intensity := 1.0 - ratio
+			ii := intensity * intensity
+			set_pixbuf_with_rgba(pixbuf, (u)*4, uint8(ii*float64(color[0])), uint8(ii*float64(color[1])), uint8(ii*float64(color[2])), uint8(ii*255))
+		}
+		if true { // glow on both side for the first row (v == 1)  [ 0.0 ~ 1.0 ~ 0.0 ]
+			intensity := 1.0 - math.Abs(ratio*2-1)
+			ii := intensity * intensity
+			set_pixbuf_with_rgba(pixbuf, (width+u)*4, uint8(ii*float64(color[0])), uint8(ii*float64(color[1])), uint8(ii*float64(color[2])), uint8(ii*255))
+		}
+	}
+	self.LoadTextureFromBufferRGBA(pixbuf, width, height, false) // non-power-of-two texture with gl.NEAREST
+	return self
+}
+
+func (self *Material) LoadTextureFromBufferRGBA(buffer []uint8, width int, height int, linear bool) *Material {
 	context := self.wctx.GetContext()
 	constants := self.wctx.GetConstants()
 	js_buffer := common.ConvertGoSliceToJsTypedArray(buffer)
@@ -167,7 +201,11 @@ func (self *Material) LoadTextureFromBufferRGBA(buffer []uint8, width int, heigh
 		// WebGL1 can only use FILTERING == NEAREST or LINEAR, and WRAPPING_MODE == CLAMP_TO_EDGE
 		context.Call("texParameteri", constants.TEXTURE_2D, constants.TEXTURE_WRAP_S, constants.CLAMP_TO_EDGE)
 		context.Call("texParameteri", constants.TEXTURE_2D, constants.TEXTURE_WRAP_T, constants.CLAMP_TO_EDGE)
+	}
+	if linear {
 		context.Call("texParameteri", constants.TEXTURE_2D, constants.TEXTURE_MIN_FILTER, constants.LINEAR)
+	} else {
+		context.Call("texParameteri", constants.TEXTURE_2D, constants.TEXTURE_MIN_FILTER, constants.NEAREST)
 	}
 	self.texture_wh = [2]int{width, height}
 	return self
@@ -179,7 +217,7 @@ func (self *Material) ShowInfo() {
 		c[0], c[1], c[2], c[3], self.texture_wh[0], self.texture_wh[1])
 }
 
-func set_pbuffer_with_rgba(pbuffer []uint8, idx int, R uint8, G uint8, B uint8, A uint8) {
+func set_pixbuf_with_rgba(pbuffer []uint8, idx int, R uint8, G uint8, B uint8, A uint8) {
 	pbuffer[idx+0] = R
 	pbuffer[idx+1] = G
 	pbuffer[idx+2] = B

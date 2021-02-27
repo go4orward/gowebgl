@@ -161,7 +161,7 @@ func (self *Material) LoadTexture(path string) *Material {
 
 func (self *Material) LoadTextureForGlowEffect(color [4]uint8) *Material {
 	// Load texture for glow effect
-	const width, height = 34, 2
+	const width, height = 34, 2 // it has to be non-power-of-two texture with gl.NEAREST
 	pixbuf := make([]uint8, (width*height)*4)
 	// Note that the first (i==0) and last (i==width-1) pixel is ZERO
 	for u := 1; u < width-1; u++ {
@@ -177,7 +177,7 @@ func (self *Material) LoadTextureForGlowEffect(color [4]uint8) *Material {
 			set_pixbuf_with_rgba(pixbuf, (width+u)*4, uint8(ii*float64(color[0])), uint8(ii*float64(color[1])), uint8(ii*float64(color[2])), uint8(ii*255))
 		}
 	}
-	self.LoadTextureFromBufferRGBA(pixbuf, width, height, false)
+	self.LoadTextureFromBufferRGBA(pixbuf, width, height, false) // non-power-of-two texture with gl.NEAREST
 	return self
 }
 
