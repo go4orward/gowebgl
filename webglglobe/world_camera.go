@@ -14,7 +14,7 @@ type WorldCamera struct {
 }
 
 func NewWorldCamera(wh [2]int, fov float32, zoom float32) *WorldCamera {
-	camera := webgl3d.NewPerspectiveCamera(wh, fov, zoom)
+	camera := webgl3d.NewPerspectiveCamera(wh, fov, zoom) // AspectRatio, FieldOfView, ZoomLevel
 	self := WorldCamera{gcam: camera}
 	return &self
 }

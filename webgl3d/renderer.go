@@ -30,9 +30,6 @@ func (self *Renderer) Clear(camera *Camera, color string) {
 	context := self.wctx.GetContext()
 	constants := self.wctx.GetConstants()
 
-	// context.Call("viewport", 0, 0, camera.wh[0], camera.wh[1]) // (LowerLeft.x, LowerLeft.y, width, height)
-	// (if 'viewport' is not updated, rendering may blur after window.resize)
-
 	rgb, _ := common.ParseHexColor(color)
 	context.Call("clearColor", rgb[0], rgb[1], rgb[2], 1.0) // set clearing color
 	context.Call("clear", constants.COLOR_BUFFER_BIT)       // clear the canvas

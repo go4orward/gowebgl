@@ -43,6 +43,10 @@ func NewOrthographicCamera(wh [2]int, fov_in_clipwidth float32, zoom float32) *C
 	return &camera
 }
 
+func (self *Camera) GetCenter() [3]float32 {
+	return self.center
+}
+
 func (self *Camera) GetProjMatrix() *geom3d.Matrix4 {
 	return self.projection.GetMatrix()
 }

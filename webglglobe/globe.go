@@ -9,20 +9,51 @@ import (
 )
 
 type Globe struct {
-	gsphere  *webgl3d.SceneObject //
-	glowring *webgl3d.SceneObject //
-	// TODO: Add glow ring around the globe profile
+	gsphere     *webgl3d.SceneObject //
+	glowring    *webgl3d.SceneObject //
+	modelmatrix geom3d.Matrix4       //
 }
 
 func NewGlobe(wctx *common.WebGLContext) *Globe {
 	self := Globe{}
+	self.modelmatrix.SetIdentity()                // initialize as Identity matrix
 	self.gsphere = NewSceneObject_Globe(wctx)     // texture & vertex normals
 	self.glowring = NewSceneObject_GlowRing(wctx) //
 	return &self
 }
 
-func (self *Globe) Rotate(angle_in_degree float32) {
-	self.gsphere.Rotate([3]float32{0, 0, 1}, angle_in_degree)
+func (self *Globe) IsReadyToRender() bool {
+	return self.gsphere.GetMaterial().IsTextureLoading() == false
+}
+
+// ----------------------------------------------------------------------------
+// Translation, Rotation, Scaling (by manipulating MODEL matrix)
+// ----------------------------------------------------------------------------
+
+func (self *Globe) SetTransformation(txyz [3]float32, axis [3]float32, angle_in_degree float32, scale float32) *Globe {
+	translation := geom3d.NewMatrix4().SetTranslation(txyz[0], txyz[1], txyz[2])
+	rotation := geom3d.NewMatrix4().SetRotationByAxis(axis, angle_in_degree)
+	scaling := geom3d.NewMatrix4().SetScaling(scale, scale, scale)
+	self.modelmatrix.SetMultiplyMatrices(translation, rotation, scaling)
+	return self
+}
+
+func (self *Globe) Translate(tx float32, ty float32, tz float32) *Globe {
+	translation := geom3d.NewMatrix4().SetTranslation(tx, ty, tz)
+	self.modelmatrix.SetMultiplyMatrices(translation, &self.modelmatrix)
+	return self
+}
+
+func (self *Globe) Rotate(axis [3]float32, angle_in_degree float32) *Globe {
+	rotation := geom3d.NewMatrix4().SetRotationByAxis(axis, angle_in_degree)
+	self.modelmatrix.SetMultiplyMatrices(rotation, &self.modelmatrix)
+	return self
+}
+
+func (self *Globe) Scale(scale float32) *Globe {
+	scaling := geom3d.NewMatrix4().SetScaling(scale, scale, scale)
+	self.modelmatrix.SetMultiplyMatrices(scaling, &self.modelmatrix)
+	return self
 }
 
 // ----------------------------------------------------------------------------
@@ -105,8 +136,8 @@ func build_glowring_geometry(in_radius float32, out_radius float32, nsegs int) *
 		cos, sin := float32(math.Cos(rad*float64(i))), float32(math.Sin(rad*float64(i)))
 		geometry.AddVertex([3]float32{in_radius * cos, in_radius * sin, 0})
 		geometry.AddVertex([3]float32{out_radius * cos, out_radius * sin, 0})
-		geometry.AddTextureUV([]float32{0.0, 1.0})
-		geometry.AddTextureUV([]float32{1.0, 1.0})
+		geometry.AddTextureUV([]float32{0.0, 1})
+		geometry.AddTextureUV([]float32{1.0, 1})
 		ii, jj := uint32(i), uint32((i+1)%nsegs)
 		geometry.AddFace([]uint32{2*ii + 0, 2*jj + 0, 2*jj + 1, 2*ii + 1})
 	}

@@ -34,6 +34,22 @@ func NewSceneObject(geometry *Geometry, material *Material, shader *common.Shade
 	return &sobj
 }
 
+// ----------------------------------------------------------------------------
+// Basic Access
+// ----------------------------------------------------------------------------
+
+func (self *SceneObject) GetGeometry() *Geometry {
+	return self.geometry
+}
+
+func (self *SceneObject) GetMaterial() *Material {
+	return self.material
+}
+
+func (self *SceneObject) GetShader() *common.Shader {
+	return self.shader
+}
+
 func (self *SceneObject) SetInstancePoses(poses *SceneObjectPoses) *SceneObject {
 	self.poses = poses
 	return self
