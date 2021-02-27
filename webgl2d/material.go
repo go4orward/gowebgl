@@ -17,18 +17,20 @@ import (
 )
 
 type Material struct {
-	wctx       *common.WebGLContext //
-	color      [4]float32           //
-	texture    js.Value             // texture
-	texture_wh [2]int               // texture size
+	wctx            *common.WebGLContext //
+	color           [4]uint8             //
+	texture         js.Value             // texture
+	texture_wh      [2]int               // texture size
+	texture_loading bool                 // true, only if texture is being loaded
 }
 
 func NewMaterial(wctx *common.WebGLContext, source string) *Material {
-	mat := Material{wctx: wctx, color: [4]float32{1, 1, 0, 1}, texture: js.Null(), texture_wh: [2]int{0, 0}}
+	mat := Material{wctx: wctx, color: [4]uint8{0, 255, 255, 255}, texture: js.Null(), texture_wh: [2]int{0, 0}}
 	if len(source) > 0 {
 		if source[0] == '#' { // COLOR RGB value
 			mat.SetColor(source)
-		} else if source[0] == '/' { // TEXTURE image path
+			mat.LoadTextureOfSinglePixel(mat.color)
+		} else { // TEXTURE image path
 			mat.LoadTexture(source)
 		}
 	}
@@ -40,8 +42,12 @@ func (self *Material) SetColor(color string) *Material {
 	return self
 }
 
-func (self *Material) GetColor() [4]float32 {
+func (self *Material) GetColor() [4]uint8 {
 	return self.color
+}
+
+func (self *Material) GetFloat32Color() [4]float32 {
+	return [4]float32{float32(self.color[0]) / 255.0, float32(self.color[1]) / 255.0, float32(self.color[2]) / 255.0, float32(self.color[3]) / 255.0}
 }
 
 func (self *Material) GetTexture() js.Value {
@@ -49,15 +55,19 @@ func (self *Material) GetTexture() js.Value {
 }
 
 func (self *Material) IsTextureReady() bool {
-	return (self.texture_wh[0] > 1 || self.texture_wh[1] > 1)
+	return (self.texture_wh[0] > 0 && self.texture_wh[1] > 0)
+}
+
+func (self *Material) IsTextureLoading() bool {
+	return self.texture_loading
 }
 
 // ----------------------------------------------------------------------------
 // Loading Texture Image
 // ----------------------------------------------------------------------------
 
-func (self *Material) LoadTextureOfSingleBluePixel() *Material {
-	// Load texture from 1x1 image of a single blue pixel
+func (self *Material) LoadTextureOfSinglePixel(color [4]uint8) *Material {
+	// Load texture from 1x1 image of a single pixel
 	context := self.wctx.GetContext()
 	constants := self.wctx.GetConstants()
 	if self.texture.IsNull() {
@@ -65,7 +75,7 @@ func (self *Material) LoadTextureOfSingleBluePixel() *Material {
 	}
 	context.Call("bindTexture", constants.TEXTURE_2D, self.texture)
 	context.Call("texImage2D", constants.TEXTURE_2D, 0, constants.RGBA, 1, 1, 0, constants.RGBA, constants.UNSIGNED_BYTE,
-		common.ConvertGoSliceToJsTypedArray([]uint8{0, 0, 255, 255}))
+		common.ConvertGoSliceToJsTypedArray(color[:]))
 	// gl.texImage2D(gl.TEXTURE_2D, level, internalFormat, width, height, border, srcFormat, srcType, pixels);
 	self.texture_wh = [2]int{1, 1}
 	return self
@@ -73,11 +83,13 @@ func (self *Material) LoadTextureOfSingleBluePixel() *Material {
 
 func (self *Material) LoadTexture(path string) *Material {
 	// Load texture image from server path, for example "/assets/world.jpg"
-	if self.texture.IsNull() {
-		self.LoadTextureOfSingleBluePixel() // initialize it with a single blue pixel
+	if self.texture.IsNull() { // initialize it with a single CYAN pixel
+		self.LoadTextureOfSinglePixel(self.color)
 	}
+	self.texture_loading = true
 	if path != "" {
 		go func() {
+			defer func() { self.texture_loading = false }()
 			// log.Printf("Texture started GET %s\n", path)
 			resp, err := http.Get(path)
 			if err != nil {

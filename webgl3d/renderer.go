@@ -195,7 +195,7 @@ func (self *Renderer) bind_uniform(uname string, umap map[string]interface{}, ma
 	case "material.color":
 		c := [4]float32{1, 1, 1, 1}
 		if material != nil {
-			c = material.color
+			c = material.GetFloat32Color()
 		}
 		switch dtype {
 		case "vec3":
@@ -206,7 +206,7 @@ func (self *Renderer) bind_uniform(uname string, umap map[string]interface{}, ma
 			return nil
 		}
 	case "material.texture":
-		if material == nil || !material.IsTextureReady() {
+		if material == nil || !material.IsTextureReady() || material.IsTextureLoading() {
 			return errors.New("Texture is not ready")
 		}
 		txt_unit := 0

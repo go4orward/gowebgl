@@ -2,11 +2,10 @@ package common
 
 import "fmt"
 
-func ParseHexColor(s string) ([4]float32, error) {
-	color := [4]float32{1.0, 1.0, 1.0, 1.0}
+func ParseHexColor(s string) ([4]uint8, error) {
+	c := [4]uint8{255, 255, 255, 255}
 	var err error = nil
 	if s[0] == '#' {
-		c := [4]uint8{255, 255, 255, 255}
 		switch len(s) {
 		case 9:
 			_, err = fmt.Sscanf(s, "#%02x%02x%02x%02x", &c[0], &c[1], &c[2], &c[3])
@@ -26,7 +25,6 @@ func ParseHexColor(s string) ([4]float32, error) {
 		default:
 			err = fmt.Errorf("invalid length, must be 7 or 4")
 		}
-		color = [4]float32{float32(c[0]) / 255.0, float32(c[1]) / 255.0, float32(c[2]) / 255.0, float32(c[3]) / 255.0}
 	}
-	return color, err
+	return c, err
 }

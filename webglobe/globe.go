@@ -32,7 +32,7 @@ func NewSceneObject_GlobeWithoutLight(wctx *common.WebGLContext) *webgl3d.SceneO
 	// This Globe model has texture only (without normal vectors and directional lighting).
 	geometry := NewGeometry_Globe(1.0, 64, 32)                 // create geometry (a cube of size 1.0)
 	geometry.BuildDataBuffers(true, false, true)               // build data buffers for vertices and faces
-	material := webgl3d.NewMaterial(wctx, "/assets/world.png") // create material (yellow color)
+	material := webgl3d.NewMaterial(wctx, "/assets/world.png") // create material with a texture of world image
 	shader := webgl3d.NewShader_Texture(wctx)                  // create a shader, and set its bindings
 	return webgl3d.NewSceneObject(geometry, material, shader)  // set up the scene object
 }
