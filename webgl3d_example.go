@@ -27,7 +27,7 @@ func main() {
 		geometry.BuildNormalsForFace()                              // calculate normal vectors for each face
 		geometry.BuildDataBuffers(true, false, true)                // build data buffers for vertices and faces
 		material := webgl3d.NewMaterial(wctx, "/assets/gopher.png") // create material (with texture image)
-		shader := webgl3d.NewShader_BasicTexture(wctx)              // create a shader, and set its bindings
+		shader := webgl3d.NewShader_NormalTexture(wctx)             // use the standard NORMAL+TEXTURE shader
 		scene.Add(webgl3d.NewSceneObject(geometry, material, shader))
 	}
 	camera := webgl3d.NewPerspectiveCamera(wctx.GetWH(), 15, 1.0) // FOV default is 15° (in degree)

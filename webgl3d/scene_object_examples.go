@@ -22,7 +22,7 @@ func NewSceneObject_CylinderWireframe(wctx *common.WebGLContext) *SceneObject {
 	geometry := NewGeometry_Cylinder(6, 0.5, 1.0, 0, true) // create a cylinder with radius 0.5 and heigt 1.0
 	geometry.BuildDataBuffersForWireframe()                // extract wireframe edges from faces
 	material := NewMaterial(wctx, "#888888")               // create material with yellow color
-	shader := NewShader_NoLight(wctx)                      // create shader, and set its bindings
+	shader := NewShader_ColorOnly(wctx)                    // use the standard COLOR_ONLY shader
 	return NewSceneObject(geometry, material, shader)      // set up the scene object
 }
 
@@ -31,7 +31,7 @@ func NewSceneObject_CubeWithTexture(wctx *common.WebGLContext) *SceneObject {
 	geometry.BuildNormalsForFace()
 	geometry.BuildDataBuffers(true, false, true)        // build data buffers for vertices and faces
 	material := NewMaterial(wctx, "/assets/gopher.png") // create material with a texture image
-	shader := NewShader_BasicTexture(wctx)              // create shader, and set its bindings
+	shader := NewShader_NormalTexture(wctx)             // use the standard NORMAL+TEXTURE shader
 	return NewSceneObject(geometry, material, shader)   // set up the scene object
 }
 
@@ -77,7 +77,7 @@ func NewSceneObject_Airplane(wctx *common.WebGLContext) *SceneObject {
 	geometry.BuildNormalsForVertex()                     // prepare normal vectors
 	geometry.BuildDataBuffers(true, false, true)         //
 	material := NewMaterial(wctx, "#ffff88")             // create material
-	shader := NewShader_Basic(wctx)                      // create shader, and set its bindings
+	shader := NewShader_NormalColor(wctx)                // use the standard NORMAL+COLOR shader
 	scnobj := NewSceneObject(geometry, material, shader) // set up the scene object
 	return scnobj
 }

@@ -9,6 +9,7 @@ import (
 	"image/png"
 	"io/ioutil"
 	"log"
+	"math"
 	"net/http"
 	"path/filepath"
 	"syscall/js"
@@ -32,6 +33,17 @@ func NewMaterial(wctx *common.WebGLContext, source string) *Material {
 			mat.LoadTextureOfSinglePixel(mat.color)
 		} else { // TEXTURE image path
 			mat.LoadTexture(source)
+		}
+	}
+	return &mat
+}
+
+func NewMaterialForGlowEffect(wctx *common.WebGLContext, color string) *Material {
+	mat := Material{wctx: wctx, color: [4]uint8{0, 255, 255, 255}, texture: js.Null(), texture_wh: [2]int{0, 0}}
+	if len(color) > 0 {
+		if color[0] == '#' { // COLOR RGB value
+			mat.SetColor(color)
+			mat.LoadTextureForGlowEffect(mat.color)
 		}
 	}
 	return &mat
@@ -133,7 +145,7 @@ func (self *Material) LoadTexture(path string) *Material {
 							for x := 0; x < size.X; x++ {
 								rgba := color.RGBAModel.Convert(img.At(x, y)).(color.RGBA)
 								idx := y_idx + x*4
-								set_pbuffer_with_rgba(pixbuf, idx, rgba.R, rgba.G, rgba.B, rgba.A)
+								set_pixbuf_with_rgba(pixbuf, idx, rgba.R, rgba.G, rgba.B, rgba.A)
 							}
 						}
 						// log.Printf("Texture pixel buffer converted to RGBA\n")
@@ -144,6 +156,24 @@ func (self *Material) LoadTexture(path string) *Material {
 			}
 		}()
 	}
+	return self
+}
+
+func (self *Material) LoadTextureForGlowEffect(color [4]uint8) *Material {
+	// Load texture for glow effect
+	const width, height = 32, 2
+	pixbuf := make([]uint8, width*height*4)
+	for u := 0; u < width; u++ {
+		// glow on both side for the first row (v == 0)  [ 0.0 ~ 1.0 ~ 0.0 ]
+		intensity := 1.0 - math.Abs((float64(u)/float64(width-1))*2-1)
+		ii := intensity * intensity
+		set_pixbuf_with_rgba(pixbuf, (u)*4, uint8(ii*float64(color[0])), uint8(ii*float64(color[1])), uint8(ii*float64(color[2])), uint8(ii*255))
+		// descending glow for the second row (v == 1)  [ 1.0 ~ 0.5 ~ 0.0 ]
+		intensity = 1.0 - (float64(u) / float64(width-1))
+		ii = intensity * intensity
+		set_pixbuf_with_rgba(pixbuf, (width+u)*4, uint8(ii*float64(color[0])), uint8(ii*float64(color[1])), uint8(ii*float64(color[2])), uint8(ii*255))
+	}
+	self.LoadTextureFromBufferRGBA(pixbuf, width, height)
 	return self
 }
 
@@ -179,7 +209,7 @@ func (self *Material) ShowInfo() {
 		c[0], c[1], c[2], c[3], self.texture_wh[0], self.texture_wh[1])
 }
 
-func set_pbuffer_with_rgba(pbuffer []uint8, idx int, R uint8, G uint8, B uint8, A uint8) {
+func set_pixbuf_with_rgba(pbuffer []uint8, idx int, R uint8, G uint8, B uint8, A uint8) {
 	pbuffer[idx+0] = R
 	pbuffer[idx+1] = G
 	pbuffer[idx+2] = B

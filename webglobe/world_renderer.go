@@ -5,14 +5,14 @@ import (
 	"github.com/go4orward/gowebgl/webgl3d"
 )
 
-type Renderer struct {
+type WorldRenderer struct {
 	wctx     *common.WebGLContext
 	render3d *webgl3d.Renderer
 	axes     *webgl3d.SceneObject
 }
 
-func NewRenderer(wctx *common.WebGLContext) *Renderer {
-	renderer := Renderer{wctx: wctx, render3d: webgl3d.NewRenderer(wctx), axes: nil}
+func NewWorldRenderer(wctx *common.WebGLContext) *WorldRenderer {
+	renderer := WorldRenderer{wctx: wctx, render3d: webgl3d.NewRenderer(wctx), axes: nil}
 	return &renderer
 }
 
@@ -20,7 +20,7 @@ func NewRenderer(wctx *common.WebGLContext) *Renderer {
 // Clear
 // ----------------------------------------------------------------------------
 
-func (self *Renderer) Clear(wcamera *WorldCamera, color string) {
+func (self *WorldRenderer) Clear(wcamera *WorldCamera, color string) {
 	self.render3d.Clear(wcamera.gcam, color)
 }
 
@@ -28,23 +28,17 @@ func (self *Renderer) Clear(wcamera *WorldCamera, color string) {
 // Rendering Axes
 // ----------------------------------------------------------------------------
 
-func (self *Renderer) RenderAxes(wcamera *WorldCamera, length float32) {
+func (self *WorldRenderer) RenderAxes(wcamera *WorldCamera, length float32) {
 	// Render three axes (X:RED, Y:GREEN, Z:BLUE) for visual reference
 	self.render3d.RenderAxes(wcamera.gcam, length)
 }
 
 // ----------------------------------------------------------------------------
-// Rendering Scene
+// Rendering the World
 // ----------------------------------------------------------------------------
 
-func (self *Renderer) RenderScene(wcamera *WorldCamera, scene *Scene) {
+func (self *WorldRenderer) RenderWorld(wcamera *WorldCamera, globe *Globe) {
 	// Render the globe
-	new_viewmodel := wcamera.gcam.GetViewMatrix().MultiplyToTheRight(scene.Globe.globe_obj.GetModelMatrix())
-	self.render3d.RenderSceneObject(scene.Globe.globe_obj, wcamera.gcam.GetProjMatrix(), new_viewmodel)
-
-	// Render all the SceneObjects in the Scene
-	for _, sobj := range scene.objects {
-		new_viewmodel := wcamera.gcam.GetViewMatrix().MultiplyToTheRight(sobj.GetModelMatrix())
-		self.render3d.RenderSceneObject(sobj, wcamera.gcam.GetProjMatrix(), new_viewmodel)
-	}
+	new_viewmodel := wcamera.gcam.GetViewMatrix().MultiplyToTheRight(globe.gsphere.GetModelMatrix())
+	self.render3d.RenderSceneObject(globe.gsphere, wcamera.gcam.GetProjMatrix(), new_viewmodel)
 }

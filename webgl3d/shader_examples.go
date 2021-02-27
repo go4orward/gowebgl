@@ -29,7 +29,7 @@ func NewShader_3DAxes(wctx *common.WebGLContext) *common.Shader {
 	return shader
 }
 
-func NewShader_NoLight(wctx *common.WebGLContext) *common.Shader {
+func NewShader_ColorOnly(wctx *common.WebGLContext) *common.Shader {
 	// Shader for (XYZ + NORMAL) Geometry & (COLOR) Material & (DIRECTIONAL) Lighting
 	var vertex_shader_code = `
 		precision mediump float;
@@ -52,7 +52,7 @@ func NewShader_NoLight(wctx *common.WebGLContext) *common.Shader {
 	return shader
 }
 
-func NewShader_Basic(wctx *common.WebGLContext) *common.Shader {
+func NewShader_NormalColor(wctx *common.WebGLContext) *common.Shader {
 	// Shader for (XYZ + NORMAL) Geometry & (COLOR) Material & (DIRECTIONAL) Lighting
 	var vertex_shader_code = `
 		precision mediump float;
@@ -88,7 +88,7 @@ func NewShader_Basic(wctx *common.WebGLContext) *common.Shader {
 	return shader
 }
 
-func NewShader_Texture(wctx *common.WebGLContext) *common.Shader {
+func NewShader_TextureOnly(wctx *common.WebGLContext) *common.Shader {
 	// Shader for (XYZ + UV + NORMAL) Geometry & (TEXTURE) Material & (DIRECTIONAL) Lighting
 	var vertex_shader_code = `
 		precision mediump float;
@@ -118,7 +118,7 @@ func NewShader_Texture(wctx *common.WebGLContext) *common.Shader {
 	return shader
 }
 
-func NewShader_BasicTexture(wctx *common.WebGLContext) *common.Shader {
+func NewShader_NormalTexture(wctx *common.WebGLContext) *common.Shader {
 	// Shader for (XYZ + UV + NORMAL) Geometry & (TEXTURE) Material & (DIRECTIONAL) Lighting
 	var vertex_shader_code = `
 		precision mediump float;
