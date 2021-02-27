@@ -38,9 +38,9 @@ $ ./wasm_test_server    # open your browser, and visit http://localhost:8080
 ## ToDo List
 
 - user selection using collision detection with a ray from camera
-- dynamic switching of world map projections (Mercator, Stereographic, etc)
-- coast lines and country border lines on the world map
 - graticules on the globe
+- coast lines and country border lines on the world map
+- support for world map projections (Mercator, Stereographic, etc)
 - 'webglgalaxy' maybe?
 
 ## Thanks
