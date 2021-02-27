@@ -1,4 +1,4 @@
-package webglobe
+package webglglobe
 
 import "math"
 

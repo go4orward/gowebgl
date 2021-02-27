@@ -5,25 +5,25 @@ import (
 	"syscall/js"
 
 	"github.com/go4orward/gowebgl/common"
-	"github.com/go4orward/gowebgl/webglobe"
+	"github.com/go4orward/gowebgl/webglglobe"
 )
 
 func main() {
 	// THIS CODE IS SUPPOSED TO BE BUILT AS WEBASSEMBLY AND RUN INSIDE A BROWSER.
-	// BUILD IT LIKE 'GOOS=js GOARCH=wasm go build -o gowebgl.wasm gowebgl/webglobe_tester.go'
+	// BUILD IT LIKE 'GOOS=js GOARCH=wasm go build -o gowebgl.wasm gowebgl/webglglobe_example.go'
 	fmt.Println("Hello WebGL!")                       // printed in the browser console
 	wctx, err := common.NewWebGLContext("wasmcanvas") // ID of canvas element
 	if err != nil {
 		js.Global().Call("alert", "Failed to start WebGL : "+err.Error())
 		return
 	}
-	globe := webglobe.NewGlobe(wctx)
-	wcamera := webglobe.NewWorldCamera(wctx.GetWH(), 15, 1.0) // FOV default is 15° (in degree)
-	wcamera.SetPoseByLonLat(0, 0, 10)                         // longitude 0°, latitude 0°, radius(distance) 10.0
-	renderer := webglobe.NewWorldRenderer(wctx)               // set up the world renderer
-	renderer.Clear(wcamera, "#000000")                        // prepare to render (clearing to black background)
-	renderer.RenderWorld(wcamera, globe)                      // render the Globe (and all the layers & glowring)
-	renderer.RenderAxes(wcamera, 1.2)                         // render the axes (just for visual reference)
+	globe := webglglobe.NewGlobe(wctx)
+	wcamera := webglglobe.NewWorldCamera(wctx.GetWH(), 15, 1.0) // FOV default is 15° (in degree)
+	wcamera.SetPoseByLonLat(0, 0, 10)                           // longitude 0°, latitude 0°, radius(distance) 10.0
+	renderer := webglglobe.NewWorldRenderer(wctx)               // set up the world renderer
+	renderer.Clear(wcamera, "#000000")                          // prepare to render (clearing to black background)
+	renderer.RenderWorld(wcamera, globe)                        // render the Globe (and all the layers & glowring)
+	renderer.RenderAxes(wcamera, 1.2)                           // render the axes (just for visual reference)
 
 	if true { // interactive
 		fmt.Println("Try mouse drag & wheel with SHIFT key pressed") // printed in the browser console

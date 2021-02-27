@@ -1,4 +1,4 @@
-package webglobe
+package webglglobe
 
 import (
 	"github.com/go4orward/gowebgl/common"
