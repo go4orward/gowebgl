@@ -30,7 +30,8 @@ func (self *Renderer) Clear(scene *Scene) {
 	constants := self.wctx.GetConstants()
 	rgb := scene.GetBkgColor()
 	context.Call("clearColor", rgb[0], rgb[1], rgb[2], 1.0) // Set clearing color
-	context.Call("clear", constants.COLOR_BUFFER_BIT)       // Clear the canvas
+	context.Call("clear", constants.COLOR_BUFFER_BIT)       // clear the canvas
+	context.Call("clear", constants.DEPTH_BUFFER_BIT)       // clear the canvas
 }
 
 func (self *Renderer) RenderAxes(camera *Camera, length float32) {
@@ -59,12 +60,28 @@ func (self *Renderer) RenderScene(scene *Scene, camera *Camera) {
 func (self *Renderer) RenderSceneObject(sobj *SceneObject, pvm *geom2d.Matrix3) error {
 	context := self.wctx.GetContext()
 	constants := self.wctx.GetConstants()
+	// 0. set DepthTest & Blending options
+	if sobj.UseDepth {
+		context.Call("enable", constants.DEPTH_TEST)      // Enable depth test
+		context.Call("depthFunc", constants.LEQUAL)       // Near things obscure far things
+		context.Call("clearColor", 0, 0, 0, 1.0)          // set clearing color to all 0
+		context.Call("clear", constants.DEPTH_BUFFER_BIT) // clear the depth_buffer
+	} else {
+		context.Call("disable", constants.DEPTH_TEST) // Disable depth test
+	}
+	if sobj.UseBlend {
+		context.Call("enable", constants.BLEND)                                 // for pre-multiplied alpha
+		context.Call("blendFunc", constants.ONE, constants.ONE_MINUS_SRC_ALPHA) // for pre-multiplied alpha
+		// context.Call("blendFunc", constants.SRC_ALPHA, constants.ONE_MINUS_SRC_ALPHA) // for non pre-multiplied alpha
+	} else {
+		context.Call("disable", constants.BLEND) // Disable blending
+	}
 	// 1. If necessary, then build WebGLBuffers for the SceneObject's Geometry
-	if sobj.geometry.IsDataBufferReady() == false {
+	if sobj.Geometry.IsDataBufferReady() == false {
 		return errors.New("Failed to RenderSceneObject() : empty geometry data buffer")
 	}
-	if sobj.geometry.IsWebGLBufferReady() == false {
-		sobj.geometry.build_webgl_buffers(self.wctx, true, true, true)
+	if sobj.Geometry.IsWebGLBufferReady() == false {
+		sobj.Geometry.build_webgl_buffers(self.wctx, true, true, true)
 	}
 	if sobj.poses != nil && sobj.poses.IsWebGLBufferReady() == false {
 		sobj.poses.build_webgl_buffers(self.wctx)
@@ -73,17 +90,14 @@ func (self *Renderer) RenderSceneObject(sobj *SceneObject, pvm *geom2d.Matrix3) 
 		}
 	}
 	// 2. Decide which Shader to use
-	shader := sobj.shader
+	shader := sobj.Shader
 	if shader == nil {
-		shader = sobj.parent_shader
-		if shader == nil {
-			return errors.New("Failed to RenderSceneObject() : shader not found")
-		}
+		return errors.New("Failed to RenderSceneObject() : shader not found")
 	}
 	context.Call("useProgram", shader.GetShaderProgram())
 	// 3. bind the uniforms of the shader program
 	for uname, umap := range shader.GetUniformBindings() {
-		if err := self.bind_uniform(uname, umap, sobj.material, pvm); err != nil {
+		if err := self.bind_uniform(uname, umap, sobj.Material, pvm); err != nil {
 			if err.Error() != "Texture is not ready" {
 				fmt.Println(err.Error())
 			}
@@ -92,7 +106,7 @@ func (self *Renderer) RenderSceneObject(sobj *SceneObject, pvm *geom2d.Matrix3) 
 	}
 	// 4. bind the attributes of the shader program
 	for aname, amap := range shader.GetAttributeBindings() {
-		if err := self.bind_attribute(aname, amap, sobj.geometry, sobj.poses); err != nil {
+		if err := self.bind_attribute(aname, amap, sobj.Geometry, sobj.poses); err != nil {
 			fmt.Println(err.Error())
 			return err
 		}
@@ -102,7 +116,7 @@ func (self *Renderer) RenderSceneObject(sobj *SceneObject, pvm *geom2d.Matrix3) 
 		// Note that ARRAY_BUFFER was binded already in the previous step (during attribute binding)
 		switch draw_mode {
 		case "POINTS", "VERTICES":
-			_, count, _ := sobj.geometry.GetWebGLBuffer("POINTS")
+			_, count, _ := sobj.Geometry.GetWebGLBuffer("POINTS")
 			if count > 0 {
 				if sobj.poses == nil {
 					context.Call("drawArrays", constants.POINTS, 0, count) // (mode, first, count)
@@ -112,7 +126,7 @@ func (self *Renderer) RenderSceneObject(sobj *SceneObject, pvm *geom2d.Matrix3) 
 				}
 			}
 		case "LINES", "EDGES":
-			buffer, count, _ := sobj.geometry.GetWebGLBuffer("LINES")
+			buffer, count, _ := sobj.Geometry.GetWebGLBuffer("LINES")
 			if count > 0 {
 				context.Call("bindBuffer", constants.ELEMENT_ARRAY_BUFFER, buffer)
 				if sobj.poses == nil {
@@ -123,7 +137,7 @@ func (self *Renderer) RenderSceneObject(sobj *SceneObject, pvm *geom2d.Matrix3) 
 				}
 			}
 		case "TRIANGLES", "FACES":
-			buffer, count, _ := sobj.geometry.GetWebGLBuffer("TRIANGLES")
+			buffer, count, _ := sobj.Geometry.GetWebGLBuffer("TRIANGLES")
 			if count > 0 {
 				context.Call("bindBuffer", constants.ELEMENT_ARRAY_BUFFER, buffer)
 				if sobj.poses == nil {

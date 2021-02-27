@@ -24,7 +24,7 @@ func NewGlobe(wctx *common.WebGLContext, bkg_color string) *Globe {
 }
 
 func (self *Globe) IsReadyToRender() bool {
-	return self.gsphere.GetMaterial().IsTextureLoading() == false
+	return self.gsphere.Material.IsTextureLoading() == false
 }
 
 // ----------------------------------------------------------------------------
@@ -141,9 +141,11 @@ func NewSceneObject_GlowRing(wctx *common.WebGLContext) *webgl3d.SceneObject {
 	// (Note that GlowRing should be rendered in CAMERA space by Renderer)
 	glowring := build_glowring_geometry(1.0, 1.2, 64)             // create geometry (a ring around the globe)
 	glowring.BuildDataBuffers(true, false, true)                  // build data buffers for vertices and faces
-	material := webgl3d.NewMaterialForGlowEffect(wctx, "#ffffff") // texture material for glow effect
+	material := webgl3d.NewMaterialForGlowEffect(wctx, "#ffff00") // texture material for glow effect
 	shader := webgl3d.NewShader_TextureOnly(wctx)                 // use the standard TEXTURE_ONLY shader
-	return webgl3d.NewSceneObject(glowring, material, shader)     // set up the scene object
+	scnobj := webgl3d.NewSceneObject(glowring, material, shader)  // set up the scene object
+	scnobj.UseBlend = true
+	return scnobj
 }
 
 func build_glowring_geometry(in_radius float32, out_radius float32, nsegs int) *webgl3d.Geometry {

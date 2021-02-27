@@ -6,6 +6,7 @@ import (
 
 type Constants struct {
 	ARRAY_BUFFER         js.Value //
+	BLEND                js.Value // for gl.enable(gl.BLEND)
 	BYTE                 js.Value //
 	CLAMP_TO_EDGE        js.Value //
 	COLOR_BUFFER_BIT     js.Value //
@@ -20,8 +21,11 @@ type Constants struct {
 	LINES                js.Value //
 	LINK_STATUS          js.Value //
 	NEAREST              js.Value //
+	ONE                  js.Value // for gl.blendFunc()
+	ONE_MINUS_SRC_ALPHA  js.Value // for gl.blendFunc()
 	POINTS               js.Value //
 	RGBA                 js.Value //
+	SRC_ALPHA            js.Value // for gl.blendFunc()
 	STATIC_DRAW          js.Value //
 	TEXTURE_2D           js.Value //
 	TEXTURE0             js.Value //
@@ -39,6 +43,7 @@ type Constants struct {
 func (self *Constants) LoadFromContext(context js.Value) {
 	// get WebGL constants
 	self.ARRAY_BUFFER = context.Get("ARRAY_BUFFER")
+	self.BLEND = context.Get("BLEND")
 	self.BYTE = context.Get("BYTE")
 	self.CLAMP_TO_EDGE = context.Get("CLAMP_TO_EDGE")
 	self.COLOR_BUFFER_BIT = context.Get("COLOR_BUFFER_BIT")
@@ -53,8 +58,11 @@ func (self *Constants) LoadFromContext(context js.Value) {
 	self.LINES = context.Get("LINES")
 	self.LINK_STATUS = context.Get("LINK_STATUS")
 	self.NEAREST = context.Get("NEAREST")
+	self.ONE = context.Get("ONE")
+	self.ONE_MINUS_SRC_ALPHA = context.Get("ONE_MINUS_SRC_ALPHA")
 	self.POINTS = context.Get("POINTS")
 	self.RGBA = context.Get("RGBA")
+	self.SRC_ALPHA = context.Get("SRC_ALPHA")
 	self.STATIC_DRAW = context.Get("STATIC_DRAW")
 	self.TEXTURE_2D = context.Get("TEXTURE_2D")
 	self.TEXTURE0 = context.Get("TEXTURE0")

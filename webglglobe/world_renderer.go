@@ -27,11 +27,7 @@ func (self *WorldRenderer) Clear(globe *Globe) {
 	rgb := globe.GetBkgColor()
 	context.Call("clearColor", rgb[0], rgb[1], rgb[2], 1.0) // set clearing color
 	context.Call("clear", constants.COLOR_BUFFER_BIT)       // clear the canvas
-
-	context.Call("enable", constants.DEPTH_TEST)      // Enable depth test
-	context.Call("depthFunc", constants.LEQUAL)       // Near things obscure far things
-	context.Call("clearColor", 0, 0, 0, 1.0)          // set clearing color to all 0
-	context.Call("clear", constants.DEPTH_BUFFER_BIT) // clear the depth_buffer
+	context.Call("clear", constants.DEPTH_BUFFER_BIT)       // clear the canvas
 }
 
 // ----------------------------------------------------------------------------

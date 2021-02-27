@@ -8,14 +8,14 @@ import (
 )
 
 type SceneObject struct {
-	geometry        *Geometry
-	material        *Material         // material
-	shader          *common.Shader    // shader and its bindings
-	modelmatrix     geom3d.Matrix4    //
-	poses           *SceneObjectPoses // poses for multiple instances of this (geometry+material) object
-	children        []*SceneObject    //
-	parent_material *Material         // shader of the parent SceneObject
-	parent_shader   *common.Shader    // shader of the parent SceneObject
+	Geometry    *Geometry
+	Material    *Material         // material
+	Shader      *common.Shader    // shader and its bindings
+	modelmatrix geom3d.Matrix4    //
+	UseDepth    bool              // depth test flag (default is true)
+	UseBlend    bool              // blending flag with alpha (default is false)
+	poses       *SceneObjectPoses // poses for multiple instances of this (geometry+material) object
+	children    []*SceneObject    //
 }
 
 func NewSceneObject(geometry *Geometry, material *Material, shader *common.Shader) *SceneObject {
@@ -23,30 +23,18 @@ func NewSceneObject(geometry *Geometry, material *Material, shader *common.Shade
 		return nil
 	}
 	// Note that 'material' & 'shader' can be nil, in which case its parent's 'material' & 'shader' will be used to render.
-	sobj := SceneObject{geometry: geometry, material: material, shader: shader}
+	sobj := SceneObject{Geometry: geometry, Material: material, Shader: shader}
 	sobj.modelmatrix.SetIdentity()
+	sobj.UseDepth = true
+	sobj.UseBlend = false
 	sobj.poses = nil
 	sobj.children = nil
-	sobj.parent_material = nil
-	sobj.parent_shader = nil
 	return &sobj
 }
 
 // ----------------------------------------------------------------------------
 // Basic Access
 // ----------------------------------------------------------------------------
-
-func (self *SceneObject) GetGeometry() *Geometry {
-	return self.geometry
-}
-
-func (self *SceneObject) GetMaterial() *Material {
-	return self.material
-}
-
-func (self *SceneObject) GetShader() *common.Shader {
-	return self.shader
-}
 
 func (self *SceneObject) SetInstancePoses(poses *SceneObjectPoses) *SceneObject {
 	self.poses = poses
@@ -56,16 +44,6 @@ func (self *SceneObject) SetInstancePoses(poses *SceneObjectPoses) *SceneObject 
 func (self *SceneObject) AddChild(child *SceneObject) *SceneObject {
 	if self.children == nil {
 		self.children = make([]*SceneObject, 0)
-	}
-	if self.material != nil {
-		child.parent_material = self.material
-	} else {
-		child.parent_material = self.parent_material
-	}
-	if self.shader != nil {
-		child.parent_shader = self.shader
-	} else {
-		child.parent_shader = self.parent_shader
 	}
 	self.children = append(self.children, child)
 	return self
@@ -81,11 +59,11 @@ func (self *SceneObject) GetChildren() []*SceneObject {
 
 func (self *SceneObject) ShowInfo() {
 	fmt.Printf("SceneObject ")
-	self.geometry.ShowInfo()
+	self.Geometry.ShowInfo()
 	fmt.Printf("SceneObject ")
-	self.material.ShowInfo()
+	self.Material.ShowInfo()
 	fmt.Printf("SceneObject ")
-	self.shader.ShowInfo()
+	self.Shader.ShowInfo()
 	fmt.Printf("SceneObject children : %d\n", len(self.children))
 }
 

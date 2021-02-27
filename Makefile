@@ -7,7 +7,7 @@ all:
 	go build -o wasm_test_server wasm_test_server.go
 
 2dui:
-	GOOS=js GOARCH=wasm go build -o wasm_test.wasm webgl2d_ui_example.go
+	GOOS=js GOARCH=wasm go build -o wasm_test.wasm webgl2dui_example.go
 	go build -o wasm_test_server wasm_test_server.go
 
 3d:
