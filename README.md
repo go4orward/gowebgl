@@ -41,7 +41,7 @@ $ ./wasm_test_server    # open your browser, and visit http://localhost:8080
 - graticules on the globe
 - coast lines and country border lines on the world map
 - support for world map projections (Mercator, Stereographic, etc)
-- 'webglgalaxy' maybe?
+- 'webglgalaxy' maybe? :)
 
 ## Thanks
 
