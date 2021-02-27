@@ -212,9 +212,8 @@ func (self *Material) LoadTextureFromBufferRGBA(buffer []uint8, width int, heigh
 }
 
 func (self *Material) ShowInfo() {
-	c := self.color
-	fmt.Printf("Material with COLOR [%.2f %.2f %.2f %.2f] and TEXTURE %d x %d\n",
-		c[0], c[1], c[2], c[3], self.texture_wh[0], self.texture_wh[1])
+	fmt.Printf("Material with COLOR [%3d %3d %3d %3d] and TEXTURE %d x %d\n",
+		self.color[0], self.color[1], self.color[2], self.color[3], self.texture_wh[0], self.texture_wh[1])
 }
 
 func set_pixbuf_with_rgba(pbuffer []uint8, idx int, R uint8, G uint8, B uint8, A uint8) {

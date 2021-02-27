@@ -9,7 +9,7 @@ Simplest example: &emsp; _(for explaining how WebGL works)_
 $ make                  # source : 'webgl1st_example.go'
 $ ./wasm_test_server    # open your browser, and visit http://localhost:8080
 ```
-![webgl_example result](assets/xscreen_webgl.png)
+![webgl1st_example result](assets/xscreen_webgl1st.png)
 
 2D example: &emsp; _(with animation & user interactions)_
 ```bash

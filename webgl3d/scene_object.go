@@ -60,11 +60,16 @@ func (self *SceneObject) GetChildren() []*SceneObject {
 func (self *SceneObject) ShowInfo() {
 	fmt.Printf("SceneObject ")
 	self.Geometry.ShowInfo()
-	fmt.Printf("SceneObject ")
-	self.Material.ShowInfo()
-	fmt.Printf("SceneObject ")
-	self.Shader.ShowInfo()
-	fmt.Printf("SceneObject children : %d\n", len(self.children))
+	if self.Material != nil {
+		fmt.Printf("  ")
+		self.Material.ShowInfo()
+	}
+	if self.Shader != nil {
+		fmt.Printf("  ")
+		self.Shader.ShowInfo()
+	}
+	fmt.Printf("  Flags    : UseDepth=%t  UseBlend=%t\n", self.UseDepth, self.UseBlend)
+	fmt.Printf("  Children : %d\n", len(self.children))
 }
 
 // ----------------------------------------------------------------------------

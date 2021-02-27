@@ -23,7 +23,6 @@ func main() {
 	renderer := webglglobe.NewWorldRenderer(wctx)               // set up the world renderer
 	renderer.Clear(globe)                                       // prepare to render (clearing to black background)
 	renderer.RenderWorld(globe, wcamera)                        // render the Globe (and all the layers & glowring)
-	renderer.RenderAxes(wcamera, 1.2)                           // render the axes (just for visual reference)
 
 	if true { // interactive
 		fmt.Println("Try mouse drag & wheel with SHIFT key pressed") // printed in the browser console
@@ -45,9 +44,9 @@ func main() {
 		})
 		// add animation
 		wctx.SetupAnimationFrame(func(canvas js.Value) {
-			renderer.Clear(globe)                // prepare to render (clearing to black background)
-			renderer.RenderWorld(globe, wcamera) // render the Globe (and all the layers & glowring)
-			globe.Rotate([3]float32{0, 0, 1}, 0.1)
+			renderer.Clear(globe)                  // prepare to render (clearing to black background)
+			renderer.RenderWorld(globe, wcamera)   // render the Globe (and all the layers & glowring)
+			globe.Rotate([3]float32{0, 0, 1}, 0.1) // rotate the Globe
 		})
 		<-make(chan bool) // wait for events (without exiting)
 	}

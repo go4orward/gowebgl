@@ -69,10 +69,8 @@ func (self *Renderer) RenderSceneObject(sobj *SceneObject, proj *geom3d.Matrix4,
 	constants := self.wctx.GetConstants()
 	// 0. set DepthTest & Blending options
 	if sobj.UseDepth {
-		context.Call("enable", constants.DEPTH_TEST)      // Enable depth test
-		context.Call("depthFunc", constants.LEQUAL)       // Near things obscure far things
-		context.Call("clearColor", 0, 0, 0, 1.0)          // set clearing color to all 0
-		context.Call("clear", constants.DEPTH_BUFFER_BIT) // clear the depth_buffer
+		context.Call("enable", constants.DEPTH_TEST) // Enable depth test
+		context.Call("depthFunc", constants.LEQUAL)  // Near things obscure far things
 	} else {
 		context.Call("disable", constants.DEPTH_TEST) // Disable depth test
 	}

@@ -81,19 +81,19 @@ func (self *Geometry) ShowInfo() {
 	fmt.Printf("Geometry with %d verts %d edges %d faces\n", len(self.verts), len(self.edges), len(self.faces))
 	if len(self.tuvs) > 0 {
 		if self.HasTextureFor("VERTEX") {
-			fmt.Printf("  texture UV coords   : [%d][]float32   for each vertex\n", len(self.tuvs))
+			fmt.Printf("    texture UV coords   : [%d][]float32   for each vertex\n", len(self.tuvs))
 		} else if self.HasTextureFor("FACE") {
-			fmt.Printf("  texture UV coords   : [%d][]float32   for each face\n", len(self.tuvs))
+			fmt.Printf("    texture UV coords   : [%d][]float32   for each face\n", len(self.tuvs))
 		} else {
-			fmt.Printf("  texture UV coords   : [%d][]float32   \n", len(self.tuvs))
+			fmt.Printf("    texture UV coords   : [%d][]float32   \n", len(self.tuvs))
 		}
 	}
-	fmt.Printf("  data_buffer_vpoints : %4d (WebGL:%s)  pinfo=%v\n", len(self.data_buffer_vpoints), wblen(self.webgl_buffer_vpoints), self.vpoint_info)
-	fmt.Printf("  data_buffer_fpoints : %4d (WebGL:%s)  pinfo=%v\n", len(self.data_buffer_fpoints), wblen(self.webgl_buffer_fpoints), self.fpoint_info)
-	fmt.Printf("  data_buffer_lines   : %4d (WebGL:%s)\n", len(self.data_buffer_lines), wblen(self.webgl_buffer_lines))
-	fmt.Printf("  data_buffer_faces   : %4d (WebGL:%s)\n", len(self.data_buffer_faces), wblen(self.webgl_buffer_faces))
-	// fmt.Printf("  data_buffer_vpoints : %v\n", self.data_buffer_vpoints)
-	// fmt.Printf("  data_buffer_fpoints : %v\n", self.data_buffer_fpoints)
+	fmt.Printf("    data_buffer_vpoints : %4d (WebGL:%s)  pinfo=%v\n", len(self.data_buffer_vpoints), wblen(self.webgl_buffer_vpoints), self.vpoint_info)
+	fmt.Printf("    data_buffer_fpoints : %4d (WebGL:%s)  pinfo=%v\n", len(self.data_buffer_fpoints), wblen(self.webgl_buffer_fpoints), self.fpoint_info)
+	fmt.Printf("    data_buffer_lines   : %4d (WebGL:%s)\n", len(self.data_buffer_lines), wblen(self.webgl_buffer_lines))
+	fmt.Printf("    data_buffer_faces   : %4d (WebGL:%s)\n", len(self.data_buffer_faces), wblen(self.webgl_buffer_faces))
+	// fmt.Printf("    data_buffer_vpoints : %v\n", self.data_buffer_vpoints)
+	// fmt.Printf("    data_buffer_fpoints : %v\n", self.data_buffer_fpoints)
 }
 
 // ----------------------------------------------------------------------------

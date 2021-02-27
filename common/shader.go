@@ -82,16 +82,16 @@ func (self *Shader) ShowInfo() {
 		fmt.Printf("Shader  with Error - %s\n", self.err.Error())
 	}
 	for uname, umap := range self.uniforms {
-		fmt.Printf("  Uniform   %-10s: %v\n", uname, umap)
+		fmt.Printf("    Uniform   %-10s: %v\n", uname, umap)
 	}
 	for aname, amap := range self.attributes {
-		fmt.Printf("  Attribute %-10s: %v\n", aname, amap)
+		fmt.Printf("    Attribute %-10s: %v\n", aname, amap)
 	}
 	things_to_draw := ""
 	for _, dmode := range self.draw_modes {
 		things_to_draw += dmode + " "
 	}
-	fmt.Printf("  ThingsToDraw : %s\n", things_to_draw)
+	fmt.Printf("    ThingsToDraw : %s\n", things_to_draw)
 }
 
 // ----------------------------------------------------------------------------

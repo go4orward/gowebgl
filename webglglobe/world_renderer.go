@@ -38,6 +38,7 @@ func (self *WorldRenderer) RenderAxes(wcamera *WorldCamera, length float32) {
 	// Render three axes (X:RED, Y:GREEN, Z:BLUE) for visual reference
 	if self.axes == nil {
 		self.axes = webgl3d.NewSceneObject_3DAxes(self.wctx, length)
+		self.axes.ShowInfo()
 	}
 	self.renderer.RenderSceneObject(self.axes, wcamera.gcam.GetProjMatrix(), wcamera.gcam.GetViewMatrix())
 }
