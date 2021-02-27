@@ -27,7 +27,7 @@ func main() {
 		geometry.BuildNormalsForFace()                              // calculate normal vectors for each face
 		geometry.BuildDataBuffers(true, false, true)                // build data buffers for vertices and faces
 		material := webgl3d.NewMaterial(wctx, "/assets/gopher.png") // create material (with texture image)
-		shader := webgl3d.NewShader_Basic(wctx)                     // create a shader, and set its bindings
+		shader := webgl3d.NewShader_BasicTexture(wctx)              // create a shader, and set its bindings
 		scene.Add(webgl3d.NewSceneObject(geometry, material, shader))
 	}
 	camera := webgl3d.NewPerspectiveCamera(wctx.GetWH(), 15, 1.0) // FOV default is 15° (in degree)
@@ -58,8 +58,9 @@ func main() {
 			renderer.Clear(camera, "#ffffff")   // prepare to render (clearing to white background)
 			renderer.RenderScene(camera, scene) // render the scene (iterating over all the SceneObjects in it)
 			renderer.RenderAxes(camera, 0.8)    // render the axes (just for visual reference)
-			scene.Get(0).Rotate([3]float32{0, 0, 1}, 1.0)
+			// scene.Get(0).Rotate([3]float32{1, 0, 0}, 1.0)
 			scene.Get(0).Rotate([3]float32{0, 1, 0}, 1.0)
+			scene.Get(0).Rotate([3]float32{0, 0, 1}, 1.0)
 		})
 		<-make(chan bool) // wait for events (without exiting)
 	}

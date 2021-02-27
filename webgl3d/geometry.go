@@ -187,6 +187,34 @@ func (self *Geometry) AppyMatrix4(m *geom3d.Matrix4) *Geometry {
 }
 
 // ----------------------------------------------------------------------------
+// Merge
+// ----------------------------------------------------------------------------
+
+func (self *Geometry) Merge(g *Geometry) *Geometry {
+	self.Clear(false, true, true)
+	nverts := uint32(len(self.verts))
+	for _, v := range g.verts {
+		self.AddVertex(v)
+	}
+	for _, e := range g.edges {
+		new_edge := make([]uint32, len(e))
+		for i := 0; i < len(e); i++ {
+			new_edge[i] = nverts + e[i]
+		}
+		self.AddEdge(new_edge)
+	}
+	for _, f := range g.faces {
+		new_face := make([]uint32, len(f))
+		for i := 0; i < len(f); i++ {
+			new_face[i] = nverts + f[i]
+		}
+		self.AddFace(new_face)
+	}
+	// TODO: texture UV coordinates and normal vectors
+	return self
+}
+
+// ----------------------------------------------------------------------------
 // Texture UV coordinates
 // ----------------------------------------------------------------------------
 
@@ -265,16 +293,39 @@ func (self *Geometry) GetFaceNormal(fidx int) [3]float32 {
 }
 
 func (self *Geometry) GetVertexNormal(vidx int) [3]float32 {
-	normals := [][3]float32{}
-	for fidx, face := range self.faces {
-		for _, face_vidx := range face {
-			if face_vidx == uint32(vidx) {
-				face_normal := self.GetFaceNormal(fidx)
-				normals = append(normals, face_normal)
+	if true {
+		normals := [][3]float32{}
+		for fidx, face := range self.faces {
+			for _, face_vidx := range face {
+				if face_vidx == uint32(vidx) {
+					face_normal := self.GetFaceNormal(fidx)
+					normals = append(normals, face_normal)
+					break
+				}
 			}
 		}
+		return geom3d.Normalize(geom3d.AverageAll(normals))
+	} else {
+		neighbors := [][2]uint32{}
+		for _, face_vlist := range self.faces {
+			for i, face_vidx := range face_vlist {
+				if face_vidx == uint32(vidx) {
+					face_len := len(face_vlist)
+					neighbor_next := uint32((i + 1) % face_len)
+					neighbor_prev := uint32((i - 1 + face_len) % face_len)
+					neighbors = append(neighbors, [2]uint32{neighbor_next, neighbor_prev})
+					break
+				}
+			}
+		}
+		cross_sum := [3]float32{0, 0, 0}
+		for _, nv := range neighbors {
+			vnext := geom3d.SubAB(self.verts[nv[0]], self.verts[vidx])
+			vprev := geom3d.SubAB(self.verts[nv[1]], self.verts[vidx])
+			cross_sum = geom3d.AddAB(cross_sum, geom3d.CrossAB(vnext, vprev))
+		}
+		return geom3d.Normalize(cross_sum)
 	}
-	return geom3d.Normalize(geom3d.AverageAll(normals))
 }
 
 func (self *Geometry) ChangeNormal(idx int, normal_vector [3]float32) *Geometry {
@@ -305,7 +356,8 @@ func (self *Geometry) get_triangulation(face_vlist []uint32, face_normal [3]floa
 	copy(vindices, face_vlist)
 	new_faces := make([][]uint32, 0)
 	vidx, vcount := 0, len(vindices)
-	for vcount > 3 {
+	iterations, max_iterations := 0, 10*len(vindices)
+	for vcount > 3 && iterations < max_iterations {
 		i0, i1, i2 := vidx, (vidx+1)%vcount, (vidx+2)%vcount
 		v0, v1, v2 := self.verts[vindices[i0]], self.verts[vindices[i1]], self.verts[vindices[i2]]
 		if geom3d.DotAB(face_normal, geom3d.CrossAB(geom3d.SubAB(v1, v0), geom3d.SubAB(v2, v0))) > 0 {
@@ -323,8 +375,12 @@ func (self *Geometry) get_triangulation(face_vlist []uint32, face_normal [3]floa
 		}
 		vcount = len(vindices)
 		vidx = (vidx + 1) % vcount
+		iterations++
 	}
 	new_faces = append(new_faces, vindices)
+	if iterations == max_iterations {
+		fmt.Printf("failed to traiangulate : %v => %v\n", face_vlist, new_faces)
+	}
 	// fmt.Printf("%v => %v\n", face_vlist, new_faces)
 	return new_faces
 }

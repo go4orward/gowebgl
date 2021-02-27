@@ -130,7 +130,7 @@ func NewGeometry_SolidFromFaceAndHeight(face [][3]float32, height float32) *Geom
 	for i := 0; i < flen; i++ {
 		b := geometry.AddVertex([3]float32{face[i][0], face[i][1], face[i][2]})
 		t := geometry.AddVertex([3]float32{face[i][0], face[i][1], face[i][2] + height})
-		b2, t2 := uint32((int(b)+1)%flen), uint32((int(t)+flen-1)%flen)
+		b2, t2 := uint32((int(b)+2)%(2*flen)), uint32((int(t)+2)%(2*flen))
 		geometry.AddFace([]uint32{b, b2, t2, t}) // face on the side
 		top_list[i] = t
 		btm_list[flen-1-i] = b
@@ -140,37 +140,37 @@ func NewGeometry_SolidFromFaceAndHeight(face [][3]float32, height float32) *Geom
 	return geometry
 }
 
-func NewGeometry_SolidFromCenterAndRadius(nsides int, center [][3]float32, radius []float32) *Geometry {
+func NewGeometry_SolidFromCentersAndRadii(centers [][3]float32, radii []float32, nsegments int) *Geometry {
 	geometry := NewGeometry()
-	// const wrad = Math.PI * 2 / nsides;
-	// geom.addVertex( centers[0] );                   // bottom center
-	// for (let i=1; i < centers.length; i++) {
-	// 	let center = centers[i];
-	// 	let radius = radii[i];
-	// 	let curr = geom.countVertices();
-	// 	if (i == 1) {
-	// 		for (let j = 0; j < nsides; j++) {
-	// 			let θ = wrad * j;
-	// 			let cosθ = Math.cos(θ) * radius, sinθ = Math.sin(θ) * radius;
-	// 			geom.addVertex([ center[0] + cosθ, center[1] + sinθ, center[2] ]);
-	// 			geom.addFace([ 0, curr + (j+1)%nsides, curr + j ]);
-	// 		}
-	// 	} else if (i < centers.length-1) {
-	// 		let prev = curr - nsides;
-	// 		for (let j = 0; j < nsides; j++) {
-	// 			let θ = wrad * j;
-	// 			let cosθ = Math.cos(θ) * radius, sinθ = Math.sin(θ) * radius;
-	// 			geom.addVertex([ center[0] + cosθ, center[1] + sinθ, center[2] ]);
-	// 			geom.addFace([ prev+j, prev + (j+1)%nsides, curr + (j+1)%nsides, curr + j ]);
-	// 		}
-	// 	} else {
-	// 		let prev = curr - nsides;
-	// 		geom.addVertex( centers[i] );           // top center
-	// 		for (let j = 0; j < nsides; j++) {
-	// 			geom.addFace([ curr, prev+j, prev + (j+1)%nsides ]);
-	// 		}
-	// 	}
-	// }
+	nsides, astep := uint32(nsegments), math.Pi*2/float64(nsegments)
+	geometry.AddVertex(centers[0]) // bottom center
+	for i := 1; i < len(centers); i++ {
+		center := centers[i]
+		radius := float64(radii[i])
+		curr := uint32(len(geometry.verts)) // geometry.countVertices();
+		if i == 1 {
+			for j := uint32(0); j < nsides; j++ {
+				a := astep * float64(j)
+				cosA, sinA := float32(math.Cos(a)*radius), float32(math.Sin(a)*radius)
+				geometry.AddVertex([3]float32{center[0] + cosA, center[1] + sinA, center[2]})
+				geometry.AddFace([]uint32{0, curr + (j+1)%nsides, curr + j})
+			}
+		} else if i < len(centers)-1 {
+			prev := curr - nsides
+			for j := uint32(0); j < nsides; j++ {
+				a := astep * float64(j)
+				cosA, sinA := float32(math.Cos(a)*radius), float32(math.Sin(a)*radius)
+				geometry.AddVertex([3]float32{center[0] + cosA, center[1] + sinA, center[2]})
+				geometry.AddFace([]uint32{prev + j, prev + (j+1)%nsides, curr + (j+1)%nsides, curr + j})
+			}
+		} else {
+			prev := curr - nsides
+			geometry.AddVertex(centers[i]) // top center
+			for j := uint32(0); j < nsides; j++ {
+				geometry.AddFace([]uint32{curr, prev + j, prev + (j+1)%nsides})
+			}
+		}
+	}
 	return geometry
 }
 

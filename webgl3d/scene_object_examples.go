@@ -31,7 +31,7 @@ func NewSceneObject_CubeWithTexture(wctx *common.WebGLContext) *SceneObject {
 	geometry.BuildNormalsForFace()
 	geometry.BuildDataBuffers(true, false, true)        // build data buffers for vertices and faces
 	material := NewMaterial(wctx, "/assets/gopher.png") // create material with a texture image
-	shader := NewShader_Basic(wctx)                     // create shader, and set its bindings
+	shader := NewShader_BasicTexture(wctx)              // create shader, and set its bindings
 	return NewSceneObject(geometry, material, shader)   // set up the scene object
 }
 
@@ -57,4 +57,27 @@ func NewSceneObject_CubeInstances(wctx *common.WebGLContext) *SceneObject {
 	sobj.SetInstancePoses(poses)
 	sobj.Translate(-0.5, -0.5, -0.5)
 	return sobj
+}
+
+func NewSceneObject_Airplane(wctx *common.WebGLContext) *SceneObject {
+	centers := [][3]float32{{0, -0.025, -1}, {0, -0.025, -0.99}, {0, -0.02, -0.9}, {0, -0.01, -0.6}, {0, 0, +0.0}, {0, 0, +0.8}, {0, 0, +0.9}, {0, 0, +0.99}, {0, 0, +1}}
+	radii := []float32{0, 0.01, 0.04, 0.08, 0.1, 0.1, 0.08, 0.02, 0}
+	wingth := float32(0.02)
+	pbody := NewGeometry_SolidFromCentersAndRadii(centers, radii, 8)
+	rwing := NewGeometry_SolidFromFaceAndHeight([][3]float32{{0, 0.0}, {+0.8, -0.3}, {+0.8, -0.2}, {0, 0.4}}, wingth)
+	lwing := NewGeometry_SolidFromFaceAndHeight([][3]float32{{0, 0.4}, {-0.8, -0.2}, {-0.8, -0.3}, {0.0, 0}}, wingth)
+	twing := NewGeometry_SolidFromFaceAndHeight([][3]float32{{0, 0.3}, {-0.3, 0.05}, {-0.3, 0}, {+0.3, 0}, {+0.3, 0.05}}, wingth)
+	vwing := NewGeometry_SolidFromFaceAndHeight([][3]float32{{0, 0.0}, {0.3, 0}, {0.3, 0.05}, {0, 0.3}}, wingth).Rotate([3]float32{0, 1, 0}, -90)
+	geometry := NewGeometry()
+	geometry.Merge(pbody.Rotate([3]float32{1, 0, 0}, -90))
+	geometry.Merge(rwing.Translate(0, 0.0, -wingth))
+	geometry.Merge(lwing.Translate(0, 0.0, -wingth))
+	geometry.Merge(twing.Translate(0, -0.9, +wingth))
+	geometry.Merge(vwing.Translate(wingth/2, -0.9, 0))
+	geometry.BuildNormalsForVertex()                     // prepare normal vectors
+	geometry.BuildDataBuffers(true, false, true)         //
+	material := NewMaterial(wctx, "#ffff88")             // create material
+	shader := NewShader_Basic(wctx)                      // create shader, and set its bindings
+	scnobj := NewSceneObject(geometry, material, shader) // set up the scene object
+	return scnobj
 }

@@ -176,6 +176,34 @@ func (self *Geometry) AppyMatrix(matrix *geom2d.Matrix3) *Geometry {
 }
 
 // ----------------------------------------------------------------------------
+// Merge
+// ----------------------------------------------------------------------------
+
+func (self *Geometry) Merge(g *Geometry) *Geometry {
+	self.Clear(false, true, true)
+	vcount := uint32(len(self.verts))
+	for _, v := range g.verts {
+		self.AddVertex(v)
+	}
+	for _, e := range g.edges {
+		new_edge := make([]uint32, len(e))
+		for i := 0; i < len(new_edge); i++ {
+			new_edge[i] = e[i] + vcount
+		}
+		self.AddEdge(new_edge)
+	}
+	for _, f := range g.faces {
+		new_face := make([]uint32, len(f))
+		for i := 0; i < len(new_face); i++ {
+			new_face[i] = f[i] + vcount
+		}
+		self.AddFace(new_face)
+	}
+	// TODO: texture UV coordinates
+	return self
+}
+
+// ----------------------------------------------------------------------------
 // Texture UV coordinates
 // ----------------------------------------------------------------------------
 
@@ -228,12 +256,13 @@ func (self *Geometry) splice_indices(a []uint32, pos int, delete_count int, new_
 	return append(append(head, new_entries...), tail...)
 }
 
-func (self *Geometry) get_triangulation(face []uint32) [][]uint32 {
-	vindices := make([]uint32, len(face))
-	copy(vindices, face)
-	newfaces := make([][]uint32, 0)
+func (self *Geometry) get_triangulation(face_vlist []uint32) [][]uint32 {
+	vindices := make([]uint32, len(face_vlist))
+	copy(vindices, face_vlist)
+	new_faces := make([][]uint32, 0)
 	vidx, vcount := 0, len(vindices)
-	for vcount > 3 {
+	iterations, max_iterations := 0, 10*len(vindices)
+	for vcount > 3 && iterations < max_iterations {
 		i0, i1, i2 := vidx, (vidx+1)%vcount, (vidx+2)%vcount
 		v0, v1, v2 := self.verts[vindices[i0]], self.verts[vindices[i1]], self.verts[vindices[i2]]
 		if geom2d.IsCCW(v0, v1, v2) {
@@ -245,15 +274,19 @@ func (self *Geometry) get_triangulation(face []uint32) [][]uint32 {
 				}
 			}
 			if !point_inside {
-				newfaces = append(newfaces, []uint32{vindices[i0], vindices[i1], vindices[i2]})
+				new_faces = append(new_faces, []uint32{vindices[i0], vindices[i1], vindices[i2]})
 				vindices = self.splice_indices(vindices, i1, 1)
 			}
 		}
 		vcount = len(vindices)
 		vidx = (vidx + 1) % vcount
+		iterations++
 	}
-	newfaces = append(newfaces, vindices)
-	return newfaces
+	new_faces = append(new_faces, vindices)
+	if iterations == max_iterations {
+		fmt.Printf("failed to traiangulate : %v => %v\n", face_vlist, new_faces)
+	}
+	return new_faces
 }
 
 // ----------------------------------------------------------------------------
