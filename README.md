@@ -30,10 +30,10 @@ $ ./wasm_test_server    # open your browser, and visit http://localhost:8080
 
 Globe example: &emsp; _(with perspective & orthographic camera)_
 ```bash
-$ make globe            # source : 'webglobe_example.go'
+$ make globe            # source : 'webglglobe_example.go'
 $ ./wasm_test_server    # open your browser, and visit http://localhost:8080
 ```
-![webglobe_example result](assets/xscreen_webglobe.png)
+![webglglobe_example result](assets/xscreen_webglglobe.png)
 
 ## ToDo List
 
@@ -41,6 +41,7 @@ $ ./wasm_test_server    # open your browser, and visit http://localhost:8080
 - dynamic switching of world map projections (Mercator, Stereographic, etc)
 - coast lines and country border lines on the world map
 - graticules on the globe
+- 'webglgalaxy' maybe?
 
 ## Thanks
 

@@ -15,7 +15,7 @@ all:
 	go build -o wasm_test_server wasm_test_server.go
 
 globe:
-	GOOS=js GOARCH=wasm go build -o wasm_test.wasm webglobe_example.go
+	GOOS=js GOARCH=wasm go build -o wasm_test.wasm webglglobe_example.go
 	go build -o wasm_test_server wasm_test_server.go
 
 clean:
