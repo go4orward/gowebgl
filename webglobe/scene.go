@@ -6,13 +6,13 @@ import (
 )
 
 type Scene struct {
-	globe   *SceneGlobe            // the Globe
+	Globe   *Globe                 // the Globe
 	objects []*webgl3d.SceneObject // the other SceneObjects
 }
 
 func NewScene(wctx *common.WebGLContext) *Scene {
 	scene := Scene{}
-	scene.globe = NewSceneGlobe(wctx)
+	scene.Globe = NewGlobe(wctx)
 	scene.objects = make([]*webgl3d.SceneObject, 0)
 	return &scene
 }

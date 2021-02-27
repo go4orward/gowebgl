@@ -8,16 +8,20 @@ import (
 	"github.com/go4orward/gowebgl/webgl3d"
 )
 
-type SceneGlobe struct {
+type Globe struct {
 	globe_obj *webgl3d.SceneObject
 	// TODO: Add glow ring around the globe profile
 }
 
-func NewSceneGlobe(wctx *common.WebGLContext) *SceneGlobe {
-	globe := SceneGlobe{}
+func NewGlobe(wctx *common.WebGLContext) *Globe {
+	globe := Globe{}
 	globe.globe_obj = NewSceneObject_Globe(wctx) // texture & vertex normals
 	// log.Println("Please wait while world image is loaded.") // printed in the browser console
 	return &globe
+}
+
+func (self *Globe) Rotate(angle_in_degree float32) {
+	self.globe_obj.Rotate([3]float32{0, 0, 1}, angle_in_degree)
 }
 
 // ----------------------------------------------------------------------------

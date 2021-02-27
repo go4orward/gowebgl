@@ -49,6 +49,7 @@ func main() {
 			renderer.Clear(wcamera, "#222222")   // prepare to render (clearing to white background)
 			renderer.RenderScene(wcamera, scene) // render the scene (iterating over all the SceneObjects in it)
 			renderer.RenderAxes(wcamera, 1.2)    // render the axes (just for visual reference)
+			scene.Globe.Rotate(0.1)
 		})
 		<-make(chan bool) // wait for events (without exiting)
 	}

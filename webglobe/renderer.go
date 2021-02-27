@@ -39,7 +39,8 @@ func (self *Renderer) RenderAxes(wcamera *WorldCamera, length float32) {
 
 func (self *Renderer) RenderScene(wcamera *WorldCamera, scene *Scene) {
 	// Render the globe
-	self.render3d.RenderSceneObject(scene.globe.globe_obj, wcamera.gcam.GetProjMatrix(), wcamera.gcam.GetViewMatrix())
+	new_viewmodel := wcamera.gcam.GetViewMatrix().MultiplyToTheRight(scene.Globe.globe_obj.GetModelMatrix())
+	self.render3d.RenderSceneObject(scene.Globe.globe_obj, wcamera.gcam.GetProjMatrix(), new_viewmodel)
 
 	// Render all the SceneObjects in the Scene
 	for _, sobj := range scene.objects {
