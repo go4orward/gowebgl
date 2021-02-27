@@ -25,14 +25,10 @@ func NewRenderer(wctx *common.WebGLContext) *Renderer {
 // Clear
 // ----------------------------------------------------------------------------
 
-func (self *Renderer) Clear(camera *Camera, color string) {
+func (self *Renderer) Clear(scene *Scene) {
 	context := self.wctx.GetContext()
 	constants := self.wctx.GetConstants()
-
-	// context.Call("viewport", 0, 0, camera.wh[0], camera.wh[1]) // (LowerLeft.x, LowerLeft.y, width, height)
-	// (if 'viewport' is not updated, rendering may blur after window.resize)
-
-	rgb, _ := common.ParseHexColor(color)
+	rgb := scene.GetBkgColor()
 	context.Call("clearColor", rgb[0], rgb[1], rgb[2], 1.0) // Set clearing color
 	context.Call("clear", constants.COLOR_BUFFER_BIT)       // Clear the canvas
 }
@@ -48,7 +44,7 @@ func (self *Renderer) RenderAxes(camera *Camera, length float32) {
 // Rendering Scene
 // ----------------------------------------------------------------------------
 
-func (self *Renderer) RenderScene(camera *Camera, scene *Scene) {
+func (self *Renderer) RenderScene(scene *Scene, camera *Camera) {
 	// Render all the scene objects
 	for _, sobj := range scene.objects {
 		pvm_matrix := camera.pjvwmatrix.MultiplyToTheRight(&sobj.modelmatrix)

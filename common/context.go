@@ -36,6 +36,9 @@ func NewWebGLContext(canvas_id string) (*WebGLContext, error) {
 	// Ref: https://stackoverflow.com/questions/4938346/canvas-width-and-height-in-html5
 	wctx.canvas.Set("width", wctx.width)   // IMPORTANT!
 	wctx.canvas.Set("height", wctx.height) // IMPORTANT!
+	// context.Call("viewport", 0, 0, camera.wh[0], camera.wh[1]) // (LowerLeft.x, LowerLeft.y, width, height)
+	// (if 'viewport' is not updated, rendering may blur after window.resize)
+
 	// create WebGL context
 	wctx.context = wctx.canvas.Call("getContext", "webgl")
 	if wctx.context.IsUndefined() {

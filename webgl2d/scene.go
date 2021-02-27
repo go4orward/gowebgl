@@ -1,21 +1,42 @@
 package webgl2d
 
-import "github.com/go4orward/gowebgl/common/geom2d"
+import (
+	"github.com/go4orward/gowebgl/common"
+	"github.com/go4orward/gowebgl/common/geom2d"
+)
 
 type Scene struct {
-	objects []*SceneObject // list of SceneObjects in the Scene
-	bbox    [2][2]float32  // bounding box of all the SceneObjects
+	bkgcolor [3]float32     // background color of the scene
+	objects  []*SceneObject // SceneObjects in the scene
+	bbox     [2][2]float32  // bounding box of all the SceneObjects
 }
 
-func NewScene() *Scene {
+func NewScene(bkg_color string) *Scene {
 	var scene Scene
+	scene.SetBkgColor(bkg_color)
 	scene.objects = make([]*SceneObject, 0)
 	scene.bbox = geom2d.BBoxInit()
 	return &scene
 }
 
 // ----------------------------------------------------------------------------
-// Handling SceneObject
+// Background Color
+// ----------------------------------------------------------------------------
+
+func (self *Scene) SetBkgColor(color string) *Scene {
+	rgba, err := common.ParseHexColor(color)
+	if err != nil {
+		self.bkgcolor = [3]float32{float32(rgba[0]) / 255.0, float32(rgba[1]) / 255.0, float32(rgba[2]) / 255.0}
+	}
+	return self
+}
+
+func (self *Scene) GetBkgColor() [3]float32 {
+	return self.bkgcolor
+}
+
+// ----------------------------------------------------------------------------
+// Handling SceneObjects
 // ----------------------------------------------------------------------------
 
 func (self *Scene) Add(sobj *SceneObject) *Scene {

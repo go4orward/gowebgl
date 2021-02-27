@@ -7,9 +7,9 @@ import (
 )
 
 type WorldRenderer struct {
-	wctx     *common.WebGLContext
-	renderer *webgl3d.Renderer
-	axes     *webgl3d.SceneObject
+	wctx     *common.WebGLContext // WebGL context
+	renderer *webgl3d.Renderer    // Renderer for rendering 3D SceneObjects
+	axes     *webgl3d.SceneObject // XYZ axes for visual reference (only if required)
 }
 
 func NewWorldRenderer(wctx *common.WebGLContext) *WorldRenderer {
@@ -21,8 +21,17 @@ func NewWorldRenderer(wctx *common.WebGLContext) *WorldRenderer {
 // Clear
 // ----------------------------------------------------------------------------
 
-func (self *WorldRenderer) Clear(wcamera *WorldCamera, color string) {
-	self.renderer.Clear(wcamera.gcam, color)
+func (self *WorldRenderer) Clear(globe *Globe) {
+	context := self.wctx.GetContext()
+	constants := self.wctx.GetConstants()
+	rgb := globe.GetBkgColor()
+	context.Call("clearColor", rgb[0], rgb[1], rgb[2], 1.0) // set clearing color
+	context.Call("clear", constants.COLOR_BUFFER_BIT)       // clear the canvas
+
+	context.Call("enable", constants.DEPTH_TEST)      // Enable depth test
+	context.Call("depthFunc", constants.LEQUAL)       // Near things obscure far things
+	context.Call("clearColor", 0, 0, 0, 1.0)          // set clearing color to all 0
+	context.Call("clear", constants.DEPTH_BUFFER_BIT) // clear the depth_buffer
 }
 
 // ----------------------------------------------------------------------------
@@ -31,14 +40,17 @@ func (self *WorldRenderer) Clear(wcamera *WorldCamera, color string) {
 
 func (self *WorldRenderer) RenderAxes(wcamera *WorldCamera, length float32) {
 	// Render three axes (X:RED, Y:GREEN, Z:BLUE) for visual reference
-	self.renderer.RenderAxes(wcamera.gcam, length)
+	if self.axes == nil {
+		self.axes = webgl3d.NewSceneObject_3DAxes(self.wctx, length)
+	}
+	self.renderer.RenderSceneObject(self.axes, wcamera.gcam.GetProjMatrix(), wcamera.gcam.GetViewMatrix())
 }
 
 // ----------------------------------------------------------------------------
 // Rendering the World
 // ----------------------------------------------------------------------------
 
-func (self *WorldRenderer) RenderWorld(wcamera *WorldCamera, globe *Globe) {
+func (self *WorldRenderer) RenderWorld(globe *Globe, wcamera *WorldCamera) {
 	if globe.IsReadyToRender() {
 		// Render the Globe
 		new_viewmodel := wcamera.gcam.GetViewMatrix().MultiplyToTheRight(&globe.modelmatrix)

@@ -1,13 +1,33 @@
 package webgl3d
 
+import "github.com/go4orward/gowebgl/common"
+
 type Scene struct {
-	objects []*SceneObject
+	bkgcolor [3]float32     // background color of the scene
+	objects  []*SceneObject // SceneObjects in the scene
 }
 
-func NewScene() *Scene {
+func NewScene(bkg_color string) *Scene {
 	var scene Scene
+	scene.SetBkgColor(bkg_color)
 	scene.objects = make([]*SceneObject, 0)
 	return &scene
+}
+
+// ----------------------------------------------------------------------------
+// Background Color
+// ----------------------------------------------------------------------------
+
+func (self *Scene) SetBkgColor(color string) *Scene {
+	rgba, err := common.ParseHexColor(color)
+	if err != nil {
+		self.bkgcolor = [3]float32{float32(rgba[0]) / 255.0, float32(rgba[1]) / 255.0, float32(rgba[2]) / 255.0}
+	}
+	return self
+}
+
+func (self *Scene) GetBkgColor() [3]float32 {
+	return self.bkgcolor
 }
 
 // ----------------------------------------------------------------------------

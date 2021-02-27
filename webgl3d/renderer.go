@@ -26,11 +26,10 @@ func NewRenderer(wctx *common.WebGLContext) *Renderer {
 // Clear
 // ----------------------------------------------------------------------------
 
-func (self *Renderer) Clear(camera *Camera, color string) {
+func (self *Renderer) Clear(scene *Scene) {
 	context := self.wctx.GetContext()
 	constants := self.wctx.GetConstants()
-
-	rgb, _ := common.ParseHexColor(color)
+	rgb := scene.GetBkgColor()
 	context.Call("clearColor", rgb[0], rgb[1], rgb[2], 1.0) // set clearing color
 	context.Call("clear", constants.COLOR_BUFFER_BIT)       // clear the canvas
 
@@ -57,7 +56,7 @@ func (self *Renderer) RenderAxes(camera *Camera, length float32) {
 // Rendering Scene
 // ----------------------------------------------------------------------------
 
-func (self *Renderer) RenderScene(camera *Camera, scene *Scene) {
+func (self *Renderer) RenderScene(scene *Scene, camera *Camera) {
 	// Render all the SceneObjects in the Scene
 	for _, sobj := range scene.objects {
 		new_viewmodel := camera.viewmatrix.MultiplyToTheRight(&sobj.modelmatrix)

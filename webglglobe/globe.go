@@ -9,12 +9,13 @@ import (
 )
 
 type Globe struct {
+	bkgcolor    [3]float32           // background color of the globe
 	gsphere     *webgl3d.SceneObject //
 	glowring    *webgl3d.SceneObject //
 	modelmatrix geom3d.Matrix4       //
 }
 
-func NewGlobe(wctx *common.WebGLContext) *Globe {
+func NewGlobe(wctx *common.WebGLContext, bkg_color string) *Globe {
 	self := Globe{}
 	self.modelmatrix.SetIdentity()                // initialize as Identity matrix
 	self.gsphere = NewSceneObject_Globe(wctx)     // texture & vertex normals
@@ -24,6 +25,22 @@ func NewGlobe(wctx *common.WebGLContext) *Globe {
 
 func (self *Globe) IsReadyToRender() bool {
 	return self.gsphere.GetMaterial().IsTextureLoading() == false
+}
+
+// ----------------------------------------------------------------------------
+// Background Color
+// ----------------------------------------------------------------------------
+
+func (self *Globe) SetBkgColor(color string) *Globe {
+	rgba, err := common.ParseHexColor(color)
+	if err != nil {
+		self.bkgcolor = [3]float32{float32(rgba[0]) / 255.0, float32(rgba[1]) / 255.0, float32(rgba[2]) / 255.0}
+	}
+	return self
+}
+
+func (self *Globe) GetBkgColor() [3]float32 {
+	return self.bkgcolor
 }
 
 // ----------------------------------------------------------------------------

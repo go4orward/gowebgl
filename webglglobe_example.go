@@ -17,12 +17,12 @@ func main() {
 		js.Global().Call("alert", "Failed to start WebGL : "+err.Error())
 		return
 	}
-	globe := webglglobe.NewGlobe(wctx)                          // Globe radius is assumed to be 1.0
+	globe := webglglobe.NewGlobe(wctx, "#000000")               // Globe radius is assumed to be 1.0
 	wcamera := webglglobe.NewWorldCamera(wctx.GetWH(), 15, 1.0) // camera FOV default is 15° (in degree)
 	wcamera.SetPoseByLonLat(0, 0, 10)                           // longitude 0°, latitude 0°, radius(distance) 10.0
 	renderer := webglglobe.NewWorldRenderer(wctx)               // set up the world renderer
-	renderer.Clear(wcamera, "#000000")                          // prepare to render (clearing to black background)
-	renderer.RenderWorld(wcamera, globe)                        // render the Globe (and all the layers & glowring)
+	renderer.Clear(globe)                                       // prepare to render (clearing to black background)
+	renderer.RenderWorld(globe, wcamera)                        // render the Globe (and all the layers & glowring)
 	renderer.RenderAxes(wcamera, 1.2)                           // render the axes (just for visual reference)
 
 	if true { // interactive
@@ -45,8 +45,8 @@ func main() {
 		})
 		// add animation
 		wctx.SetupAnimationFrame(func(canvas js.Value) {
-			renderer.Clear(wcamera, "#000000")   // prepare to render (clearing to black background)
-			renderer.RenderWorld(wcamera, globe) // render the Globe (and all the layers & glowring)
+			renderer.Clear(globe)                // prepare to render (clearing to black background)
+			renderer.RenderWorld(globe, wcamera) // render the Globe (and all the layers & glowring)
 			globe.Rotate([3]float32{0, 0, 1}, 0.1)
 		})
 		<-make(chan bool) // wait for events (without exiting)

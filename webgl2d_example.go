@@ -23,10 +23,10 @@ func main() {
 	material := webgl2d.NewMaterial(wctx, "#bbbbff") // create material (with light-blue color)
 	shader := webgl2d.NewShader_Color(wctx)          // shader with auto-binded color & PVM matrix
 	scnobj := webgl2d.NewSceneObject(geometry, material, shader).Rotate(40)
-	scene := webgl2d.NewScene().Add(scnobj)         // scene holds all the SceneObjects to be rendered
-	camera := webgl2d.NewCamera(wctx.GetWH(), 2, 1) // FOV 2 means range of [-1,+1] in X, ZoomLevel is 1.0
-	renderer := webgl2d.NewRenderer(wctx)           // set up the renderer
-	renderer.Clear(camera, "#ffffff")               // prepare to render (clearing to white background)
-	renderer.RenderScene(camera, scene)             // render the scene (iterating over all the SceneObjects in it)
-	renderer.RenderAxes(camera, 1.0)                // render the axes (just for visual reference)
+	scene := webgl2d.NewScene("#ffffff").Add(scnobj) // scene holds all the SceneObjects to be rendered
+	camera := webgl2d.NewCamera(wctx.GetWH(), 2, 1)  // FOV 2 means range of [-1,+1] in X, ZoomLevel is 1.0
+	renderer := webgl2d.NewRenderer(wctx)            // set up the renderer
+	renderer.Clear(scene)                            // prepare to render (clearing to white background)
+	renderer.RenderScene(scene, camera)              // render the scene (iterating over all the SceneObjects in it)
+	renderer.RenderAxes(camera, 1.0)                 // render the axes (just for visual reference)
 }

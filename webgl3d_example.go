@@ -18,7 +18,7 @@ func main() {
 		js.Global().Call("alert", "Failed to start WebGL : "+err.Error())
 		return
 	}
-	scene := webgl3d.NewScene()
+	scene := webgl3d.NewScene("#ffffff")
 	if false {
 		scene.Add(webgl3d.NewSceneObject_CylinderWireframe(wctx)) // a pre-defined example of SceneObject
 		// scene.Add(webgl3d.NewSceneObject_CubeInstances(wctx)) // a pre-defined example of SceneObject
@@ -33,8 +33,8 @@ func main() {
 	camera := webgl3d.NewPerspectiveCamera(wctx.GetWH(), 15, 1.0) // FOV default is 15° (in degree)
 	camera.SetPose([3]float32{0, 0, 10}, [3]float32{0, 0, 0}, [3]float32{0, 1, 0})
 	renderer := webgl3d.NewRenderer(wctx) // set up the renderer
-	renderer.Clear(camera, "#ffffff")     // prepare to render (clearing to white background)
-	renderer.RenderScene(camera, scene)   // render the scene (iterating over all the SceneObjects in it)
+	renderer.Clear(scene)                 // prepare to render (clearing to white background)
+	renderer.RenderScene(scene, camera)   // render the scene (iterating over all the SceneObjects in it)
 	renderer.RenderAxes(camera, 1.0)      // render the axes (just for visual reference)
 
 	if true { // interactive
@@ -55,8 +55,8 @@ func main() {
 		})
 		// add animation
 		wctx.SetupAnimationFrame(func(canvas js.Value) {
-			renderer.Clear(camera, "#ffffff")   // prepare to render (clearing to white background)
-			renderer.RenderScene(camera, scene) // render the scene (iterating over all the SceneObjects in it)
+			renderer.Clear(scene)               // prepare to render (clearing to white background)
+			renderer.RenderScene(scene, camera) // render the scene (iterating over all the SceneObjects in it)
 			renderer.RenderAxes(camera, 0.8)    // render the axes (just for visual reference)
 			// scene.Get(0).Rotate([3]float32{1, 0, 0}, 1.0)
 			scene.Get(0).Rotate([3]float32{0, 1, 0}, 1.0)

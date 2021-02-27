@@ -19,7 +19,7 @@ func main() {
 		js.Global().Call("alert", "Failed to start WebGL : "+err.Error())
 		return
 	}
-	scene := webgl2d.NewScene()
+	scene := webgl2d.NewScene("#ffffff")
 	if false {
 		scene.Add(webgl2d.NewSceneObject_RectInstances(wctx)) // multiple instances of rectangles
 	} else {
@@ -36,8 +36,8 @@ func main() {
 	camera := webgl2d.NewCamera(wctx.GetWH(), size[0]*1.1, 1.0) // FOV covers the Width of BBox, ZoomLevel is 1.0
 	camera.SetPose(center[0], center[1], 0.0).SetBoundingBox(bbox)
 	renderer := webgl2d.NewRenderer(wctx) // set up the renderer
-	renderer.Clear(camera, "#ffffff")     // prepare to render (clearing to white background)
-	renderer.RenderScene(camera, scene)   // render the scene (iterating over all the SceneObjects in it)
+	renderer.Clear(scene)                 // prepare to render (clearing to white background)
+	renderer.RenderScene(scene, camera)   // render the scene (iterating over all the SceneObjects in it)
 	renderer.RenderAxes(camera, 1.0)      // render the axes (just for visual reference)
 
 	if true { // ONLY FOR INTERACTIVE UI
@@ -72,8 +72,8 @@ func main() {
 		})
 		// add animation
 		wctx.SetupAnimationFrame(func(canvas js.Value) {
-			renderer.Clear(camera, "#ffffff")   // prepare to render (clearing to white background)
-			renderer.RenderScene(camera, scene) // render the scene (iterating over all the SceneObjects in it)
+			renderer.Clear(scene)               // prepare to render (clearing to white background)
+			renderer.RenderScene(scene, camera) // render the scene (iterating over all the SceneObjects in it)
 			renderer.RenderAxes(camera, 0.8)    // render the axes (just for visual reference)
 		})
 		<-make(chan bool) // wait for events (without exiting)
