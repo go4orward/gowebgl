@@ -20,15 +20,15 @@ func main() {
 		return
 	}
 	scene := webgl2d.NewScene("#ffffff")
-	if false {
+	if true {
 		scene.Add(webgl2d.NewSceneObject_RectInstances(wctx)) // multiple instances of rectangles
 	} else {
-		geometry := webgl2d.NewGeometry_Rectangle(2.0) // create geometry (a triangle with radius 0.5)
-		geometry.SetTextureUVs([][]float32{{0, 1, 1, 1, 1, 0, 0, 0}})
-		geometry.BuildDataBuffers(true, false, true)                // build data buffers for vertices and faces
-		material := webgl2d.NewMaterial(wctx, "/assets/gopher.png") // create material (with texture image)
-		shader := webgl2d.NewShader_Texture(wctx)                   // shader with auto-binded color & PVM matrix
-		scnobj := webgl2d.NewSceneObject(geometry, material, shader)
+		geometry := webgl2d.NewGeometry_Rectangle(1.0) // create geometry (a rectangle)
+		geometry.SetTextureUVs([][]float32{{0, 1}, {1, 1}, {1, 0}, {0, 0}})
+		geometry.BuildDataBuffers(true, true, true)                // build data buffers for vertices, edges, and faces
+		material := common.NewMaterial(wctx, "/assets/gopher.png") // create material (with texture image)
+		shader := webgl2d.NewShader_MaterialTexture(wctx)          // shader with auto-binded color & PVM matrix
+		scnobj := webgl2d.NewSceneObject(geometry, material, nil, nil, shader)
 		scene.Add(scnobj)
 		geometry.ShowInfo()
 	}
@@ -74,7 +74,7 @@ func main() {
 		wctx.SetupAnimationFrame(func(canvas js.Value) {
 			renderer.Clear(scene)               // prepare to render (clearing to white background)
 			renderer.RenderScene(scene, camera) // render the scene (iterating over all the SceneObjects in it)
-			renderer.RenderAxes(camera, 0.8)    // render the axes (just for visual reference)
+			renderer.RenderAxes(camera, 1.0)    // render the axes (just for visual reference)
 		})
 		<-make(chan bool) // wait for events (without exiting)
 	}

@@ -19,10 +19,8 @@ func NewScene(bkg_color string) *Scene {
 // ----------------------------------------------------------------------------
 
 func (self *Scene) SetBkgColor(color string) *Scene {
-	rgba, err := common.ParseHexColor(color)
-	if err == nil {
-		self.bkgcolor = [3]float32{float32(rgba[0]) / 255.0, float32(rgba[1]) / 255.0, float32(rgba[2]) / 255.0}
-	}
+	rgba := common.ParseHexColor(color)
+	self.bkgcolor = [3]float32{rgba[0], rgba[1], rgba[2]}
 	return self
 }
 

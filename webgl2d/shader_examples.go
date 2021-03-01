@@ -10,12 +10,12 @@ func NewShader_2DAxes(wctx *common.WebGLContext) *common.Shader {
 	var vertex_shader_code = `
 		precision mediump float;
 		uniform   mat3 pvm;			// Projection * View * Model matrix
-		attribute vec2 xy;			// XY coordinates
+		attribute vec2 axy;			// XY coordinates
 		varying   vec2 v_xy;		// (varying) XY coordinates
 		void main() {
-			vec3 new_pos = pvm * vec3(xy.x, xy.y, 1.0);
+			vec3 new_pos = pvm * vec3(axy, 1.0);
 			gl_Position = vec4(new_pos.x, new_pos.y, 0.0, 1.0);
-			v_xy = xy;
+			v_xy = axy;
 		}`
 	var fragment_shader_code = `
 		precision mediump float;
@@ -25,13 +25,13 @@ func NewShader_2DAxes(wctx *common.WebGLContext) *common.Shader {
 			else               gl_FragColor = vec4(0.1, 1.0, 0.1, 1.0);
 		}`
 	shader, _ := common.NewShader(wctx, vertex_shader_code, fragment_shader_code)
-	shader.InitBindingForUniform("pvm", "mat3", "renderer.pvm")     // automatic binding of Proj*View*Model matrix
-	shader.InitBindingForAttribute("xy", "vec2", "geometry.coords") // automatic binding of point coordinates
-	shader.SetThingsToDraw("LINES")                                 // only for axis LINES
+	shader.InitBindingForUniform("pvm", "mat3", "renderer.pvm")      // automatic binding of Proj*View*Model matrix
+	shader.InitBindingForAttribute("axy", "vec2", "geometry.coords") // automatic binding of point coordinates
+	shader.CheckBindings()                                           // check validity of the shader
 	return shader
 }
 
-func NewShader_Color(wctx *common.WebGLContext) *common.Shader {
+func NewShader_MaterialColor(wctx *common.WebGLContext) *common.Shader {
 	// Shader with auto-binded color and (Proj * View * Model) matrix
 	var vertex_shader_code = `
 		precision mediump float;
@@ -51,11 +51,11 @@ func NewShader_Color(wctx *common.WebGLContext) *common.Shader {
 	shader.InitBindingForUniform("pvm", "mat3", "renderer.pvm")     // automatic binding of Proj*View*Model matrix
 	shader.InitBindingForUniform("color", "vec3", "material.color") // automatic binding of material color
 	shader.InitBindingForAttribute("xy", "vec2", "geometry.coords") // automatic binding of point coordinates
-	shader.SetThingsToDraw("LINES", "TRIANGLES")                    // can be used for drawing either
+	shader.CheckBindings()                                          // check validity of the shader
 	return shader
 }
 
-func NewShader_Texture(wctx *common.WebGLContext) *common.Shader {
+func NewShader_MaterialTexture(wctx *common.WebGLContext) *common.Shader {
 	// Shader with auto-binded color and (Proj * View * Model) matrix
 	var vertex_shader_code = `
 		precision mediump float;
@@ -80,7 +80,7 @@ func NewShader_Texture(wctx *common.WebGLContext) *common.Shader {
 	shader.InitBindingForUniform("text", "sampler2D", "material.texture") // automatic binding of texture sampler (unit:0)
 	shader.InitBindingForAttribute("xy", "vec2", "geometry.coords")       // automatic binding of point coordinates
 	shader.InitBindingForAttribute("uv", "vec2", "geometry.textuv")       // automatic binding of texture UV coordinates
-	shader.SetThingsToDraw("LINES", "TRIANGLES")                          // can be used for drawing either
+	shader.CheckBindings()                                                // check validity of the shader
 	return shader
 }
 
@@ -90,8 +90,8 @@ func NewShader_InstancePoseColor(wctx *common.WebGLContext) *common.Shader {
 		precision mediump float;
 		uniform   mat3 pvm;			// Projection * View * Model matrix
 		attribute vec2 xy;			// XY coordinates
-		attribute vec2 ixy;			// instance pose : XY translation
-		attribute vec3 icolor;		// instance pose : color
+		attribute vec2 ixy;			// instance position : XY translation
+		attribute vec3 icolor;		// instance color    : RGB
 		varying   vec3 v_color;		// (varying) color
 		void main() {
 			vec3 new_pos = pvm * vec3(xy.x + ixy.x, xy.y + ixy.y, 1.0);
@@ -109,6 +109,6 @@ func NewShader_InstancePoseColor(wctx *common.WebGLContext) *common.Shader {
 	shader.InitBindingForAttribute("xy", "vec2", "geometry.coords")       // automatic binding of point coordinates
 	shader.InitBindingForAttribute("ixy", "vec2", "instance.pose:5:0")    // automatic binding of instance pose
 	shader.InitBindingForAttribute("icolor", "vec3", "instance.pose:5:2") // automatic binding of instance color
-	shader.SetThingsToDraw("LINES", "TRIANGLES")                          // can be used for drawing either
+	shader.CheckBindings()                                                // check validity of the shader
 	return shader
 }

@@ -38,6 +38,10 @@ func (self *Renderer) RenderAxes(camera *Camera, length float32) {
 	if self.axes == nil {
 		self.axes = NewSceneObject_2DAxes(self.wctx, length)
 	}
+	context := self.wctx.GetContext()
+	constants := self.wctx.GetConstants()
+	context.Call("bindBuffer", constants.ARRAY_BUFFER, js.Null())
+	context.Call("bindBuffer", constants.ELEMENT_ARRAY_BUFFER, js.Null())
 	self.RenderSceneObject(self.axes, &camera.pjvwmatrix) // (Proj * View) matrix
 }
 
@@ -60,7 +64,7 @@ func (self *Renderer) RenderScene(scene *Scene, camera *Camera) {
 func (self *Renderer) RenderSceneObject(sobj *SceneObject, pvm *geom2d.Matrix3) error {
 	context := self.wctx.GetContext()
 	constants := self.wctx.GetConstants()
-	// 0. set DepthTest & Blending options
+	// Set DepthTest & Blending options
 	if sobj.UseDepth {
 		context.Call("enable", constants.DEPTH_TEST) // Enable depth test
 		context.Call("depthFunc", constants.LEQUAL)  // Near things obscure far things
@@ -74,7 +78,7 @@ func (self *Renderer) RenderSceneObject(sobj *SceneObject, pvm *geom2d.Matrix3) 
 	} else {
 		context.Call("disable", constants.BLEND) // Disable blending
 	}
-	// 1. If necessary, then build WebGLBuffers for the SceneObject's Geometry
+	// If necessary, then build WebGLBuffers for the SceneObject's Geometry
 	if sobj.Geometry.IsDataBufferReady() == false {
 		return errors.New("Failed to RenderSceneObject() : empty geometry data buffer")
 	}
@@ -87,71 +91,28 @@ func (self *Renderer) RenderSceneObject(sobj *SceneObject, pvm *geom2d.Matrix3) 
 			self.wctx.SetupExtension("ANGLE")
 		}
 	}
-	// 2. Decide which Shader to use
-	shader := sobj.Shader
-	if shader == nil {
-		return errors.New("Failed to RenderSceneObject() : shader not found")
-	}
-	context.Call("useProgram", shader.GetShaderProgram())
-	// 3. bind the uniforms of the shader program
-	for uname, umap := range shader.GetUniformBindings() {
-		if err := self.bind_uniform(uname, umap, sobj.Material, pvm); err != nil {
-			if err.Error() != "Texture is not ready" {
-				fmt.Println(err.Error())
-			}
+	// R3: Render the object with FACE shader
+	if sobj.FShader != nil {
+		err := self.render_scene_object_with_shader(sobj, pvm, 3, sobj.FShader)
+		if err != nil {
 			return err
 		}
 	}
-	// 4. bind the attributes of the shader program
-	for aname, amap := range shader.GetAttributeBindings() {
-		if err := self.bind_attribute(aname, amap, sobj.Geometry, sobj.poses); err != nil {
-			fmt.Println(err.Error())
+	// R2: Render the object with EDGE shader
+	if sobj.EShader != nil {
+		err := self.render_scene_object_with_shader(sobj, pvm, 2, sobj.EShader)
+		if err != nil {
 			return err
 		}
 	}
-	// 5. draw
-	for _, draw_mode := range shader.GetThingsToDraw() {
-		// Note that ARRAY_BUFFER was binded already in the previous step (during attribute binding)
-		switch draw_mode {
-		case "POINTS", "VERTICES":
-			_, count, _ := sobj.Geometry.GetWebGLBuffer("POINTS")
-			if count > 0 {
-				if sobj.poses == nil {
-					context.Call("drawArrays", constants.POINTS, 0, count) // (mode, first, count)
-				} else {
-					ext, pose_count := self.wctx.GetExtension("ANGLE"), sobj.poses.GetPoseCount()
-					ext.Call("drawArraysInstancedANGLE", constants.POINTS, 0, count, pose_count)
-				}
-			}
-		case "LINES", "EDGES":
-			buffer, count, _ := sobj.Geometry.GetWebGLBuffer("LINES")
-			if count > 0 {
-				context.Call("bindBuffer", constants.ELEMENT_ARRAY_BUFFER, buffer)
-				if sobj.poses == nil {
-					context.Call("drawElements", constants.LINES, count, constants.UNSIGNED_INT, 0) // (mode, count, type, offset)
-				} else {
-					ext, pose_count := self.wctx.GetExtension("ANGLE"), sobj.poses.GetPoseCount()
-					ext.Call("drawElementsInstancedANGLE", constants.LINES, count, constants.UNSIGNED_INT, 0, pose_count)
-				}
-			}
-		case "TRIANGLES", "FACES":
-			buffer, count, _ := sobj.Geometry.GetWebGLBuffer("TRIANGLES")
-			if count > 0 {
-				context.Call("bindBuffer", constants.ELEMENT_ARRAY_BUFFER, buffer)
-				if sobj.poses == nil {
-					context.Call("drawElements", constants.TRIANGLES, count, constants.UNSIGNED_INT, 0) // (mode, count, type, offset)
-				} else {
-					ext, pose_count := self.wctx.GetExtension("ANGLE"), sobj.poses.GetPoseCount()
-					ext.Call("drawElementsInstancedANGLE", constants.TRIANGLES, count, constants.UNSIGNED_INT, 0, pose_count)
-				}
-			}
-		default:
-			err := fmt.Errorf("Unknown mode to draw : %s\n", draw_mode)
-			fmt.Printf(err.Error())
+	// R1: Render the object with VERTEX shader
+	if sobj.VShader != nil {
+		err := self.render_scene_object_with_shader(sobj, pvm, 1, sobj.VShader)
+		if err != nil {
 			return err
 		}
 	}
-	// 6. render all the children
+	// Render all the children
 	for _, child := range sobj.children {
 		new_pvm := pvm.MultiplyToTheRight(&child.modelmatrix)
 		self.RenderSceneObject(child, new_pvm)
@@ -159,7 +120,77 @@ func (self *Renderer) RenderSceneObject(sobj *SceneObject, pvm *geom2d.Matrix3) 
 	return nil
 }
 
-func (self *Renderer) bind_uniform(uname string, umap map[string]interface{}, material *Material, pvm *geom2d.Matrix3) error {
+func (self *Renderer) render_scene_object_with_shader(sobj *SceneObject, pvm *geom2d.Matrix3, draw_mode int, shader *common.Shader) error {
+	context := self.wctx.GetContext()
+	constants := self.wctx.GetConstants()
+	// 1. Decide which Shader to use
+	if shader == nil {
+		return errors.New("Failed to RenderSceneObject() : shader not found")
+	}
+	context.Call("useProgram", shader.GetShaderProgram())
+	// 2. bind the uniforms of the shader program
+	for uname, umap := range shader.GetUniformBindings() {
+		if err := self.bind_uniform(uname, umap, draw_mode, sobj.Material, pvm); err != nil {
+			if err.Error() != "Texture is not ready" {
+				fmt.Println(err.Error())
+			}
+			return err
+		}
+	}
+	// 3. bind the attributes of the shader program
+	for aname, amap := range shader.GetAttributeBindings() {
+		if err := self.bind_attribute(aname, amap, draw_mode, sobj.Geometry, sobj.poses); err != nil {
+			fmt.Println(err.Error())
+			return err
+		}
+	}
+	// 4. draw  (Note that ARRAY_BUFFER was binded already in the attribut-binding step)
+	switch draw_mode {
+	case 3: // draw TRIANGLES (FACES)
+		buffer, count, _ := sobj.Geometry.GetWebGLBuffer(draw_mode)
+		if count > 0 {
+			context.Call("bindBuffer", constants.ELEMENT_ARRAY_BUFFER, buffer)
+			if sobj.poses == nil {
+				context.Call("drawElements", constants.TRIANGLES, count, constants.UNSIGNED_INT, 0) // (mode, count, type, offset)
+			} else {
+				ext, pose_count := self.wctx.GetExtension("ANGLE"), sobj.poses.GetPoseCount()
+				ext.Call("drawElementsInstancedANGLE", constants.TRIANGLES, count, constants.UNSIGNED_INT, 0, pose_count)
+			}
+		}
+	case 2: // draw LINES (EDGES)
+		buffer, count, _ := sobj.Geometry.GetWebGLBuffer(draw_mode)
+		if count > 0 {
+			context.Call("bindBuffer", constants.ELEMENT_ARRAY_BUFFER, buffer)
+			if sobj.poses == nil {
+				// pname := self.wctx.GetExtension("ANGLE").Get("VERTEX_ATTRIB_ARRAY_DIVISOR_ANGLE")
+				// loc2 := shader.GetAttributeBindings()["axy"]["location"].(js.Value)
+				// fmt.Printf("axy  : %v\n", context.Call("getVertexAttrib", loc2, pname))
+				context.Call("drawElements", constants.LINES, count, constants.UNSIGNED_INT, 0) // (mode, count, type, offset)
+			} else {
+				ext, pose_count := self.wctx.GetExtension("ANGLE"), sobj.poses.GetPoseCount()
+				ext.Call("drawElementsInstancedANGLE", constants.LINES, count, constants.UNSIGNED_INT, 0, pose_count)
+			}
+		}
+	case 1: // draw POINTS (VERTICES)
+		_, count, _ := sobj.Geometry.GetWebGLBuffer(draw_mode)
+		if count > 0 {
+			if sobj.poses == nil {
+				context.Call("drawArrays", constants.POINTS, 0, count) // (mode, first, count)
+			} else {
+				ext, pose_count := self.wctx.GetExtension("ANGLE"), sobj.poses.GetPoseCount()
+				ext.Call("drawArraysInstancedANGLE", constants.POINTS, 0, count, pose_count)
+			}
+		}
+	default:
+		err := fmt.Errorf("Unknown mode to draw : %s\n", draw_mode)
+		fmt.Printf(err.Error())
+		return err
+	}
+	return nil
+}
+
+func (self *Renderer) bind_uniform(uname string, umap map[string]interface{},
+	draw_mode int, material *common.Material, pvm *geom2d.Matrix3) error {
 	context := self.wctx.GetContext()
 	constants := self.wctx.GetConstants()
 	if umap["location"] == nil {
@@ -183,7 +214,7 @@ func (self *Renderer) bind_uniform(uname string, umap map[string]interface{}, ma
 	case "material.color":
 		c := [4]float32{0, 1, 1, 1}
 		if material != nil {
-			c = material.GetFloat32Color()
+			c = material.GetDrawModeColor(draw_mode) // get color from material (for the DrawMode)
 		}
 		switch dtype {
 		case "vec3":
@@ -234,7 +265,8 @@ func (self *Renderer) bind_uniform(uname string, umap map[string]interface{}, ma
 	return fmt.Errorf("Failed to bind uniform '%s' (%s) with %v", uname, dtype, autobinding)
 }
 
-func (self *Renderer) bind_attribute(aname string, amap map[string]interface{}, geometry *Geometry, poses *SceneObjectPoses) error {
+func (self *Renderer) bind_attribute(aname string, amap map[string]interface{},
+	draw_mode int, geometry *Geometry, poses *SceneObjectPoses) error {
 	context := self.wctx.GetContext()
 	constants := self.wctx.GetConstants()
 	if amap["location"] == nil {
@@ -248,20 +280,22 @@ func (self *Renderer) bind_attribute(aname string, amap map[string]interface{}, 
 	autobinding0 := autobinding_split[0]
 	switch autobinding0 {
 	case "geometry.coords": // 2 * float32 in 8 bytes (2 float32)
-		buffer, _, pinfo := geometry.GetWebGLBuffer("POINTS")
+		buffer, _, pinfo := geometry.GetWebGLBuffer(1) // pinfo : [3]{stride, xy_offset, uv_offset}
 		context.Call("bindBuffer", constants.ARRAY_BUFFER, buffer)
 		context.Call("vertexAttribPointer", location, 2, constants.FLOAT, false, pinfo[0]*4, pinfo[1]*4)
 		context.Call("enableVertexAttribArray", location)
-		if poses != nil { // context.ext_angle.vertexAttribDivisorANGLE(attribute_loc, divisor);
+		if self.wctx.IsExtensionReady("ANGLE") {
+			// context.ext_angle.vertexAttribDivisorANGLE(attribute_loc, divisor);
 			self.wctx.GetExtension("ANGLE").Call("vertexAttribDivisorANGLE", location, 0) // divisor == 0
 		}
 		return nil
 	case "geometry.textuv": // 2 * uint16 in 4 bytes (1 float32)
-		buffer, _, pinfo := geometry.GetWebGLBuffer("POINTS")
+		buffer, _, pinfo := geometry.GetWebGLBuffer(1) // pinfo : [3]{stride, xy_offset, uv_offset}
 		context.Call("bindBuffer", constants.ARRAY_BUFFER, buffer)
 		context.Call("vertexAttribPointer", location, 2, constants.UNSIGNED_SHORT, true, pinfo[0]*4, pinfo[2]*4)
 		context.Call("enableVertexAttribArray", location)
-		if poses != nil { // context.ext_angle.vertexAttribDivisorANGLE(attribute_loc, divisor);
+		if self.wctx.IsExtensionReady("ANGLE") {
+			// context.ext_angle.vertexAttribDivisorANGLE(attribute_loc, divisor);
 			self.wctx.GetExtension("ANGLE").Call("vertexAttribDivisorANGLE", location, 0) // divisor == 0
 		}
 		return nil
@@ -284,7 +318,8 @@ func (self *Renderer) bind_attribute(aname string, amap map[string]interface{}, 
 			context.Call("bindBuffer", constants.ARRAY_BUFFER, buffer.(js.Value))
 			context.Call("vertexAttribPointer", location, count, constants.FLOAT, false, stride*4, offset*4)
 			context.Call("enableVertexAttribArray", location)
-			if poses != nil { // context.ext_angle.vertexAttribDivisorANGLE(attribute_loc, divisor);
+			if self.wctx.IsExtensionReady("ANGLE") {
+				// context.ext_angle.vertexAttribDivisorANGLE(attribute_loc, divisor);
 				self.wctx.GetExtension("ANGLE").Call("vertexAttribDivisorANGLE", location, 0) // divisor == 0
 			}
 		}

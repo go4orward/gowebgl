@@ -10,17 +10,17 @@ import (
 
 type Globe struct {
 	bkgcolor    [3]float32           // background color of the globe
-	GSphere     *webgl3d.SceneObject //
-	GlowRing    *webgl3d.SceneObject //
-	modelmatrix geom3d.Matrix4       //
+	GSphere     *webgl3d.SceneObject // globe sphere with texture & vertex normals
+	GlowRing    *webgl3d.SceneObject // glow ring around the globe
+	modelmatrix geom3d.Matrix4       // Model matrix of the globe & its layers
 }
 
 func NewGlobe(wctx *common.WebGLContext, bkg_color string) *Globe {
 	self := Globe{}
 	self.SetBkgColor(bkg_color)
+	self.GSphere = NewSceneObject_Globe(wctx)     // globe sphere with texture & vertex normals
+	self.GlowRing = NewSceneObject_GlowRing(wctx) // glow ring around the globe
 	self.modelmatrix.SetIdentity()                // initialize as Identity matrix
-	self.GSphere = NewSceneObject_Globe(wctx)     // texture & vertex normals
-	self.GlowRing = NewSceneObject_GlowRing(wctx) //
 	return &self
 }
 
@@ -33,10 +33,8 @@ func (self *Globe) IsReadyToRender() bool {
 // ----------------------------------------------------------------------------
 
 func (self *Globe) SetBkgColor(color string) *Globe {
-	rgba, err := common.ParseHexColor(color)
-	if err == nil {
-		self.bkgcolor = [3]float32{float32(rgba[0]) / 255.0, float32(rgba[1]) / 255.0, float32(rgba[2]) / 255.0}
-	}
+	rgba := common.ParseHexColor(color)
+	self.bkgcolor = [3]float32{rgba[0], rgba[1], rgba[2]}
 	return self
 }
 
@@ -80,20 +78,20 @@ func (self *Globe) Scale(scale float32) *Globe {
 
 func NewSceneObject_GlobeWithoutLight(wctx *common.WebGLContext) *webgl3d.SceneObject {
 	// Globe model with texture UV coordinates (without normal vectors and directional lighting)
-	geometry := build_globe_geometry(1.0, 64, 32, false)       // create globe geometry with texture UVs only
-	geometry.BuildDataBuffers(true, false, true)               // build data buffers for vertices and faces
-	material := webgl3d.NewMaterial(wctx, "/assets/world.png") // create material with a texture of world image
-	shader := webgl3d.NewShader_TextureOnly(wctx)              // use the standard TEXTURE_ONLY shader
-	return webgl3d.NewSceneObject(geometry, material, shader)  // set up the scene object
+	geometry := build_globe_geometry(1.0, 64, 32, false)                // create globe geometry with texture UVs only
+	geometry.BuildDataBuffers(true, false, true)                        // build data buffers for vertices and faces
+	material := common.NewMaterial(wctx, "/assets/world.png")           // create material with a texture of world image
+	shader := webgl3d.NewShader_TextureOnly(wctx)                       // use the standard TEXTURE_ONLY shader
+	return webgl3d.NewSceneObject(geometry, material, nil, nil, shader) // set up the scene object
 }
 
 func NewSceneObject_Globe(wctx *common.WebGLContext) *webgl3d.SceneObject {
 	// Globe model with texture AND normal vectors (for directional lighting)
-	geometry := build_globe_geometry(1.0, 64, 32, true)        // create globe geometry with vertex normal vectors
-	geometry.BuildDataBuffers(true, false, true)               // build data buffers for vertices and faces
-	material := webgl3d.NewMaterial(wctx, "/assets/world.png") // create material with a texture of world image
-	shader := webgl3d.NewShader_NormalTexture(wctx)            // use the standard NORMAL+TEXTURE shader
-	return webgl3d.NewSceneObject(geometry, material, shader)  // set up the scene object
+	geometry := build_globe_geometry(1.0, 64, 32, true)                 // create globe geometry with vertex normal vectors
+	geometry.BuildDataBuffers(true, false, true)                        // build data buffers for vertices and faces
+	material := common.NewMaterial(wctx, "/assets/world.png")           // create material with a texture of world image
+	shader := webgl3d.NewShader_NormalTexture(wctx)                     // use the standard NORMAL+TEXTURE shader
+	return webgl3d.NewSceneObject(geometry, material, nil, nil, shader) // set up the scene object
 }
 
 func build_globe_geometry(radius float32, wsegs int, hsegs int, use_normals bool) *webgl3d.Geometry {
@@ -140,13 +138,21 @@ func build_globe_geometry(radius float32, wsegs int, hsegs int, use_normals bool
 func NewSceneObject_GlowRing(wctx *common.WebGLContext) *webgl3d.SceneObject {
 	// GlowRing around the globe, to make the globe stand out against black background.
 	// (Note that GlowRing should be rendered in CAMERA space by Renderer)
-	geometry := build_glowring_geometry(1.0, 1.12, 64)            // create geometry (a ring around the globe)
-	geometry.BuildDataBuffers(true, false, true)                  // build data buffers for vertices and faces
-	material := webgl3d.NewMaterialForGlowEffect(wctx, "#445566") // texture material for glow effect
-	shader := webgl3d.NewShader_TextureOnly(wctx)                 // use the standard TEXTURE_ONLY shader
-	scnobj := webgl3d.NewSceneObject(geometry, material, shader)  // set up the scene object
-	scnobj.UseBlend = true                                        // default is false
-	return scnobj
+	if true {
+		geometry := build_glowring_geometry(1.0, 1.1, 64)                      // create geometry (a ring around the globe)
+		geometry.BuildDataBuffers(true, false, true)                           // build data buffers for vertices and faces
+		material := common.NewMaterialForGlowEffect(wctx, "#445566")           // texture material for glow effect
+		shader := webgl3d.NewShader_TextureOnly(wctx)                          // use the standard TEXTURE_ONLY shader
+		scnobj := webgl3d.NewSceneObject(geometry, material, nil, nil, shader) // set up the scene object
+		scnobj.UseBlend = true                                                 // default is false
+		return scnobj
+	} else {
+		geometry := build_glowring_geometry(1.0, 1.1, 64)                 // create geometry (a ring around the globe)
+		geometry.BuildDataBuffersForWireframe()                           // build data buffers for vertices and faces
+		shader := webgl3d.NewShader_ColorOnly(wctx)                       // use the standard TEXTURE_ONLY shader
+		scnobj := webgl3d.NewSceneObject(geometry, nil, nil, shader, nil) // set up the scene object
+		return scnobj
+	}
 }
 
 func build_glowring_geometry(in_radius float32, out_radius float32, nsegs int) *webgl3d.Geometry {

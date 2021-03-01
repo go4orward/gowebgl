@@ -9,8 +9,10 @@ import (
 
 type SceneObject struct {
 	Geometry    *Geometry
-	Material    *Material         // material
-	Shader      *common.Shader    // shader and its bindings
+	Material    *common.Material  // material
+	VShader     *common.Shader    // vert shader and its bindings
+	EShader     *common.Shader    // edge shader and its bindings
+	FShader     *common.Shader    // face shader and its bindings
 	modelmatrix geom3d.Matrix4    //
 	UseDepth    bool              // depth test flag (default is true)
 	UseBlend    bool              // blending flag with alpha (default is false)
@@ -18,18 +20,52 @@ type SceneObject struct {
 	children    []*SceneObject    //
 }
 
-func NewSceneObject(geometry *Geometry, material *Material, shader *common.Shader) *SceneObject {
+func NewSceneObject(geometry *Geometry, material *common.Material,
+	vshader *common.Shader, eshader *common.Shader, fshader *common.Shader) *SceneObject {
+	// 'geometry' : geometric shape (vertices, edges, faces) to be rendered
+	// 'material' : color, texture, or other material properties	: OPTIONAL (can be 'nil')
+	// 'vshader' : shader for VERTICES (POINTS) 					: OPTIONAL (can be 'nil')
+	// 'eshader' : shader for EDGES (LINES) 						: OPTIONAL (can be 'nil')
+	// 'fshader' : shader for FACES (TRIANGLES) 					: OPTIONAL (can be 'nil')
+	// Note that geometry & material & shader can be shared among different SceneObjects.
 	if geometry == nil {
 		return nil
 	}
 	// Note that 'material' & 'shader' can be nil, in which case its parent's 'material' & 'shader' will be used to render.
-	sobj := SceneObject{Geometry: geometry, Material: material, Shader: shader}
+	sobj := SceneObject{Geometry: geometry, Material: material, VShader: vshader, EShader: eshader, FShader: fshader}
 	sobj.modelmatrix.SetIdentity()
-	sobj.UseDepth = true
-	sobj.UseBlend = false
+	sobj.UseDepth = true  // depth test is turned on by default
+	sobj.UseBlend = false // alpha blending is turned off by default
 	sobj.poses = nil
 	sobj.children = nil
 	return &sobj
+}
+
+func (self *SceneObject) ShowInfo() {
+	fmt.Printf("SceneObject ")
+	self.Geometry.ShowInfo()
+	if self.poses != nil {
+		fmt.Printf("  ")
+		self.poses.ShowInfo()
+	}
+	if self.Material != nil {
+		fmt.Printf("  ")
+		self.Material.ShowInfo()
+	}
+	if self.VShader != nil {
+		fmt.Printf("  VERT ")
+		self.VShader.ShowInfo()
+	}
+	if self.EShader != nil {
+		fmt.Printf("  EDGE ")
+		self.EShader.ShowInfo()
+	}
+	if self.FShader != nil {
+		fmt.Printf("  FACE ")
+		self.FShader.ShowInfo()
+	}
+	fmt.Printf("  Flags    : UseDepth=%t  UseBlend=%t\n", self.UseDepth, self.UseBlend)
+	fmt.Printf("  Children : %d\n", len(self.children))
 }
 
 // ----------------------------------------------------------------------------
@@ -55,21 +91,6 @@ func (self *SceneObject) GetModelMatrix() *geom3d.Matrix4 {
 
 func (self *SceneObject) GetChildren() []*SceneObject {
 	return self.children
-}
-
-func (self *SceneObject) ShowInfo() {
-	fmt.Printf("SceneObject ")
-	self.Geometry.ShowInfo()
-	if self.Material != nil {
-		fmt.Printf("  ")
-		self.Material.ShowInfo()
-	}
-	if self.Shader != nil {
-		fmt.Printf("  ")
-		self.Shader.ShowInfo()
-	}
-	fmt.Printf("  Flags    : UseDepth=%t  UseBlend=%t\n", self.UseDepth, self.UseBlend)
-	fmt.Printf("  Children : %d\n", len(self.children))
 }
 
 // ----------------------------------------------------------------------------

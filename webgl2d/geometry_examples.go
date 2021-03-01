@@ -4,15 +4,18 @@ import (
 	"math"
 )
 
-func NewGeometry_Triangle(size float32) *Geometry {
-	return NewGeometry_Polygon(3, size, -30)
-}
-
 func NewGeometry_Rectangle(size float32) *Geometry {
 	hs := size / 2
 	geometry := NewGeometry() // create an empty geometry
 	geometry.SetVertices([][2]float32{{-hs, -hs}, {hs, -hs}, {hs, hs}, {-hs, hs}})
 	geometry.SetFaces([][]uint32{{0, 1, 2, 3}})
+	geometry.SetEdges([][]uint32{{0, 1, 2, 3}})
+	return geometry
+}
+
+func NewGeometry_Triangle(size float32) *Geometry {
+	geometry := NewGeometry_Polygon(3, size, -30) // 3 vertices and 1 triangular face
+	geometry.SetEdges([][]uint32{{0, 1, 2, 0}})   // 1 edge connecting all the vertices
 	return geometry
 }
 

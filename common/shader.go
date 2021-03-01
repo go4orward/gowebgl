@@ -19,8 +19,6 @@ type Shader struct {
 
 	uniforms   map[string]map[string]interface{} // shader uniforms to bind
 	attributes map[string]map[string]interface{} // shader attributes to bind
-
-	draw_modes []string // draw_modes to render ("POINTS", "LINES", "TRIANGLES")
 }
 
 func NewShader(wctx *WebGLContext, vertex_shader string, fragment_shader string) (*Shader, error) {
@@ -55,7 +53,6 @@ func NewShader(wctx *WebGLContext, vertex_shader string, fragment_shader string)
 	// initialize shader bindings with empty map
 	shader.uniforms = map[string]map[string]interface{}{}
 	shader.attributes = map[string]map[string]interface{}{}
-	shader.draw_modes = []string{}
 	return &shader, shader.err
 }
 
@@ -71,10 +68,6 @@ func (self *Shader) GetAttributeBindings() map[string]map[string]interface{} {
 	return self.attributes
 }
 
-func (self *Shader) GetThingsToDraw() []string {
-	return self.draw_modes
-}
-
 func (self *Shader) ShowInfo() {
 	if self.err == nil {
 		fmt.Printf("Shader  OK\n")
@@ -87,11 +80,6 @@ func (self *Shader) ShowInfo() {
 	for aname, amap := range self.attributes {
 		fmt.Printf("    Attribute %-10s: %v\n", aname, amap)
 	}
-	things_to_draw := ""
-	for _, dmode := range self.draw_modes {
-		things_to_draw += dmode + " "
-	}
-	fmt.Printf("    ThingsToDraw : %s\n", things_to_draw)
 }
 
 // ----------------------------------------------------------------------------
@@ -109,7 +97,7 @@ func (self *Shader) InitBindingForUniform(name string, dtype string, autobinding
 	case "renderer.pvm": //  [mat3](2D) or [mat4](3D) (Proj * View * Model) matrix
 	case "renderer.proj": // [mat3](2D) or [mat4](3D) (Projection) matrix
 	case "renderer.vwmd": // [mat3](2D) or [mat4](3D) (View * Model) matrix
-	case "material.color": //  [vec3] uniform color for all
+	case "material.color": //  [vec3] uniform color taken from Material
 	case "material.texture": // [sampler2D] texture sampler(unit), like "material.texture:0"
 	case "lighting.dlight": // [mat3](3D) directional light information with (direction[3], color[3], ambient[3])
 	case "": // It's OK to skip autobinding.
@@ -180,10 +168,7 @@ func (self *Shader) SetBindingForAttribute(name string, dtype string, buffer int
 	return err
 }
 
-func (self *Shader) SetThingsToDraw(modes ...string) {
-	// set things ("POINTS"/"VERTICES", "LINES"/"EDGES", or "TRIANGLES"/"FACES") to draw
-	self.draw_modes = modes
-
+func (self *Shader) CheckBindings() {
 	// check uniform locations before rendering (since gl.getXXX() is expensive)
 	context := self.wctx.GetContext()
 	if self.err != nil {

@@ -25,7 +25,7 @@ func NewShader_3DAxes(wctx *common.WebGLContext) *common.Shader {
 	shader, _ := common.NewShader(wctx, vertex_shader_code, fragment_shader_code)
 	shader.InitBindingForUniform("pvm", "mat4", "renderer.pvm")      // automatic binding of (Proj * View * Models) matrix
 	shader.InitBindingForAttribute("xyz", "vec3", "geometry.coords") // automatic binding of vertex coordinates
-	shader.SetThingsToDraw("LINES")                                  // only for axis LINES
+	shader.CheckBindings()                                           // check validity of the shader
 	return shader
 }
 
@@ -48,7 +48,7 @@ func NewShader_ColorOnly(wctx *common.WebGLContext) *common.Shader {
 	shader.InitBindingForUniform("pvm", "mat4", "renderer.pvm")      // automatic binding of (Proj * View * Models) matrix
 	shader.InitBindingForUniform("color", "vec3", "material.color")  // automatic binding of material color
 	shader.InitBindingForAttribute("xyz", "vec3", "geometry.coords") // automatic binding of point XYZ coordinates
-	shader.SetThingsToDraw("LINES", "TRIANGLES")                     // can be used for drawing either
+	shader.CheckBindings()                                           // check validity of the shader
 	return shader
 }
 
@@ -84,7 +84,7 @@ func NewShader_NormalColor(wctx *common.WebGLContext) *common.Shader {
 	shader.InitBindingForUniform("light", "mat3", "lighting.dlight") // automatic binding of directional lighting
 	shader.InitBindingForAttribute("xyz", "vec3", "geometry.coords") // automatic binding of point XYZ coordinates
 	shader.InitBindingForAttribute("nor", "vec3", "geometry.normal") // automatic binding of point normal vectors
-	shader.SetThingsToDraw("TRIANGLES")                              // can be used for drawing TRIANGLES
+	shader.CheckBindings()                                           // check validity of the shader
 	return shader
 }
 
@@ -114,7 +114,7 @@ func NewShader_TextureOnly(wctx *common.WebGLContext) *common.Shader {
 	shader.InitBindingForUniform("text", "sampler2D", "material.texture") // automatic binding of texture sampler (unit:0)
 	shader.InitBindingForAttribute("xyz", "vec3", "geometry.coords")      // automatic binding of point XYZ coordinates
 	shader.InitBindingForAttribute("tuv", "vec2", "geometry.textuv")      // automatic binding of point UV coordinates (texture)
-	shader.SetThingsToDraw("TRIANGLES")                                   // can be used for drawing TRIANGLES
+	shader.CheckBindings()                                                // check validity of the shader
 	return shader
 }
 
@@ -156,7 +156,7 @@ func NewShader_NormalTexture(wctx *common.WebGLContext) *common.Shader {
 	shader.InitBindingForAttribute("xyz", "vec3", "geometry.coords")      // automatic binding of point XYZ coordinates
 	shader.InitBindingForAttribute("tuv", "vec2", "geometry.textuv")      // automatic binding of point UV coordinates (texture)
 	shader.InitBindingForAttribute("nor", "vec3", "geometry.normal")      // automatic binding of point normal vector
-	shader.SetThingsToDraw("TRIANGLES")                                   // can be used for drawing TRIANGLES
+	shader.CheckBindings()                                                // check validity of the shader
 	return shader
 }
 
@@ -197,6 +197,6 @@ func NewShader_InstancePoseColor(wctx *common.WebGLContext) *common.Shader {
 	shader.InitBindingForAttribute("nor", "vec3", "geometry.normal")      // automatic binding of point normal vectors
 	shader.InitBindingForAttribute("ixyz", "vec3", "instance.pose:6:0")   // automatic binding of instance position
 	shader.InitBindingForAttribute("icolor", "vec3", "instance.pose:6:3") // automatic binding of instance color
-	shader.SetThingsToDraw("TRIANGLES")                                   // can be used for drawing TRIANGLES
+	shader.CheckBindings()                                                // check validity of the shader
 	return shader
 }

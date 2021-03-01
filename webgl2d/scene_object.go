@@ -9,8 +9,10 @@ import (
 
 type SceneObject struct {
 	Geometry    *Geometry         // geometry
-	Material    *Material         // material
-	Shader      *common.Shader    // shader and its bindings
+	Material    *common.Material  // material
+	VShader     *common.Shader    // vert shader and its bindings
+	EShader     *common.Shader    // edge shader and its bindings
+	FShader     *common.Shader    // face shader and its bindings
 	modelmatrix geom2d.Matrix3    // model transformation matrix of this SceneObject
 	UseDepth    bool              // depth test flag (default is true)
 	UseBlend    bool              // blending flag with alpha (default is false)
@@ -19,19 +21,52 @@ type SceneObject struct {
 	bbox        [2][2]float32     // bounding box
 }
 
-func NewSceneObject(geometry *Geometry, material *Material, shader *common.Shader) *SceneObject {
+func NewSceneObject(geometry *Geometry, material *common.Material,
+	vshader *common.Shader, eshader *common.Shader, fshader *common.Shader) *SceneObject {
+	// 'geometry' : geometric shape (vertices, edges, faces) to be rendered
+	// 'material' : color, texture, or other material properties	: OPTIONAL (can be 'nil')
+	// 'vshader' : shader for VERTICES (POINTS) 					: OPTIONAL (can be 'nil')
+	// 'eshader' : shader for EDGES (LINES) 						: OPTIONAL (can be 'nil')
+	// 'fshader' : shader for FACES (TRIANGLES) 					: OPTIONAL (can be 'nil')
+	// Note that geometry & material & shader can be shared among different SceneObjects.
 	if geometry == nil {
 		return nil
 	}
-	// Note that 'material' & 'shader' can be nil, in which case its parent's 'material' & 'shader' will be used to render.
-	sobj := SceneObject{Geometry: geometry, Material: material, Shader: shader}
+	sobj := SceneObject{Geometry: geometry, Material: material, VShader: vshader, EShader: eshader, FShader: fshader}
 	sobj.modelmatrix.SetIdentity()
-	sobj.UseDepth = true
-	sobj.UseBlend = false
+	sobj.UseDepth = false // new drawings will overwrite old ones by default
+	sobj.UseBlend = false // alpha blending is turned off by default
 	sobj.poses = nil
 	sobj.children = nil
 	sobj.bbox = geom2d.BBoxInit()
 	return &sobj
+}
+
+func (self *SceneObject) ShowInfo() {
+	fmt.Printf("SceneObject ")
+	self.Geometry.ShowInfo()
+	if self.poses != nil {
+		fmt.Printf("  ")
+		self.poses.ShowInfo()
+	}
+	if self.Material != nil {
+		fmt.Printf("  ")
+		self.Material.ShowInfo()
+	}
+	if self.VShader != nil {
+		fmt.Printf("  VERT ")
+		self.VShader.ShowInfo()
+	}
+	if self.EShader != nil {
+		fmt.Printf("  EDGE ")
+		self.EShader.ShowInfo()
+	}
+	if self.FShader != nil {
+		fmt.Printf("  FACE ")
+		self.FShader.ShowInfo()
+	}
+	fmt.Printf("  Flags    : UseDepth=%t  UseBlend=%t\n", self.UseDepth, self.UseBlend)
+	fmt.Printf("  Children : %d\n", len(self.children))
 }
 
 // ----------------------------------------------------------------------------
@@ -49,25 +84,6 @@ func (self *SceneObject) AddChild(child *SceneObject) *SceneObject {
 	}
 	self.children = append(self.children, child)
 	return self
-}
-
-func (self *SceneObject) ShowInfo() {
-	fmt.Printf("SceneObject ")
-	self.Geometry.ShowInfo()
-	if self.poses != nil {
-		fmt.Printf("  ")
-		self.poses.ShowInfo()
-	}
-	if self.Material != nil {
-		fmt.Printf("  ")
-		self.Material.ShowInfo()
-	}
-	if self.Shader != nil {
-		fmt.Printf("  ")
-		self.Shader.ShowInfo()
-	}
-	fmt.Printf("  Flags    : UseDepth=%t  UseBlend=%t\n", self.UseDepth, self.UseBlend)
-	fmt.Printf("  Children : %d\n", len(self.children))
 }
 
 // ----------------------------------------------------------------------------
