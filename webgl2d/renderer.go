@@ -55,6 +55,10 @@ func (self *Renderer) RenderScene(scene *Scene, camera *Camera) {
 		pvm_matrix := camera.pjvwmatrix.MultiplyToTheRight(&sobj.modelmatrix)
 		self.RenderSceneObject(sobj, pvm_matrix) // (Proj * View * Model) matrix
 	}
+	// Render all the OverlayLayers
+	for _, overlay := range scene.overlays {
+		overlay.Render(self.wctx, &camera.pjvwmatrix)
+	}
 }
 
 // ----------------------------------------------------------------------------
@@ -83,10 +87,10 @@ func (self *Renderer) RenderSceneObject(sobj *SceneObject, pvm *geom2d.Matrix3) 
 		return errors.New("Failed to RenderSceneObject() : empty geometry data buffer")
 	}
 	if sobj.Geometry.IsWebGLBufferReady() == false {
-		sobj.Geometry.build_webgl_buffers(self.wctx, true, true, true)
+		sobj.Geometry.BuildWebGLBuffers(self.wctx, true, true, true)
 	}
 	if sobj.poses != nil && sobj.poses.IsWebGLBufferReady() == false {
-		sobj.poses.build_webgl_buffers(self.wctx)
+		sobj.poses.BuildWebGLBuffers(self.wctx)
 		if !self.wctx.IsExtensionReady("ANGLE") {
 			self.wctx.SetupExtension("ANGLE")
 		}
@@ -203,14 +207,6 @@ func (self *Renderer) bind_uniform(uname string, umap map[string]interface{},
 	autobinding_split := strings.Split(autobinding, ":")
 	autobinding0 := autobinding_split[0]
 	switch autobinding0 {
-	case "renderer.pvm":
-		switch dtype {
-		case "mat3":
-			elements := pvm.GetElements()
-			e := common.ConvertGoSliceToJsTypedArray(elements[:]) // ModelView matrix, converted to JavaScript 'Float32Array'
-			context.Call("uniformMatrix3fv", location, false, e)  // gl.uniformMatrix3fv(location, transpose, values_array)
-			return nil
-		}
 	case "material.color":
 		c := [4]float32{0, 1, 1, 1}
 		if material != nil {
@@ -237,6 +233,21 @@ func (self *Renderer) bind_uniform(uname string, umap map[string]interface{},
 		context.Call("bindTexture", constants.TEXTURE_2D, material.GetTexture()) // bind the texture
 		context.Call("uniform1i", location, txt_unit)                            // give shader the unit number
 		return nil
+	case "renderer.aspect":
+		switch dtype {
+		case "vec2":
+			wh := self.wctx.GetWH()
+			context.Call("uniform2f", location, float32(wh[0]), float32(wh[1]))
+			return nil
+		}
+	case "renderer.pvm":
+		switch dtype {
+		case "mat3":
+			elements := pvm.GetElements()
+			e := common.ConvertGoSliceToJsTypedArray(elements[:]) // ModelView matrix, converted to JavaScript 'Float32Array'
+			context.Call("uniformMatrix3fv", location, false, e)  // gl.uniformMatrix3fv(location, transpose, values_array)
+			return nil
+		}
 	default:
 		value := umap["value"]
 		if value != nil {

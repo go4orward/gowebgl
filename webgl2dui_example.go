@@ -22,6 +22,8 @@ func main() {
 	scene := webgl2d.NewScene("#ffffff")
 	if true {
 		scene.Add(webgl2d.NewSceneObject_RectInstances(wctx)) // multiple instances of rectangles
+		mlayer := webgl2d.NewOverlayMarkerLayer(wctx).AddArrowMarkersToTest()
+		scene.AddOverlay(mlayer)
 	} else {
 		geometry := webgl2d.NewGeometry_Rectangle(1.0) // create geometry (a rectangle)
 		geometry.SetTextureUVs([][]float32{{0, 1}, {1, 1}, {1, 0}, {0, 0}})

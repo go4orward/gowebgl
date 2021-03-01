@@ -94,12 +94,13 @@ func (self *Shader) InitBindingForUniform(name string, dtype string, autobinding
 	autobinding_split := strings.Split(autobinding, ":")
 	autobinding0 := autobinding_split[0]
 	switch autobinding0 {
+	case "lighting.dlight": // [mat3](3D) directional light information with (direction[3], color[3], ambient[3])
+	case "material.color": //  [vec3] uniform color taken from Material
+	case "material.texture": // [sampler2D] texture sampler(unit), like "material.texture:0"
+	case "renderer.aspect": // AspectRatio of camera, Width : Height
 	case "renderer.pvm": //  [mat3](2D) or [mat4](3D) (Proj * View * Model) matrix
 	case "renderer.proj": // [mat3](2D) or [mat4](3D) (Projection) matrix
 	case "renderer.vwmd": // [mat3](2D) or [mat4](3D) (View * Model) matrix
-	case "material.color": //  [vec3] uniform color taken from Material
-	case "material.texture": // [sampler2D] texture sampler(unit), like "material.texture:0"
-	case "lighting.dlight": // [mat3](3D) directional light information with (direction[3], color[3], ambient[3])
 	case "": // It's OK to skip autobinding.
 		// It will be set manually with 'shader.SetBindingForUniform()'.
 	default:

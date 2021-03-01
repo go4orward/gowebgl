@@ -158,10 +158,10 @@ func (self *Geometry) Rotate(angle_in_degree float32) *Geometry {
 	return self
 }
 
-func (self *Geometry) Scale(scale float32) *Geometry {
+func (self *Geometry) Scale(sx float32, sy float32) *Geometry {
 	for i := 0; i < len(self.verts); i++ {
-		self.verts[i][0] *= scale
-		self.verts[i][1] *= scale
+		self.verts[i][0] *= sx
+		self.verts[i][1] *= sy
 	}
 	self.Clear(false, true, true)
 	return self
@@ -465,7 +465,7 @@ func (self *Geometry) IsWebGLBufferReady() bool {
 	return !self.webgl_buffer_vpoints.IsNull()
 }
 
-func (self *Geometry) build_webgl_buffers(wctx *common.WebGLContext, for_points bool, for_lines bool, for_faces bool) {
+func (self *Geometry) BuildWebGLBuffers(wctx *common.WebGLContext, for_points bool, for_lines bool, for_faces bool) {
 	// THIS FUCNTION IS MEANT TO BE CALLED BY RENDERER. NO NEED TO BE EXPORTED
 	context := wctx.GetContext()     // js.Value
 	constants := wctx.GetConstants() // *common.Constants

@@ -9,6 +9,7 @@ type Scene struct {
 	bkgcolor [3]float32     // background color of the scene
 	objects  []*SceneObject // SceneObjects in the scene
 	bbox     [2][2]float32  // bounding box of all the SceneObjects
+	overlays []Overlay      // list of Overlay layers (interface)
 }
 
 func NewScene(bkg_color string) *Scene {
@@ -16,6 +17,7 @@ func NewScene(bkg_color string) *Scene {
 	scene.SetBkgColor(bkg_color)
 	scene.objects = make([]*SceneObject, 0)
 	scene.bbox = geom2d.BBoxInit()
+	scene.overlays = make([]Overlay, 0)
 	return &scene
 }
 
@@ -34,7 +36,7 @@ func (self *Scene) GetBkgColor() [3]float32 {
 }
 
 // ----------------------------------------------------------------------------
-// Handling SceneObjects
+// Managing SceneObjects
 // ----------------------------------------------------------------------------
 
 func (self *Scene) Add(sobj *SceneObject) *Scene {
@@ -81,4 +83,15 @@ func (self *Scene) GetBoundingBox(renew bool) [2][2]float32 {
 func (self *Scene) GetBBoxSizeCenter(renew bool) ([2][2]float32, [2]float32, [2]float32) {
 	bbox := self.GetBoundingBox(renew)
 	return bbox, geom2d.BBoxSize(bbox), geom2d.BBoxCenter(bbox)
+}
+
+// ----------------------------------------------------------------------------
+// Managing OverlayLayers
+// ----------------------------------------------------------------------------
+
+func (self *Scene) AddOverlay(overlay Overlay) *Scene {
+	if overlay != nil {
+		self.overlays = append(self.overlays, overlay)
+	}
+	return self
 }

@@ -14,9 +14,14 @@ type SceneObjectPoses struct {
 	webgl_buffer js.Value  //
 }
 
-func NewSceneObjectPoses(size int, count int) *SceneObjectPoses {
+func NewSceneObjectPoses(size int, count int, data []float32) *SceneObjectPoses {
 	poses := SceneObjectPoses{size: size, count: count}
 	poses.data_buffer = make([]float32, size*count)
+	if data != nil {
+		for i := 0; i < len(poses.data_buffer) && i < len(data); i++ {
+			poses.data_buffer[i] = data[i]
+		}
+	}
 	poses.webgl_buffer = js.Null()
 	return &poses
 }
@@ -56,7 +61,7 @@ func (self *SceneObjectPoses) IsWebGLBufferReady() bool {
 	return !self.webgl_buffer.IsNull()
 }
 
-func (self *SceneObjectPoses) build_webgl_buffers(wctx *common.WebGLContext) {
+func (self *SceneObjectPoses) BuildWebGLBuffers(wctx *common.WebGLContext) {
 	// THIS FUCNTION IS MEANT TO BE CALLED BY RENDERER. NO NEED TO BE EXPORTED
 	context := wctx.GetContext()     // js.Value
 	constants := wctx.GetConstants() // *common.Constants

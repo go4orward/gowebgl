@@ -41,7 +41,7 @@ func NewSceneObject_RectInstances(wctx *common.WebGLContext) *SceneObject {
 	material := common.NewMaterial(wctx, "#888888")              // create material
 	shader := NewShader_InstancePoseColor(wctx)                  // create shader, and set its bindings
 	sobj := NewSceneObject(geometry, material, nil, nil, shader) // set up the scene object (draw FACES only)
-	poses := NewSceneObjectPoses(5, 200*80)
+	poses := NewSceneObjectPoses(5, 200*80, nil)
 	for row := 0; row < 200; row++ {
 		for col := 0; col < 80; col++ {
 			ii, jj := math.Abs(float64(row)-100)/100, math.Abs(float64(col)-40)/40
