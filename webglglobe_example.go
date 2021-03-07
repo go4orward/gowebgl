@@ -4,15 +4,15 @@ import (
 	"fmt"
 	"syscall/js"
 
-	"github.com/go4orward/gowebgl/common"
+	"github.com/go4orward/gowebgl/wcommon"
 	"github.com/go4orward/gowebgl/webglglobe"
 )
 
 func main() {
 	// THIS CODE IS SUPPOSED TO BE BUILT AS WEBASSEMBLY AND RUN INSIDE A BROWSER.
 	// BUILD IT LIKE 'GOOS=js GOARCH=wasm go build -o gowebgl.wasm gowebgl/webglglobe_example.go'
-	fmt.Println("Hello WebGL!")                       // printed in the browser console
-	wctx, err := common.NewWebGLContext("wasmcanvas") // ID of canvas element
+	fmt.Println("Hello WebGL!")                        // printed in the browser console
+	wctx, err := wcommon.NewWebGLContext("wasmcanvas") // ID of canvas element
 	if err != nil {
 		js.Global().Call("alert", "Failed to start WebGL : "+err.Error())
 		return

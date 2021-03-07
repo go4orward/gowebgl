@@ -1,6 +1,7 @@
 package webglglobe
 
 import (
+	"github.com/go4orward/gowebgl/wcommon"
 	"github.com/go4orward/gowebgl/webgl2d"
 )
 
@@ -26,6 +27,6 @@ func (self *GlobeMarkLayer) AddMark(geometry *webgl2d.Geometry, color string) *G
 // Mark with Instance Poses 	(multiple instances sharing the same geometry)
 // ----------------------------------------------------------------------------
 
-func (self *GlobeMarkLayer) AddMarkWithPoses(geometry *webgl2d.Geometry, poses *webgl2d.SceneObjectPoses) *GlobeMarkLayer {
+func (self *GlobeMarkLayer) AddMarkWithPoses(geometry *webgl2d.Geometry, poses *wcommon.SceneObjectPoses) *GlobeMarkLayer {
 	return self
 }

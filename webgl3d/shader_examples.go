@@ -1,10 +1,10 @@
 package webgl3d
 
 import (
-	"github.com/go4orward/gowebgl/common"
+	"github.com/go4orward/gowebgl/wcommon"
 )
 
-func NewShader_3DAxes(wctx *common.WebGLContext) *common.Shader {
+func NewShader_3DAxes(wctx *wcommon.WebGLContext) *wcommon.Shader {
 	var vertex_shader_code = `
 		precision mediump float;
 		uniform mat4 pvm;			// Projection * View * Model matrix
@@ -22,14 +22,14 @@ func NewShader_3DAxes(wctx *common.WebGLContext) *common.Shader {
 			else if (v_xyz.y != 0.0) gl_FragColor = vec4(0.1, 1.0, 0.1, 1.0);
 			else                     gl_FragColor = vec4(0.6, 0.6, 1.0, 1.0);
 		}`
-	shader, _ := common.NewShader(wctx, vertex_shader_code, fragment_shader_code)
-	shader.InitBindingForUniform("pvm", "mat4", "renderer.pvm")      // automatic binding of (Proj * View * Models) matrix
-	shader.InitBindingForAttribute("xyz", "vec3", "geometry.coords") // automatic binding of vertex coordinates
-	shader.CheckBindings()                                           // check validity of the shader
+	shader, _ := wcommon.NewShader(wctx, vertex_shader_code, fragment_shader_code)
+	shader.SetBindingForUniform("pvm", "mat4", "renderer.pvm")      // (Proj * View * Models) matrix
+	shader.SetBindingForAttribute("xyz", "vec3", "geometry.coords") // vertex coordinates
+	shader.CheckBindings()                                          // check validity of the shader
 	return shader
 }
 
-func NewShader_ColorOnly(wctx *common.WebGLContext) *common.Shader {
+func NewShader_ColorOnly(wctx *wcommon.WebGLContext) *wcommon.Shader {
 	// Shader for (XYZ + NORMAL) Geometry & (COLOR) Material & (DIRECTIONAL) Lighting
 	var vertex_shader_code = `
 		precision mediump float;
@@ -44,15 +44,15 @@ func NewShader_ColorOnly(wctx *common.WebGLContext) *common.Shader {
 		void main() { 
 			gl_FragColor = vec4(color.rgb, 1.0);
 		}`
-	shader, _ := common.NewShader(wctx, vertex_shader_code, fragment_shader_code)
-	shader.InitBindingForUniform("pvm", "mat4", "renderer.pvm")      // automatic binding of (Proj * View * Models) matrix
-	shader.InitBindingForUniform("color", "vec3", "material.color")  // automatic binding of material color
-	shader.InitBindingForAttribute("xyz", "vec3", "geometry.coords") // automatic binding of point XYZ coordinates
-	shader.CheckBindings()                                           // check validity of the shader
+	shader, _ := wcommon.NewShader(wctx, vertex_shader_code, fragment_shader_code)
+	shader.SetBindingForUniform("pvm", "mat4", "renderer.pvm")      // (Proj * View * Models) matrix
+	shader.SetBindingForUniform("color", "vec3", "material.color")  // material color
+	shader.SetBindingForAttribute("xyz", "vec3", "geometry.coords") // point XYZ coordinates
+	shader.CheckBindings()                                          // check validity of the shader
 	return shader
 }
 
-func NewShader_NormalColor(wctx *common.WebGLContext) *common.Shader {
+func NewShader_NormalColor(wctx *wcommon.WebGLContext) *wcommon.Shader {
 	// Shader for (XYZ + NORMAL) Geometry & (COLOR) Material & (DIRECTIONAL) Lighting
 	var vertex_shader_code = `
 		precision mediump float;
@@ -77,18 +77,18 @@ func NewShader_NormalColor(wctx *common.WebGLContext) *common.Shader {
 		void main() { 
 			gl_FragColor = vec4(color.rgb * v_light, color.a);
 		}`
-	shader, _ := common.NewShader(wctx, vertex_shader_code, fragment_shader_code)
-	shader.InitBindingForUniform("proj", "mat4", "renderer.proj")    // automatic binding of (Projection) matrix
-	shader.InitBindingForUniform("vwmd", "mat4", "renderer.vwmd")    // automatic binding of (View * Models) matrix
-	shader.InitBindingForUniform("color", "vec4", "material.color")  // automatic binding of material color
-	shader.InitBindingForUniform("light", "mat3", "lighting.dlight") // automatic binding of directional lighting
-	shader.InitBindingForAttribute("xyz", "vec3", "geometry.coords") // automatic binding of point XYZ coordinates
-	shader.InitBindingForAttribute("nor", "vec3", "geometry.normal") // automatic binding of point normal vectors
-	shader.CheckBindings()                                           // check validity of the shader
+	shader, _ := wcommon.NewShader(wctx, vertex_shader_code, fragment_shader_code)
+	shader.SetBindingForUniform("proj", "mat4", "renderer.proj")    // (Projection) matrix
+	shader.SetBindingForUniform("vwmd", "mat4", "renderer.vwmd")    // (View * Models) matrix
+	shader.SetBindingForUniform("color", "vec4", "material.color")  // material color
+	shader.SetBindingForUniform("light", "mat3", "lighting.dlight") // directional lighting
+	shader.SetBindingForAttribute("xyz", "vec3", "geometry.coords") // point XYZ coordinates
+	shader.SetBindingForAttribute("nor", "vec3", "geometry.normal") // point normal vectors
+	shader.CheckBindings()                                          // check validity of the shader
 	return shader
 }
 
-func NewShader_TextureOnly(wctx *common.WebGLContext) *common.Shader {
+func NewShader_TextureOnly(wctx *wcommon.WebGLContext) *wcommon.Shader {
 	// Shader for (XYZ + UV + NORMAL) Geometry & (TEXTURE) Material & (DIRECTIONAL) Lighting
 	var vertex_shader_code = `
 		precision mediump float;
@@ -108,17 +108,17 @@ func NewShader_TextureOnly(wctx *common.WebGLContext) *common.Shader {
 		void main() { 
 			gl_FragColor = texture2D(text, v_tuv);
 		}`
-	shader, _ := common.NewShader(wctx, vertex_shader_code, fragment_shader_code)
-	shader.InitBindingForUniform("proj", "mat4", "renderer.proj")         // automatic binding of (Projection) matrix
-	shader.InitBindingForUniform("vwmd", "mat4", "renderer.vwmd")         // automatic binding of (View * Models) matrix
-	shader.InitBindingForUniform("text", "sampler2D", "material.texture") // automatic binding of texture sampler (unit:0)
-	shader.InitBindingForAttribute("xyz", "vec3", "geometry.coords")      // automatic binding of point XYZ coordinates
-	shader.InitBindingForAttribute("tuv", "vec2", "geometry.textuv")      // automatic binding of point UV coordinates (texture)
-	shader.CheckBindings()                                                // check validity of the shader
+	shader, _ := wcommon.NewShader(wctx, vertex_shader_code, fragment_shader_code)
+	shader.SetBindingForUniform("proj", "mat4", "renderer.proj")         // (Projection) matrix
+	shader.SetBindingForUniform("vwmd", "mat4", "renderer.vwmd")         // (View * Models) matrix
+	shader.SetBindingForUniform("text", "sampler2D", "material.texture") // texture sampler (unit:0)
+	shader.SetBindingForAttribute("xyz", "vec3", "geometry.coords")      // point XYZ coordinates
+	shader.SetBindingForAttribute("tuv", "vec2", "geometry.textuv")      // point UV coordinates (texture)
+	shader.CheckBindings()                                               // check validity of the shader
 	return shader
 }
 
-func NewShader_NormalTexture(wctx *common.WebGLContext) *common.Shader {
+func NewShader_NormalTexture(wctx *wcommon.WebGLContext) *wcommon.Shader {
 	// Shader for (XYZ + UV + NORMAL) Geometry & (TEXTURE) Material & (DIRECTIONAL) Lighting
 	var vertex_shader_code = `
 		precision mediump float;
@@ -148,19 +148,19 @@ func NewShader_NormalTexture(wctx *common.WebGLContext) *common.Shader {
 			vec4 color = texture2D(text, v_tuv);
 			gl_FragColor = vec4(color.rgb * v_light, color.a);
 		}`
-	shader, _ := common.NewShader(wctx, vertex_shader_code, fragment_shader_code)
-	shader.InitBindingForUniform("proj", "mat4", "renderer.proj")         // automatic binding of (Projection) matrix
-	shader.InitBindingForUniform("vwmd", "mat4", "renderer.vwmd")         // automatic binding of (View * Models) matrix
-	shader.InitBindingForUniform("light", "mat3", "lighting.dlight")      // automatic binding of directional lighting
-	shader.InitBindingForUniform("text", "sampler2D", "material.texture") // automatic binding of texture sampler (unit:0)
-	shader.InitBindingForAttribute("xyz", "vec3", "geometry.coords")      // automatic binding of point XYZ coordinates
-	shader.InitBindingForAttribute("tuv", "vec2", "geometry.textuv")      // automatic binding of point UV coordinates (texture)
-	shader.InitBindingForAttribute("nor", "vec3", "geometry.normal")      // automatic binding of point normal vector
-	shader.CheckBindings()                                                // check validity of the shader
+	shader, _ := wcommon.NewShader(wctx, vertex_shader_code, fragment_shader_code)
+	shader.SetBindingForUniform("proj", "mat4", "renderer.proj")         // (Projection) matrix
+	shader.SetBindingForUniform("vwmd", "mat4", "renderer.vwmd")         // (View * Models) matrix
+	shader.SetBindingForUniform("light", "mat3", "lighting.dlight")      // directional lighting
+	shader.SetBindingForUniform("text", "sampler2D", "material.texture") // texture sampler (unit:0)
+	shader.SetBindingForAttribute("xyz", "vec3", "geometry.coords")      // point XYZ coordinates
+	shader.SetBindingForAttribute("tuv", "vec2", "geometry.textuv")      // point UV coordinates (texture)
+	shader.SetBindingForAttribute("nor", "vec3", "geometry.normal")      // point normal vector
+	shader.CheckBindings()                                               // check validity of the shader
 	return shader
 }
 
-func NewShader_InstancePoseColor(wctx *common.WebGLContext) *common.Shader {
+func NewShader_InstancePoseColor(wctx *wcommon.WebGLContext) *wcommon.Shader {
 	// Shader for (XYZ + NORMAL) Geometry & (COLOR) Material & (DIRECTIONAL) Lighting
 	var vertex_shader_code = `
 		precision mediump float;
@@ -189,14 +189,14 @@ func NewShader_InstancePoseColor(wctx *common.WebGLContext) *common.Shader {
 		void main() { 
 			gl_FragColor = vec4(v_color * v_light, 1.0);
 		}`
-	shader, _ := common.NewShader(wctx, vertex_shader_code, fragment_shader_code)
-	shader.InitBindingForUniform("proj", "mat4", "renderer.proj")         // automatic binding of (Projection) matrix
-	shader.InitBindingForUniform("vwmd", "mat4", "renderer.vwmd")         // automatic binding of (View * Models) matrix
-	shader.InitBindingForUniform("light", "mat3", "lighting.dlight")      // automatic binding of directional lighting
-	shader.InitBindingForAttribute("xyz", "vec3", "geometry.coords")      // automatic binding of point XYZ coordinates
-	shader.InitBindingForAttribute("nor", "vec3", "geometry.normal")      // automatic binding of point normal vectors
-	shader.InitBindingForAttribute("ixyz", "vec3", "instance.pose:6:0")   // automatic binding of instance position
-	shader.InitBindingForAttribute("icolor", "vec3", "instance.pose:6:3") // automatic binding of instance color
-	shader.CheckBindings()                                                // check validity of the shader
+	shader, _ := wcommon.NewShader(wctx, vertex_shader_code, fragment_shader_code)
+	shader.SetBindingForUniform("proj", "mat4", "renderer.proj")         // (Projection) matrix
+	shader.SetBindingForUniform("vwmd", "mat4", "renderer.vwmd")         // (View * Models) matrix
+	shader.SetBindingForUniform("light", "mat3", "lighting.dlight")      // directional lighting
+	shader.SetBindingForAttribute("xyz", "vec3", "geometry.coords")      // point XYZ coordinates
+	shader.SetBindingForAttribute("nor", "vec3", "geometry.normal")      // point normal vectors
+	shader.SetBindingForAttribute("ixyz", "vec3", "instance.pose:6:0")   // instance position
+	shader.SetBindingForAttribute("icolor", "vec3", "instance.pose:6:3") // instance color
+	shader.CheckBindings()                                               // check validity of the shader
 	return shader
 }

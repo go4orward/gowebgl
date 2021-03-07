@@ -3,26 +3,26 @@ package webgl2d
 import (
 	"fmt"
 
-	"github.com/go4orward/gowebgl/common"
-	"github.com/go4orward/gowebgl/common/geom2d"
+	"github.com/go4orward/gowebgl/wcommon"
+	"github.com/go4orward/gowebgl/wcommon/geom2d"
 )
 
 type SceneObject struct {
-	Geometry    *Geometry         // geometry
-	Material    *common.Material  // material
-	VShader     *common.Shader    // vert shader and its bindings
-	EShader     *common.Shader    // edge shader and its bindings
-	FShader     *common.Shader    // face shader and its bindings
-	modelmatrix geom2d.Matrix3    // model transformation matrix of this SceneObject
-	UseDepth    bool              // depth test flag (default is true)
-	UseBlend    bool              // blending flag with alpha (default is false)
-	poses       *SceneObjectPoses // poses for multiple instances of this (geometry+material) object
-	children    []*SceneObject    // children of this SceneObject (to be rendered recursively)
-	bbox        [2][2]float32     // bounding box
+	Geometry    *Geometry                 // geometry interface
+	Material    *wcommon.Material         // material
+	VShader     *wcommon.Shader           // vert shader and its bindings
+	EShader     *wcommon.Shader           // edge shader and its bindings
+	FShader     *wcommon.Shader           // face shader and its bindings
+	modelmatrix geom2d.Matrix3            // model transformation matrix of this SceneObject
+	UseDepth    bool                      // depth test flag (default is true)
+	UseBlend    bool                      // blending flag with alpha (default is false)
+	poses       *wcommon.SceneObjectPoses // OPTIONAL, poses for multiple instances of this (geometry+material) object
+	children    []*SceneObject            // OPTIONAL, children of this SceneObject (to be rendered recursively)
+	bbox        [2][2]float32             // bounding box
 }
 
-func NewSceneObject(geometry *Geometry, material *common.Material,
-	vshader *common.Shader, eshader *common.Shader, fshader *common.Shader) *SceneObject {
+func NewSceneObject(geometry *Geometry, material *wcommon.Material,
+	vshader *wcommon.Shader, eshader *wcommon.Shader, fshader *wcommon.Shader) *SceneObject {
 	// 'geometry' : geometric shape (vertices, edges, faces) to be rendered
 	// 'material' : color, texture, or other material properties	: OPTIONAL (can be 'nil')
 	// 'vshader' : shader for VERTICES (POINTS) 					: OPTIONAL (can be 'nil')
@@ -36,8 +36,8 @@ func NewSceneObject(geometry *Geometry, material *common.Material,
 	sobj.modelmatrix.SetIdentity()
 	sobj.UseDepth = false // new drawings will overwrite old ones by default
 	sobj.UseBlend = false // alpha blending is turned off by default
-	sobj.poses = nil
-	sobj.children = nil
+	sobj.poses = nil      // OPTIONAL, only if multiple instances of the geometry are rendered
+	sobj.children = nil   // OPTIONAL, only if current SceneObject has any child SceneObjects
 	sobj.bbox = geom2d.BBoxInit()
 	return &sobj
 }
@@ -73,16 +73,17 @@ func (self *SceneObject) ShowInfo() {
 // Basic Access
 // ----------------------------------------------------------------------------
 
-func (self *SceneObject) SetInstancePoses(poses *SceneObjectPoses) *SceneObject {
-	self.poses = poses
-	return self
-}
-
 func (self *SceneObject) AddChild(child *SceneObject) *SceneObject {
 	if self.children == nil {
 		self.children = make([]*SceneObject, 0)
 	}
 	self.children = append(self.children, child)
+	return self
+}
+
+func (self *SceneObject) SetInstancePoses(poses *wcommon.SceneObjectPoses) *SceneObject {
+	// This function is OPTIONAL (only if multiple instances of the geometry are rendered)
+	self.poses = poses
 	return self
 }
 
@@ -137,9 +138,9 @@ func (self *SceneObject) GetBoundingBox(m *geom2d.Matrix3, renew bool) [2][2]flo
 				geom2d.BBoxAddPoint(&bbox, xy)
 			}
 		} else {
-			for i := 0; i < self.poses.count; i++ {
-				idx := i * self.poses.size
-				txy := self.poses.data_buffer[idx : idx+2]
+			for i := 0; i < self.poses.Count; i++ {
+				idx := i * self.poses.Size
+				txy := self.poses.DataBuffer[idx : idx+2]
 				for _, v := range self.Geometry.verts {
 					xy := [2]float32{v[0] + txy[0], v[1] + txy[1]}
 					xy = mm.MultiplyVector2(xy)

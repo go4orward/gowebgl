@@ -5,8 +5,8 @@ import (
 	"math"
 	"syscall/js"
 
-	"github.com/go4orward/gowebgl/common"
-	"github.com/go4orward/gowebgl/common/geom3d"
+	"github.com/go4orward/gowebgl/wcommon"
+	"github.com/go4orward/gowebgl/wcommon/geom3d"
 )
 
 // ----------------------------------------------------------------------------
@@ -635,13 +635,13 @@ func (self *Geometry) IsWebGLBufferReady() bool {
 	return !self.webgl_buffer_vpoints.IsNull()
 }
 
-func (self *Geometry) build_webgl_buffers(wctx *common.WebGLContext, for_points bool, for_lines bool, for_faces bool) {
+func (self *Geometry) BuildWebGLBuffers(wctx *wcommon.WebGLContext, for_points bool, for_lines bool, for_faces bool) {
 	context := wctx.GetContext()     // js.Value
-	constants := wctx.GetConstants() // *common.Constants
+	constants := wctx.GetConstants() // *wcommon.Constants
 	if for_points && self.data_buffer_vpoints != nil {
 		self.webgl_buffer_vpoints = context.Call("createBuffer", constants.ARRAY_BUFFER)
 		context.Call("bindBuffer", constants.ARRAY_BUFFER, self.webgl_buffer_vpoints)
-		var points_array = common.ConvertGoSliceToJsTypedArray(self.data_buffer_vpoints)
+		var points_array = wcommon.ConvertGoSliceToJsTypedArray(self.data_buffer_vpoints)
 		context.Call("bufferData", constants.ARRAY_BUFFER, points_array, constants.STATIC_DRAW)
 		context.Call("bindBuffer", constants.ARRAY_BUFFER, nil)
 	} else {
@@ -650,7 +650,7 @@ func (self *Geometry) build_webgl_buffers(wctx *common.WebGLContext, for_points 
 	if for_lines && self.data_buffer_lines != nil {
 		self.webgl_buffer_lines = context.Call("createBuffer", constants.ELEMENT_ARRAY_BUFFER)
 		context.Call("bindBuffer", constants.ELEMENT_ARRAY_BUFFER, self.webgl_buffer_lines)
-		var indices_array = common.ConvertGoSliceToJsTypedArray(self.data_buffer_lines)
+		var indices_array = wcommon.ConvertGoSliceToJsTypedArray(self.data_buffer_lines)
 		context.Call("bufferData", constants.ELEMENT_ARRAY_BUFFER, indices_array, constants.STATIC_DRAW)
 		context.Call("bindBuffer", constants.ELEMENT_ARRAY_BUFFER, nil)
 	} else {
@@ -660,13 +660,13 @@ func (self *Geometry) build_webgl_buffers(wctx *common.WebGLContext, for_points 
 		if self.data_buffer_fpoints != nil {
 			self.webgl_buffer_fpoints = context.Call("createBuffer", constants.ARRAY_BUFFER)
 			context.Call("bindBuffer", constants.ARRAY_BUFFER, self.webgl_buffer_fpoints)
-			var points_array = common.ConvertGoSliceToJsTypedArray(self.data_buffer_fpoints)
+			var points_array = wcommon.ConvertGoSliceToJsTypedArray(self.data_buffer_fpoints)
 			context.Call("bufferData", constants.ARRAY_BUFFER, points_array, constants.STATIC_DRAW)
 			context.Call("bindBuffer", constants.ARRAY_BUFFER, nil)
 		}
 		self.webgl_buffer_faces = context.Call("createBuffer", constants.ELEMENT_ARRAY_BUFFER)
 		context.Call("bindBuffer", constants.ELEMENT_ARRAY_BUFFER, self.webgl_buffer_faces)
-		var indices_array = common.ConvertGoSliceToJsTypedArray(self.data_buffer_faces)
+		var indices_array = wcommon.ConvertGoSliceToJsTypedArray(self.data_buffer_faces)
 		context.Call("bufferData", constants.ELEMENT_ARRAY_BUFFER, indices_array, constants.STATIC_DRAW)
 		context.Call("bindBuffer", constants.ELEMENT_ARRAY_BUFFER, nil)
 	} else {
@@ -674,17 +674,17 @@ func (self *Geometry) build_webgl_buffers(wctx *common.WebGLContext, for_points 
 	}
 }
 
-func (self *Geometry) GetWebGLBuffer(mode string) (js.Value, int, [4]int) {
-	switch mode {
-	case "POINTS", "VERTICES":
+func (self *Geometry) GetWebGLBuffer(draw_mode int) (js.Value, int, [4]int) {
+	switch draw_mode {
+	case 1: // "POINTS", "VERTICES":
 		if self.data_buffer_fpoints == nil {
 			return self.webgl_buffer_vpoints, len(self.data_buffer_vpoints), self.vpoint_info
 		} else {
 			return self.webgl_buffer_fpoints, len(self.data_buffer_fpoints), self.fpoint_info
 		}
-	case "LINES", "EDGES":
+	case 2: // "LINES", "EDGES":
 		return self.webgl_buffer_lines, len(self.data_buffer_lines), self.vpoint_info
-	case "TRIANGLES", "FACES":
+	case 3: // "TRIANGLES", "FACES":
 		if self.data_buffer_fpoints == nil {
 			return self.webgl_buffer_faces, len(self.data_buffer_faces), self.vpoint_info
 		} else {

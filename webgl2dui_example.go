@@ -5,31 +5,33 @@ import (
 	"fmt"
 	"syscall/js"
 
-	"github.com/go4orward/gowebgl/common"
-	"github.com/go4orward/gowebgl/common/geom2d"
+	"github.com/go4orward/gowebgl/wcommon"
+	"github.com/go4orward/gowebgl/wcommon/geom2d"
 	"github.com/go4orward/gowebgl/webgl2d"
 )
 
 func main() {
 	// THIS CODE IS SUPPOSED TO BE BUILT AS WEBASSEMBLY AND RUN INSIDE A BROWSER.
 	// BUILD IT LIKE 'GOOS=js GOARCH=wasm go build -o gowebgl.wasm gowebgl/webgl2dui_example.go'.
-	fmt.Println("Hello WebGL!")                       // printed in the browser console
-	wctx, err := common.NewWebGLContext("wasmcanvas") // ID of canvas element
+	fmt.Println("Hello WebGL!")                        // printed in the browser console
+	wctx, err := wcommon.NewWebGLContext("wasmcanvas") // ID of canvas element
 	if err != nil {
 		js.Global().Call("alert", "Failed to start WebGL : "+err.Error())
 		return
 	}
-	scene := webgl2d.NewScene("#ffffff")
+	scene := webgl2d.NewScene("#ffffff") // Scene with WHITE background
 	if true {
 		scene.Add(webgl2d.NewSceneObject_RectInstances(wctx)) // multiple instances of rectangles
 		mlayer := webgl2d.NewOverlayMarkerLayer(wctx).AddArrowMarkersToTest()
-		scene.AddOverlay(mlayer)
+		llayer := webgl2d.NewOverlayLabelLayer(wctx, false).AddLabelText("AhjgyZ", [2]float32{40, 80}, "#ff0000", "")
+		llayer.FindLabel("AhjgyZ").SetPose(0, "L_BTM", [2]float32{30, 30}).SetBackground("under:#000000").BuildSceneObjects(wctx)
+		scene.AddOverlay(mlayer, llayer)
 	} else {
 		geometry := webgl2d.NewGeometry_Rectangle(1.0) // create geometry (a rectangle)
 		geometry.SetTextureUVs([][]float32{{0, 1}, {1, 1}, {1, 0}, {0, 0}})
-		geometry.BuildDataBuffers(true, true, true)                // build data buffers for vertices, edges, and faces
-		material := common.NewMaterial(wctx, "/assets/gopher.png") // create material (with texture image)
-		shader := webgl2d.NewShader_MaterialTexture(wctx)          // shader with auto-binded color & PVM matrix
+		geometry.BuildDataBuffers(true, true, true)                 // build data buffers for vertices, edges, and faces
+		material := wcommon.NewMaterial(wctx, "/assets/gopher.png") // create material (with texture image)
+		shader := webgl2d.NewShader_MaterialTexture(wctx)           // shader with auto-binded color & PVM matrix
 		scnobj := webgl2d.NewSceneObject(geometry, material, nil, nil, shader)
 		scene.Add(scnobj)
 		geometry.ShowInfo()

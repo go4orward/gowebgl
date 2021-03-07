@@ -1,4 +1,4 @@
-package common
+package wcommon
 
 import (
 	"errors"
@@ -83,56 +83,39 @@ func (self *Shader) ShowInfo() {
 }
 
 // ----------------------------------------------------------------------------
-// Bindings for Uniforms (in the shader code)
+// Bindings
 // ----------------------------------------------------------------------------
 
-func (self *Shader) InitBindingForUniform(name string, dtype string, autobinding string) {
-	// Initialize uniform binding with its name, data_type, and auto_binding option.
-	// If 'autobinding' is given, then the binding will be attempted automatically.
-	//    (examples: "material.color", "renderer.modelview")
-	// Otherwise, 'shader.SetBindingForUniform()' has to be called manually.
-	autobinding_split := strings.Split(autobinding, ":")
-	autobinding0 := autobinding_split[0]
-	switch autobinding0 {
-	case "lighting.dlight": // [mat3](3D) directional light information with (direction[3], color[3], ambient[3])
-	case "material.color": //  [vec3] uniform color taken from Material
-	case "material.texture": // [sampler2D] texture sampler(unit), like "material.texture:0"
-	case "renderer.aspect": // AspectRatio of camera, Width : Height
-	case "renderer.pvm": //  [mat3](2D) or [mat4](3D) (Proj * View * Model) matrix
-	case "renderer.proj": // [mat3](2D) or [mat4](3D) (Projection) matrix
-	case "renderer.vwmd": // [mat3](2D) or [mat4](3D) (View * Model) matrix
-	case "": // It's OK to skip autobinding.
-		// It will be set manually with 'shader.SetBindingForUniform()'.
+func (self *Shader) SetBindingForUniform(name string, dtype string, option interface{}) {
+	// Set uniform binding with its name, data_type, and AUTO/MANUAL option.
+	switch option.(type) {
+	case string: // let Renderer bind the uniform variable automatically
+		autobinding := option.(string)
+		autobinding_split := strings.Split(option.(string), ":")
+		autobinding0 := autobinding_split[0] // "material.texture:0" (with texture UNIT value)
+		switch autobinding0 {
+		case "lighting.dlight": // [mat3](3D) directional light information with (direction[3], color[3], ambient[3])
+		case "material.color": //  [vec3] uniform color taken from Material
+		case "material.texture": // [sampler2D] texture sampler(unit), like "material.texture:0"
+		case "renderer.aspect": // AspectRatio of camera, Width : Height
+		case "renderer.pvm": //  [mat3](2D) or [mat4](3D) (Proj * View * Model) matrix
+		case "renderer.proj": // [mat3](2D) or [mat4](3D) (Projection) matrix
+		case "renderer.vwmd": // [mat3](2D) or [mat4](3D) (View * Model) matrix
+		default:
+			fmt.Printf("Failed to SetBindingForUniform('%s') : unknown autobinding '%s'\n", name, autobinding)
+			return
+		}
+		self.uniforms[name] = map[string]interface{}{"dtype": dtype, "autobinding": autobinding}
+	case []float32: // let Renderer set the uniform manually, with the given values
+		self.uniforms[name] = map[string]interface{}{"dtype": dtype, "value": option.([]float32)}
 	default:
-		fmt.Printf("Unsupported autobinding '%s' for uniform '%s'\n", autobinding, name)
+		fmt.Printf("Failed to SetBindingForUniform('%s') : invalid option %v\n", name, option)
 		return
 	}
-	self.uniforms[name] = map[string]interface{}{"dtype": dtype, "autobinding": autobinding}
 }
 
-func (self *Shader) SetBindingForUniform(name string, dtype string, value interface{}) error {
-	var err error = nil
-	if umap := self.uniforms[name]; umap != nil {
-		if umap["dtype"] == dtype {
-			umap["value"] = value
-		} else {
-			err = errors.New(fmt.Sprintf("Binding uniform '%s' failed (invalid type '%s')", name, dtype))
-		}
-	} else {
-		err = errors.New(fmt.Sprintf("Binding uniform '%s' failed (not found)", name))
-	}
-	return err
-}
-
-// ----------------------------------------------------------------------------
-// Bindings for Attributes (in the shader code)
-// ----------------------------------------------------------------------------
-
-func (self *Shader) InitBindingForAttribute(name string, dtype string, autobinding string) {
-	// Initialize attribute binding with its name, data_type, and auto_binding option.
-	// If 'autobinding' is given, then the binding will be attempted automatically.
-	//    (examples: "geometry.coords", "geometry.textuv", or "geometry.normal")
-	// Otherwise, 'shader.SetBindingForUniform()' has to be called manually.
+func (self *Shader) SetBindingForAttribute(name string, dtype string, autobinding string) {
+	// Set attribute binding with its name, data_type, with AUTO_BINDING option.
 	autobinding_split := strings.Split(autobinding, ":")
 	autobinding0 := autobinding_split[0]
 	switch autobinding0 {
@@ -141,32 +124,14 @@ func (self *Shader) InitBindingForAttribute(name string, dtype string, autobindi
 	case "geometry.normal": // (3D only) normal vector
 	case "instance.pose": // instance pose, like "instance.pose:<stride>:<offset>"
 		if len(autobinding_split) != 3 {
-			fmt.Printf("Invalid autobinding '%s' for attribute '%s'\n", autobinding, name)
+			fmt.Printf("Failed to SetBindingForAttribute('%s') : try 'instance.pose:<stride>:<offset>'\n", name)
 			return
 		}
-	case "": // It's OK to skip autobinding.
-		// It will be set manually with 'shader.SetBindingForAttribute()'.
 	default:
-		fmt.Printf("Unsupported autobinding '%s' for attribute '%s'\n", autobinding, name)
+		fmt.Printf("Failed to SetBindingForAttribute('%s') : invalid autobinding '%s'\n", name, autobinding)
 		return
 	}
 	self.attributes[name] = map[string]interface{}{"dtype": dtype, "autobinding": autobinding}
-}
-
-func (self *Shader) SetBindingForAttribute(name string, dtype string, buffer interface{}, stride int, offset int) error {
-	var err error = nil
-	if amap := self.attributes[name]; amap != nil {
-		if amap["dtype"] == dtype {
-			amap["buffer"] = buffer
-			amap["stride"] = stride
-			amap["offset"] = offset
-		} else {
-			err = errors.New(fmt.Sprintf("Binding attribute '%s' failed (invalid type '%s')", name, dtype))
-		}
-	} else {
-		err = errors.New(fmt.Sprintf("Binding attribute '%s' failed (not found)", name))
-	}
-	return err
 }
 
 func (self *Shader) CheckBindings() {

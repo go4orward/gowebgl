@@ -7,16 +7,16 @@ import (
 	"strings"
 	"syscall/js"
 
-	"github.com/go4orward/gowebgl/common"
-	"github.com/go4orward/gowebgl/common/geom2d"
+	"github.com/go4orward/gowebgl/wcommon"
+	"github.com/go4orward/gowebgl/wcommon/geom2d"
 )
 
 type Renderer struct {
-	wctx *common.WebGLContext
+	wctx *wcommon.WebGLContext
 	axes *SceneObject
 }
 
-func NewRenderer(wctx *common.WebGLContext) *Renderer {
+func NewRenderer(wctx *wcommon.WebGLContext) *Renderer {
 	renderer := Renderer{wctx: wctx, axes: nil}
 	return &renderer
 }
@@ -57,7 +57,7 @@ func (self *Renderer) RenderScene(scene *Scene, camera *Camera) {
 	}
 	// Render all the OverlayLayers
 	for _, overlay := range scene.overlays {
-		overlay.Render(self.wctx, &camera.pjvwmatrix)
+		overlay.Render(&camera.pjvwmatrix)
 	}
 }
 
@@ -90,7 +90,7 @@ func (self *Renderer) RenderSceneObject(sobj *SceneObject, pvm *geom2d.Matrix3) 
 		sobj.Geometry.BuildWebGLBuffers(self.wctx, true, true, true)
 	}
 	if sobj.poses != nil && sobj.poses.IsWebGLBufferReady() == false {
-		sobj.poses.BuildWebGLBuffers(self.wctx)
+		sobj.poses.BuildWebGLBuffer(self.wctx)
 		if !self.wctx.IsExtensionReady("ANGLE") {
 			self.wctx.SetupExtension("ANGLE")
 		}
@@ -124,7 +124,7 @@ func (self *Renderer) RenderSceneObject(sobj *SceneObject, pvm *geom2d.Matrix3) 
 	return nil
 }
 
-func (self *Renderer) render_scene_object_with_shader(sobj *SceneObject, pvm *geom2d.Matrix3, draw_mode int, shader *common.Shader) error {
+func (self *Renderer) render_scene_object_with_shader(sobj *SceneObject, pvm *geom2d.Matrix3, draw_mode int, shader *wcommon.Shader) error {
 	context := self.wctx.GetContext()
 	constants := self.wctx.GetConstants()
 	// 1. Decide which Shader to use
@@ -157,7 +157,7 @@ func (self *Renderer) render_scene_object_with_shader(sobj *SceneObject, pvm *ge
 			if sobj.poses == nil {
 				context.Call("drawElements", constants.TRIANGLES, count, constants.UNSIGNED_INT, 0) // (mode, count, type, offset)
 			} else {
-				ext, pose_count := self.wctx.GetExtension("ANGLE"), sobj.poses.GetPoseCount()
+				ext, pose_count := self.wctx.GetExtension("ANGLE"), sobj.poses.Count
 				ext.Call("drawElementsInstancedANGLE", constants.TRIANGLES, count, constants.UNSIGNED_INT, 0, pose_count)
 			}
 		}
@@ -171,18 +171,19 @@ func (self *Renderer) render_scene_object_with_shader(sobj *SceneObject, pvm *ge
 				// fmt.Printf("axy  : %v\n", context.Call("getVertexAttrib", loc2, pname))
 				context.Call("drawElements", constants.LINES, count, constants.UNSIGNED_INT, 0) // (mode, count, type, offset)
 			} else {
-				ext, pose_count := self.wctx.GetExtension("ANGLE"), sobj.poses.GetPoseCount()
+				ext, pose_count := self.wctx.GetExtension("ANGLE"), sobj.poses.Count
 				ext.Call("drawElementsInstancedANGLE", constants.LINES, count, constants.UNSIGNED_INT, 0, pose_count)
 			}
 		}
 	case 1: // draw POINTS (VERTICES)
-		_, count, _ := sobj.Geometry.GetWebGLBuffer(draw_mode)
+		_, count, pinfo := sobj.Geometry.GetWebGLBuffer(draw_mode)
 		if count > 0 {
+			vert_count := count / pinfo[0] // number of vertices
 			if sobj.poses == nil {
-				context.Call("drawArrays", constants.POINTS, 0, count) // (mode, first, count)
+				context.Call("drawArrays", constants.POINTS, 0, vert_count) // (mode, first, count)
 			} else {
-				ext, pose_count := self.wctx.GetExtension("ANGLE"), sobj.poses.GetPoseCount()
-				ext.Call("drawArraysInstancedANGLE", constants.POINTS, 0, count, pose_count)
+				ext, pose_count := self.wctx.GetExtension("ANGLE"), sobj.poses.Count
+				ext.Call("drawArraysInstancedANGLE", constants.POINTS, 0, vert_count, pose_count)
 			}
 		}
 	default:
@@ -194,7 +195,7 @@ func (self *Renderer) render_scene_object_with_shader(sobj *SceneObject, pvm *ge
 }
 
 func (self *Renderer) bind_uniform(uname string, umap map[string]interface{},
-	draw_mode int, material *common.Material, pvm *geom2d.Matrix3) error {
+	draw_mode int, material *wcommon.Material, pvm *geom2d.Matrix3) error {
 	context := self.wctx.GetContext()
 	constants := self.wctx.GetConstants()
 	if umap["location"] == nil {
@@ -202,82 +203,81 @@ func (self *Renderer) bind_uniform(uname string, umap map[string]interface{},
 		return err
 	}
 	location, dtype := umap["location"].(js.Value), umap["dtype"].(string)
-	autobinding := umap["autobinding"].(string)
-	// fmt.Printf("Uniform (%s) : autobinding= '%s'\n", dtype, autobinding)
-	autobinding_split := strings.Split(autobinding, ":")
-	autobinding0 := autobinding_split[0]
-	switch autobinding0 {
-	case "material.color":
-		c := [4]float32{0, 1, 1, 1}
-		if material != nil {
-			c = material.GetDrawModeColor(draw_mode) // get color from material (for the DrawMode)
-		}
-		switch dtype {
-		case "vec3":
-			context.Call("uniform3f", location, c[0], c[1], c[2])
-			return nil
-		case "vec4":
-			context.Call("uniform4f", location, c[0], c[1], c[2], c[3])
-			return nil
-		}
-	case "material.texture":
-		if material == nil || !material.IsTextureReady() || material.IsTextureLoading() {
-			return errors.New("Texture is not ready")
-		}
-		txt_unit := 0
-		if len(autobinding_split) >= 2 {
-			txt_unit, _ = strconv.Atoi(autobinding_split[1])
-		}
-		texture_unit := js.ValueOf(constants.TEXTURE0.Int() + txt_unit)
-		context.Call("activeTexture", texture_unit)                              // activate texture unit N
-		context.Call("bindTexture", constants.TEXTURE_2D, material.GetTexture()) // bind the texture
-		context.Call("uniform1i", location, txt_unit)                            // give shader the unit number
-		return nil
-	case "renderer.aspect":
-		switch dtype {
-		case "vec2":
-			wh := self.wctx.GetWH()
-			context.Call("uniform2f", location, float32(wh[0]), float32(wh[1]))
-			return nil
-		}
-	case "renderer.pvm":
-		switch dtype {
-		case "mat3":
-			elements := pvm.GetElements()
-			e := common.ConvertGoSliceToJsTypedArray(elements[:]) // ModelView matrix, converted to JavaScript 'Float32Array'
-			context.Call("uniformMatrix3fv", location, false, e)  // gl.uniformMatrix3fv(location, transpose, values_array)
-			return nil
-		}
-	default:
-		value := umap["value"]
-		if value != nil {
+	if umap["autobinding"] != nil {
+		autobinding := umap["autobinding"].(string)
+		autobinding_split := strings.Split(autobinding, ":")
+		autobinding0 := autobinding_split[0]
+		switch autobinding0 {
+		case "material.color":
+			c := [4]float32{0, 1, 1, 1}
+			if material != nil {
+				c = material.GetDrawModeColor(draw_mode) // get color from material (for the DrawMode)
+			}
 			switch dtype {
-			case "int":
-				context.Call("uniform1i", location, value.(int))
-				return nil
-			case "float":
-				context.Call("uniform1f", location, value.(float32))
-				return nil
-			case "vec2":
-				v := value.([]float32)
-				context.Call("uniform2f", location, v[0], v[1])
-				return nil
 			case "vec3":
-				v := value.([]float32)
-				context.Call("uniform3f", location, v[0], v[1], v[2])
+				context.Call("uniform3f", location, c[0], c[1], c[2])
 				return nil
 			case "vec4":
-				v := value.([]float32)
-				context.Call("uniform4f", location, v[0], v[1], v[2], v[3])
+				context.Call("uniform4f", location, c[0], c[1], c[2], c[3])
+				return nil
+			}
+		case "material.texture":
+			if material == nil || !material.IsTextureReady() || material.IsTextureLoading() {
+				return errors.New("Texture is not ready")
+			}
+			txt_unit := 0
+			if len(autobinding_split) >= 2 {
+				txt_unit, _ = strconv.Atoi(autobinding_split[1])
+			}
+			texture_unit := js.ValueOf(constants.TEXTURE0.Int() + txt_unit)
+			context.Call("activeTexture", texture_unit)                              // activate texture unit N
+			context.Call("bindTexture", constants.TEXTURE_2D, material.GetTexture()) // bind the texture
+			context.Call("uniform1i", location, txt_unit)                            // give shader the unit number
+			return nil
+		case "renderer.aspect":
+			switch dtype {
+			case "vec2":
+				wh := self.wctx.GetWH()
+				context.Call("uniform2f", location, float32(wh[0]), float32(wh[1]))
+				return nil
+			}
+		case "renderer.pvm":
+			switch dtype {
+			case "mat3":
+				elements := pvm.GetElements()
+				e := wcommon.ConvertGoSliceToJsTypedArray(elements[:]) // ModelView matrix, converted to JavaScript 'Float32Array'
+				context.Call("uniformMatrix3fv", location, false, e)   // gl.uniformMatrix3fv(location, transpose, values_array)
 				return nil
 			}
 		}
+		return fmt.Errorf("Failed to bind uniform '%s' (%s) with %v", uname, dtype, autobinding)
+	} else if umap["value"] != nil {
+		v := umap["value"].([]float32)
+		switch dtype {
+		case "int":
+			context.Call("uniform1i", location, int(v[0]))
+			return nil
+		case "float":
+			context.Call("uniform1f", location, v[0])
+			return nil
+		case "vec2":
+			context.Call("uniform2f", location, v[0], v[1])
+			return nil
+		case "vec3":
+			context.Call("uniform3f", location, v[0], v[1], v[2])
+			return nil
+		case "vec4":
+			context.Call("uniform4f", location, v[0], v[1], v[2], v[3])
+			return nil
+		}
+		return fmt.Errorf("Failed to bind uniform '%s' (%s) with %v", uname, dtype, v)
+	} else {
+		return fmt.Errorf("Failed to bind uniform '%s' (%s)", uname, dtype)
 	}
-	return fmt.Errorf("Failed to bind uniform '%s' (%s) with %v", uname, dtype, autobinding)
 }
 
 func (self *Renderer) bind_attribute(aname string, amap map[string]interface{},
-	draw_mode int, geometry *Geometry, poses *SceneObjectPoses) error {
+	draw_mode int, geometry *Geometry, poses *wcommon.SceneObjectPoses) error {
 	context := self.wctx.GetContext()
 	constants := self.wctx.GetConstants()
 	if amap["location"] == nil {
@@ -312,11 +312,11 @@ func (self *Renderer) bind_attribute(aname string, amap map[string]interface{},
 		return nil
 	case "instance.pose":
 		if poses != nil && len(autobinding_split) == 3 { // it's like "instance.pose:<stride>:<offset>"
-			count := get_count_from_type(dtype)
+			size := get_count_from_type(dtype)
 			stride, _ := strconv.Atoi(autobinding_split[1])
 			offset, _ := strconv.Atoi(autobinding_split[2])
-			context.Call("bindBuffer", constants.ARRAY_BUFFER, poses.webgl_buffer)
-			context.Call("vertexAttribPointer", location, count, constants.FLOAT, false, stride*4, offset*4)
+			context.Call("bindBuffer", constants.ARRAY_BUFFER, poses.WebGLBuffer)
+			context.Call("vertexAttribPointer", location, size, constants.FLOAT, false, stride*4, offset*4)
 			context.Call("enableVertexAttribArray", location)
 			// context.ext_angle.vertexAttribDivisorANGLE(attribute_loc, divisor);
 			self.wctx.GetExtension("ANGLE").Call("vertexAttribDivisorANGLE", location, 1) // divisor == 1
@@ -325,9 +325,9 @@ func (self *Renderer) bind_attribute(aname string, amap map[string]interface{},
 	default:
 		buffer, stride_i, offset_i := amap["buffer"], amap["stride"], amap["offset"]
 		if buffer != nil && stride_i != nil && offset_i != nil {
-			count, stride, offset := get_count_from_type(dtype), stride_i.(int), offset_i.(int)
+			size, stride, offset := get_count_from_type(dtype), stride_i.(int), offset_i.(int)
 			context.Call("bindBuffer", constants.ARRAY_BUFFER, buffer.(js.Value))
-			context.Call("vertexAttribPointer", location, count, constants.FLOAT, false, stride*4, offset*4)
+			context.Call("vertexAttribPointer", location, size, constants.FLOAT, false, stride*4, offset*4)
 			context.Call("enableVertexAttribArray", location)
 			if self.wctx.IsExtensionReady("ANGLE") {
 				// context.ext_angle.vertexAttribDivisorANGLE(attribute_loc, divisor);
@@ -340,6 +340,8 @@ func (self *Renderer) bind_attribute(aname string, amap map[string]interface{},
 
 func get_count_from_type(dtype string) int {
 	switch dtype {
+	case "float":
+		return 1
 	case "vec2":
 		return 2
 	case "vec3":

@@ -1,8 +1,9 @@
-package webgl2d
+package webgl3d
 
 import (
 	"github.com/go4orward/gowebgl/wcommon"
-	"github.com/go4orward/gowebgl/wcommon/geom2d"
+	"github.com/go4orward/gowebgl/wcommon/geom3d"
+	"github.com/go4orward/gowebgl/webgl2d"
 )
 
 type OverlayMarkerLayer struct {
@@ -16,11 +17,11 @@ func NewOverlayMarkerLayer(wctx *wcommon.WebGLContext) *OverlayMarkerLayer {
 	return &self
 }
 
-func (self *OverlayMarkerLayer) Render(pvm *geom2d.Matrix3) {
+func (self *OverlayMarkerLayer) Render(proj *geom3d.Matrix4, view *geom3d.Matrix4) {
 	// 'Overlay' interface function, called by Renderer
 	renderer := NewRenderer(self.wctx)
 	for _, marker := range self.Markers {
-		renderer.RenderSceneObject(marker, pvm)
+		renderer.RenderSceneObject(marker, proj, view)
 	}
 }
 
@@ -30,7 +31,7 @@ func (self *OverlayMarkerLayer) Render(pvm *geom2d.Matrix3) {
 
 func (self *OverlayMarkerLayer) NewSceneObject_ArrowMarker() *SceneObject {
 	// Geometry (ARROW pointing left, with head at (0,0), and PIXEL length 10)
-	geometry := NewGeometry()
+	geometry := webgl2d.NewGeometry()
 	geometry.SetVertices([][2]float32{{0, 0}, {0.5, -0.3}, {0.5, -0.15}, {1, -0.15}, {1, 0.15}, {0.5, 0.15}, {0.5, 0.3}})
 	geometry.SetFaces([][]uint32{{0, 1, 2, 3, 4, 5, 6}})
 	geometry.SetEdges([][]uint32{{0, 1, 2, 3, 4, 5, 6, 0}})

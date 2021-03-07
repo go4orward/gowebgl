@@ -1,18 +1,18 @@
 package webglglobe
 
 import (
-	"github.com/go4orward/gowebgl/common"
-	"github.com/go4orward/gowebgl/common/geom3d"
+	"github.com/go4orward/gowebgl/wcommon"
+	"github.com/go4orward/gowebgl/wcommon/geom3d"
 	"github.com/go4orward/gowebgl/webgl3d"
 )
 
 type WorldRenderer struct {
-	wctx     *common.WebGLContext // WebGL context
-	renderer *webgl3d.Renderer    // Renderer for rendering 3D SceneObjects
-	axes     *webgl3d.SceneObject // XYZ axes for visual reference (only if required)
+	wctx     *wcommon.WebGLContext // WebGL context
+	renderer *webgl3d.Renderer     // Renderer for rendering 3D SceneObjects
+	axes     *webgl3d.SceneObject  // XYZ axes for visual reference (only if required)
 }
 
-func NewWorldRenderer(wctx *common.WebGLContext) *WorldRenderer {
+func NewWorldRenderer(wctx *wcommon.WebGLContext) *WorldRenderer {
 	renderer := WorldRenderer{wctx: wctx, renderer: webgl3d.NewRenderer(wctx), axes: nil}
 	return &renderer
 }

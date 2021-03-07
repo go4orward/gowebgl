@@ -7,17 +7,17 @@ import (
 	"strings"
 	"syscall/js"
 
-	"github.com/go4orward/gowebgl/common"
-	"github.com/go4orward/gowebgl/common/geom2d"
-	"github.com/go4orward/gowebgl/common/geom3d"
+	"github.com/go4orward/gowebgl/wcommon"
+	"github.com/go4orward/gowebgl/wcommon/geom2d"
+	"github.com/go4orward/gowebgl/wcommon/geom3d"
 )
 
 type Renderer struct {
-	wctx *common.WebGLContext
+	wctx *wcommon.WebGLContext
 	axes *SceneObject
 }
 
-func NewRenderer(wctx *common.WebGLContext) *Renderer {
+func NewRenderer(wctx *wcommon.WebGLContext) *Renderer {
 	renderer := Renderer{wctx: wctx, axes: nil}
 	return &renderer
 }
@@ -58,6 +58,10 @@ func (self *Renderer) RenderScene(scene *Scene, camera *Camera) {
 		new_viewmodel := camera.viewmatrix.MultiplyToTheRight(&sobj.modelmatrix)
 		self.RenderSceneObject(sobj, camera.projection.GetMatrix(), new_viewmodel)
 	}
+	// Render all the OverlayLayers
+	for _, overlay := range scene.overlays {
+		overlay.Render(camera.projection.GetMatrix(), &camera.viewmatrix)
+	}
 }
 
 // ----------------------------------------------------------------------------
@@ -86,10 +90,10 @@ func (self *Renderer) RenderSceneObject(sobj *SceneObject, proj *geom3d.Matrix4,
 		return errors.New("Failed to RenderSceneObject() : empty geometry data buffer")
 	}
 	if sobj.Geometry.IsWebGLBufferReady() == false {
-		sobj.Geometry.build_webgl_buffers(self.wctx, true, true, true)
+		sobj.Geometry.BuildWebGLBuffers(self.wctx, true, true, true)
 	}
 	if sobj.poses != nil && sobj.poses.IsWebGLBufferReady() == false {
-		sobj.poses.build_webgl_buffers(self.wctx)
+		sobj.poses.BuildWebGLBuffer(self.wctx)
 		if !self.wctx.IsExtensionReady("ANGLE") {
 			self.wctx.SetupExtension("ANGLE")
 		}
@@ -123,7 +127,7 @@ func (self *Renderer) RenderSceneObject(sobj *SceneObject, proj *geom3d.Matrix4,
 	return nil
 }
 
-func (self *Renderer) render_scene_object_with_shader(sobj *SceneObject, proj *geom3d.Matrix4, vwmd *geom3d.Matrix4, draw_mode int, shader *common.Shader) error {
+func (self *Renderer) render_scene_object_with_shader(sobj *SceneObject, proj *geom3d.Matrix4, vwmd *geom3d.Matrix4, draw_mode int, shader *wcommon.Shader) error {
 	context := self.wctx.GetContext()
 	constants := self.wctx.GetConstants()
 	// 1. Decide which Shader to use
@@ -150,7 +154,7 @@ func (self *Renderer) render_scene_object_with_shader(sobj *SceneObject, proj *g
 	// 4. draw  (Note that ARRAY_BUFFER was binded already in the attribut-binding step)
 	switch draw_mode {
 	case 3: // draw TRIANGLES (FACES)
-		buffer, count, _ := sobj.Geometry.GetWebGLBuffer("TRIANGLES")
+		buffer, count, _ := sobj.Geometry.GetWebGLBuffer(draw_mode)
 		if count > 0 {
 			context.Call("bindBuffer", constants.ELEMENT_ARRAY_BUFFER, buffer)
 			if sobj.poses == nil {
@@ -158,28 +162,28 @@ func (self *Renderer) render_scene_object_with_shader(sobj *SceneObject, proj *g
 				context.Call("drawElements", constants.TRIANGLES, count, constants.UNSIGNED_INT, 0) // (mode, count, type, offset)
 			} else {
 				// fmt.Printf("draw FACES with drawElementsInstancedANGLE()\n")
-				ext, pose_count := self.wctx.GetExtension("ANGLE"), sobj.poses.GetPoseCount()
+				ext, pose_count := self.wctx.GetExtension("ANGLE"), sobj.poses.Count
 				ext.Call("drawElementsInstancedANGLE", constants.TRIANGLES, count, constants.UNSIGNED_INT, 0, pose_count)
 			}
 		}
 	case 2: // draw LINES (EDGES)
-		buffer, count, _ := sobj.Geometry.GetWebGLBuffer("LINES")
+		buffer, count, _ := sobj.Geometry.GetWebGLBuffer(draw_mode)
 		if count > 0 {
 			context.Call("bindBuffer", constants.ELEMENT_ARRAY_BUFFER, buffer)
 			if sobj.poses == nil {
 				context.Call("drawElements", constants.LINES, count, constants.UNSIGNED_INT, 0) // (mode, count, type, offset)
 			} else {
-				ext, pose_count := self.wctx.GetExtension("ANGLE"), sobj.poses.GetPoseCount()
+				ext, pose_count := self.wctx.GetExtension("ANGLE"), sobj.poses.Count
 				ext.Call("drawElementsInstancedANGLE", constants.LINES, count, constants.UNSIGNED_INT, 0, pose_count)
 			}
 		}
 	case 1: // draw POINTS (VERTICES)
-		_, count, _ := sobj.Geometry.GetWebGLBuffer("POINTS")
+		_, count, _ := sobj.Geometry.GetWebGLBuffer(draw_mode)
 		if count > 0 {
 			if sobj.poses == nil {
 				context.Call("drawArrays", constants.POINTS, 0, count) // (mode, first, count)
 			} else {
-				ext, pose_count := self.wctx.GetExtension("ANGLE"), sobj.poses.GetPoseCount()
+				ext, pose_count := self.wctx.GetExtension("ANGLE"), sobj.poses.Count
 				ext.Call("drawArraysInstancedANGLE", constants.POINTS, 0, count, pose_count)
 			}
 		}
@@ -192,7 +196,7 @@ func (self *Renderer) render_scene_object_with_shader(sobj *SceneObject, proj *g
 }
 
 func (self *Renderer) bind_uniform(uname string, umap map[string]interface{},
-	draw_mode int, material *common.Material, proj *geom3d.Matrix4, vwmd *geom3d.Matrix4) error {
+	draw_mode int, material *wcommon.Material, proj *geom3d.Matrix4, vwmd *geom3d.Matrix4) error {
 	context := self.wctx.GetContext()
 	constants := self.wctx.GetConstants()
 	if umap["location"] == nil {
@@ -207,18 +211,18 @@ func (self *Renderer) bind_uniform(uname string, umap map[string]interface{},
 	switch autobinding0 {
 	case "renderer.proj": // mat4
 		e := (*proj.GetElements())[:]
-		m := common.ConvertGoSliceToJsTypedArray(e)          // Projection matrix, converted to JavaScript 'Float32Array'
+		m := wcommon.ConvertGoSliceToJsTypedArray(e)         // Projection matrix, converted to JavaScript 'Float32Array'
 		context.Call("uniformMatrix4fv", location, false, m) // gl.uniformMatrix4fv(location, transpose, values_array)
 		return nil
 	case "renderer.vwmd": // mat4
 		e := (*vwmd.GetElements())[:]
-		m := common.ConvertGoSliceToJsTypedArray(e)          // View * Models matrix, converted to JavaScript 'Float32Array'
+		m := wcommon.ConvertGoSliceToJsTypedArray(e)         // View * Models matrix, converted to JavaScript 'Float32Array'
 		context.Call("uniformMatrix4fv", location, false, m) // gl.uniformMatrix4fv(location, transpose, values_array)
 		return nil
 	case "renderer.pvm": // mat4
 		pvm := proj.MultiplyToTheRight(vwmd)                 // (Proj * View * Models) matrix
 		e := (*pvm.GetElements())[:]                         //
-		m := common.ConvertGoSliceToJsTypedArray(e)          // P*V*M matrix, converted to JavaScript 'Float32Array'
+		m := wcommon.ConvertGoSliceToJsTypedArray(e)         // P*V*M matrix, converted to JavaScript 'Float32Array'
 		context.Call("uniformMatrix4fv", location, false, m) // gl.uniformMatrix4fv(location, transpose, values_array)
 		return nil
 	case "material.color":
@@ -250,7 +254,7 @@ func (self *Renderer) bind_uniform(uname string, umap map[string]interface{},
 	case "lighting.dlight": // mat3
 		dlight := geom2d.NewMatrix3().Set(0, 1, 0, 0, 1, 0, 1, 1, 0) // directional light (in camera space)
 		e := (*dlight.GetElements())[:]                              // (direction[3] + intensity[3] + ambient[3])
-		m := common.ConvertGoSliceToJsTypedArray(e)                  // converted to JavaScript 'Float32Array'
+		m := wcommon.ConvertGoSliceToJsTypedArray(e)                 // converted to JavaScript 'Float32Array'
 		context.Call("uniformMatrix3fv", location, false, m)         // gl.uniformMatrix4fv(location, transpose, values_array)
 		return nil
 	default:
@@ -279,7 +283,7 @@ func (self *Renderer) bind_uniform(uname string, umap map[string]interface{},
 }
 
 func (self *Renderer) bind_attribute(aname string, amap map[string]interface{},
-	draw_mode int, geometry *Geometry, poses *SceneObjectPoses) error {
+	draw_mode int, geometry wcommon.Geometry, poses *wcommon.SceneObjectPoses) error {
 	context := self.wctx.GetContext()
 	constants := self.wctx.GetConstants()
 	if amap["location"] == nil {
@@ -293,7 +297,7 @@ func (self *Renderer) bind_attribute(aname string, amap map[string]interface{},
 	autobinding0 := autobinding_split[0]
 	switch autobinding0 {
 	case "geometry.coords": // 3 * float32 in 12 bytes (3 float32)
-		buffer, _, pinfo := geometry.GetWebGLBuffer("POINTS")
+		buffer, _, pinfo := geometry.GetWebGLBuffer(1)
 		context.Call("bindBuffer", constants.ARRAY_BUFFER, buffer)
 		context.Call("vertexAttribPointer", location, 3, constants.FLOAT, false, pinfo[0]*4, pinfo[1]*4)
 		context.Call("enableVertexAttribArray", location)
@@ -303,7 +307,7 @@ func (self *Renderer) bind_attribute(aname string, amap map[string]interface{},
 		}
 		return nil
 	case "geometry.textuv": // 2 * uint16 in 4 bytes (1 float32)
-		buffer, _, pinfo := geometry.GetWebGLBuffer("POINTS")
+		buffer, _, pinfo := geometry.GetWebGLBuffer(1)
 		context.Call("bindBuffer", constants.ARRAY_BUFFER, buffer)
 		context.Call("vertexAttribPointer", location, 2, constants.UNSIGNED_SHORT, true, pinfo[0]*4, pinfo[2]*4)
 		context.Call("enableVertexAttribArray", location)
@@ -316,7 +320,7 @@ func (self *Renderer) bind_attribute(aname string, amap map[string]interface{},
 		}
 		return nil
 	case "geometry.normal": // 3 * byte in 4 bytes (1 float32)
-		buffer, _, pinfo := geometry.GetWebGLBuffer("POINTS")
+		buffer, _, pinfo := geometry.GetWebGLBuffer(1)
 		count := get_count_from_type(dtype)
 		context.Call("bindBuffer", constants.ARRAY_BUFFER, buffer)
 		context.Call("vertexAttribPointer", location, count, constants.BYTE, true, pinfo[0]*4, pinfo[3]*4)
@@ -334,7 +338,7 @@ func (self *Renderer) bind_attribute(aname string, amap map[string]interface{},
 			count := get_count_from_type(dtype)
 			stride, _ := strconv.Atoi(autobinding_split[1])
 			offset, _ := strconv.Atoi(autobinding_split[2])
-			context.Call("bindBuffer", constants.ARRAY_BUFFER, poses.webgl_buffer)
+			context.Call("bindBuffer", constants.ARRAY_BUFFER, poses.WebGLBuffer)
 			context.Call("vertexAttribPointer", location, count, constants.FLOAT, false, stride*4, offset*4)
 			context.Call("enableVertexAttribArray", location)
 			// context.ext_angle.vertexAttribDivisorANGLE(attribute_loc, divisor);
@@ -359,6 +363,8 @@ func (self *Renderer) bind_attribute(aname string, amap map[string]interface{},
 
 func get_count_from_type(dtype string) int {
 	switch dtype {
+	case "float":
+		return 1
 	case "vec2":
 		return 2
 	case "vec3":

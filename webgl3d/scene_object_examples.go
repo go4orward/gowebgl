@@ -3,10 +3,10 @@ package webgl3d
 import (
 	"math"
 
-	"github.com/go4orward/gowebgl/common"
+	"github.com/go4orward/gowebgl/wcommon"
 )
 
-func NewSceneObject_3DAxes(wctx *common.WebGLContext, length float32) *SceneObject {
+func NewSceneObject_3DAxes(wctx *wcommon.WebGLContext, length float32) *SceneObject {
 	// This example creates two lines for X (red) and Y (green) axes, with origin at (0,0)
 	geometry := NewGeometry() // create an empty geometry
 	geometry.SetVertices([][3]float32{{0, 0, 0}, {length, 0, 0}, {0, length, 0}, {0, 0, length}})
@@ -16,34 +16,34 @@ func NewSceneObject_3DAxes(wctx *common.WebGLContext, length float32) *SceneObje
 	return NewSceneObject(geometry, nil, nil, shader, nil) // set up the scene object (draw EDGES only)
 }
 
-func NewSceneObject_CylinderWireframe(wctx *common.WebGLContext) *SceneObject {
+func NewSceneObject_CylinderWireframe(wctx *wcommon.WebGLContext) *SceneObject {
 	// This example creates a cylinder, to be rendered as 'wireframe'
 	// (This example demonstrates how 'triangulation of face' works)
 	geometry := NewGeometry_Cylinder(6, 0.5, 1.0, 0, true)      // create a cylinder with radius 0.5 and heigt 1.0
 	geometry.BuildDataBuffersForWireframe()                     // extract wireframe edges from faces
-	material := common.NewMaterial(wctx, "#888888")             // create material with yellow color
+	material := wcommon.NewMaterial(wctx, "#888888")            // create material with yellow color
 	shader := NewShader_ColorOnly(wctx)                         // use the standard COLOR_ONLY shader
 	return NewSceneObject(geometry, material, nil, shader, nil) // set up the scene object (draw EDGES only)
 }
 
-func NewSceneObject_CubeWithTexture(wctx *common.WebGLContext) *SceneObject {
+func NewSceneObject_CubeWithTexture(wctx *wcommon.WebGLContext) *SceneObject {
 	geometry := NewGeometry_CubeWithTexture(1.0, 1.0, 1.0)
 	geometry.BuildNormalsForFace()
 	geometry.BuildDataBuffers(true, false, true)                // build data buffers for vertices and faces
-	material := common.NewMaterial(wctx, "/assets/gopher.png")  // create material with a texture image
+	material := wcommon.NewMaterial(wctx, "/assets/gopher.png") // create material with a texture image
 	shader := NewShader_NormalTexture(wctx)                     // use the standard NORMAL+TEXTURE shader
 	return NewSceneObject(geometry, material, nil, nil, shader) // set up the scene object (draw FACES only)
 }
 
-func NewSceneObject_CubeInstances(wctx *common.WebGLContext) *SceneObject {
+func NewSceneObject_CubeInstances(wctx *wcommon.WebGLContext) *SceneObject {
 	// This example creates 40,000 instances of a single geometry, each with its own pose (tx, ty)
 	geometry := NewGeometry_Cube(0.08, 0.08, 0.08)               // create a cube of size 0.08
 	geometry.BuildNormalsForFace()                               // prepare face normal vectors
 	geometry.BuildDataBuffers(true, false, true)                 //
-	material := common.NewMaterial(wctx, "#888888")              // create material
+	material := wcommon.NewMaterial(wctx, "#888888")             // create material
 	shader := NewShader_InstancePoseColor(wctx)                  // create shader, and set its bindings
 	sobj := NewSceneObject(geometry, material, nil, nil, shader) // set up the scene object (draw FACES only)
-	poses := NewSceneObjectPoses(6, 10*10*10)
+	poses := wcommon.NewSceneObjectPoses(6, 10*10*10, nil)
 	for i := 0; i < 10; i++ {
 		for j := 0; j < 10; j++ {
 			for k := 0; k < 10; k++ {
@@ -59,7 +59,7 @@ func NewSceneObject_CubeInstances(wctx *common.WebGLContext) *SceneObject {
 	return sobj
 }
 
-func NewSceneObject_Airplane(wctx *common.WebGLContext) *SceneObject {
+func NewSceneObject_Airplane(wctx *wcommon.WebGLContext) *SceneObject {
 	centers := [][3]float32{{0, -0.025, -1}, {0, -0.025, -0.99}, {0, -0.02, -0.9}, {0, -0.01, -0.6}, {0, 0, +0.0}, {0, 0, +0.8}, {0, 0, +0.9}, {0, 0, +0.99}, {0, 0, +1}}
 	radii := []float32{0, 0.01, 0.04, 0.08, 0.1, 0.1, 0.08, 0.02, 0}
 	wingth := float32(0.02)
@@ -76,7 +76,7 @@ func NewSceneObject_Airplane(wctx *common.WebGLContext) *SceneObject {
 	geometry.Merge(vwing.Translate(wingth/2, -0.9, 0))
 	geometry.BuildNormalsForVertex()                               // prepare normal vectors
 	geometry.BuildDataBuffers(true, false, true)                   //
-	material := common.NewMaterial(wctx, "#ffff88")                // create material
+	material := wcommon.NewMaterial(wctx, "#ffff88")               // create material
 	shader := NewShader_NormalColor(wctx)                          // use the standard NORMAL+COLOR shader
 	scnobj := NewSceneObject(geometry, material, nil, nil, shader) // set up the scene object (draw FACES only)
 	return scnobj

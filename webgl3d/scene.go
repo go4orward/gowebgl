@@ -1,16 +1,18 @@
 package webgl3d
 
-import "github.com/go4orward/gowebgl/common"
+import "github.com/go4orward/gowebgl/wcommon"
 
 type Scene struct {
 	bkgcolor [3]float32     // background color of the scene
 	objects  []*SceneObject // SceneObjects in the scene
+	overlays []Overlay      // list of Overlay layers (interface)
 }
 
 func NewScene(bkg_color string) *Scene {
 	var scene Scene
 	scene.SetBkgColor(bkg_color)
 	scene.objects = make([]*SceneObject, 0)
+	scene.overlays = make([]Overlay, 0)
 	return &scene
 }
 
@@ -19,7 +21,7 @@ func NewScene(bkg_color string) *Scene {
 // ----------------------------------------------------------------------------
 
 func (self *Scene) SetBkgColor(color string) *Scene {
-	rgba := common.ParseHexColor(color)
+	rgba := wcommon.ParseHexColor(color)
 	self.bkgcolor = [3]float32{rgba[0], rgba[1], rgba[2]}
 	return self
 }
@@ -56,4 +58,15 @@ func (self *Scene) Get(indices ...int) *SceneObject {
 		}
 	}
 	return nil
+}
+
+// ----------------------------------------------------------------------------
+// Managing OverlayLayers
+// ----------------------------------------------------------------------------
+
+func (self *Scene) AddOverlay(overlay ...Overlay) *Scene {
+	for i := 0; i < len(overlay); i++ {
+		self.overlays = append(self.overlays, overlay[i])
+	}
+	return self
 }

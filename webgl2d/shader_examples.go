@@ -1,10 +1,10 @@
 package webgl2d
 
 import (
-	"github.com/go4orward/gowebgl/common"
+	"github.com/go4orward/gowebgl/wcommon"
 )
 
-func NewShader_2DAxes(wctx *common.WebGLContext) *common.Shader {
+func NewShader_2DAxes(wctx *wcommon.WebGLContext) *wcommon.Shader {
 	// Shader for three axes - X(RED) & Y(GREEN) - for visual reference,
 	//   with auto-binded (Proj * View * Model) matrix and XY coordinates
 	var vertex_shader_code = `
@@ -24,14 +24,14 @@ func NewShader_2DAxes(wctx *common.WebGLContext) *common.Shader {
 			if (v_xy.x != 0.0) gl_FragColor = vec4(1.0, 0.1, 0.1, 1.0);
 			else               gl_FragColor = vec4(0.1, 1.0, 0.1, 1.0);
 		}`
-	shader, _ := common.NewShader(wctx, vertex_shader_code, fragment_shader_code)
-	shader.InitBindingForUniform("pvm", "mat3", "renderer.pvm")      // automatic binding of Proj*View*Model matrix
-	shader.InitBindingForAttribute("axy", "vec2", "geometry.coords") // automatic binding of point coordinates
-	shader.CheckBindings()                                           // check validity of the shader
+	shader, _ := wcommon.NewShader(wctx, vertex_shader_code, fragment_shader_code)
+	shader.SetBindingForUniform("pvm", "mat3", "renderer.pvm")      // Proj*View*Model matrix
+	shader.SetBindingForAttribute("axy", "vec2", "geometry.coords") // point coordinates
+	shader.CheckBindings()                                          // check validity of the shader
 	return shader
 }
 
-func NewShader_MaterialColor(wctx *common.WebGLContext) *common.Shader {
+func NewShader_MaterialColor(wctx *wcommon.WebGLContext) *wcommon.Shader {
 	// Shader with auto-binded color and (Proj * View * Model) matrix
 	var vertex_shader_code = `
 		precision mediump float;
@@ -43,19 +43,19 @@ func NewShader_MaterialColor(wctx *common.WebGLContext) *common.Shader {
 		}`
 	var fragment_shader_code = `
 		precision mediump float;
-		uniform vec3 color;			// color
+		uniform vec4 color;			// color RGBA
 		void main() { 
-			gl_FragColor = vec4(color.r, color.g, color.b, 1.0);
+			gl_FragColor = color;
 		}`
-	shader, _ := common.NewShader(wctx, vertex_shader_code, fragment_shader_code)
-	shader.InitBindingForUniform("pvm", "mat3", "renderer.pvm")     // automatic binding of Proj*View*Model matrix
-	shader.InitBindingForUniform("color", "vec3", "material.color") // automatic binding of material color
-	shader.InitBindingForAttribute("xy", "vec2", "geometry.coords") // automatic binding of point coordinates
-	shader.CheckBindings()                                          // check validity of the shader
+	shader, _ := wcommon.NewShader(wctx, vertex_shader_code, fragment_shader_code)
+	shader.SetBindingForUniform("pvm", "mat3", "renderer.pvm")     // Proj*View*Model matrix
+	shader.SetBindingForUniform("color", "vec4", "material.color") // material color
+	shader.SetBindingForAttribute("xy", "vec2", "geometry.coords") // point coordinates
+	shader.CheckBindings()                                         // check validity of the shader
 	return shader
 }
 
-func NewShader_MaterialTexture(wctx *common.WebGLContext) *common.Shader {
+func NewShader_MaterialTexture(wctx *wcommon.WebGLContext) *wcommon.Shader {
 	// Shader with auto-binded color and (Proj * View * Model) matrix
 	var vertex_shader_code = `
 		precision mediump float;
@@ -75,16 +75,16 @@ func NewShader_MaterialTexture(wctx *common.WebGLContext) *common.Shader {
 		void main() { 
 			gl_FragColor = texture2D(text, v_uv);
 		}`
-	shader, _ := common.NewShader(wctx, vertex_shader_code, fragment_shader_code)
-	shader.InitBindingForUniform("pvm", "mat3", "renderer.pvm")           // automatic binding of Proj*View*Model matrix
-	shader.InitBindingForUniform("text", "sampler2D", "material.texture") // automatic binding of texture sampler (unit:0)
-	shader.InitBindingForAttribute("xy", "vec2", "geometry.coords")       // automatic binding of point coordinates
-	shader.InitBindingForAttribute("uv", "vec2", "geometry.textuv")       // automatic binding of texture UV coordinates
-	shader.CheckBindings()                                                // check validity of the shader
+	shader, _ := wcommon.NewShader(wctx, vertex_shader_code, fragment_shader_code)
+	shader.SetBindingForUniform("pvm", "mat3", "renderer.pvm")           // Proj*View*Model matrix
+	shader.SetBindingForUniform("text", "sampler2D", "material.texture") // texture sampler (unit:0)
+	shader.SetBindingForAttribute("xy", "vec2", "geometry.coords")       // point coordinates
+	shader.SetBindingForAttribute("uv", "vec2", "geometry.textuv")       // texture UV coordinates
+	shader.CheckBindings()                                               // check validity of the shader
 	return shader
 }
 
-func NewShader_InstancePoseColor(wctx *common.WebGLContext) *common.Shader {
+func NewShader_InstancePoseColor(wctx *wcommon.WebGLContext) *wcommon.Shader {
 	// Shader with instance pose, for rendering multiple instances of a same geometry
 	var vertex_shader_code = `
 		precision mediump float;
@@ -104,11 +104,11 @@ func NewShader_InstancePoseColor(wctx *common.WebGLContext) *common.Shader {
 		void main() { 
 			gl_FragColor = vec4(v_color, 1.0);
 		}`
-	shader, _ := common.NewShader(wctx, vertex_shader_code, fragment_shader_code)
-	shader.InitBindingForUniform("pvm", "mat3", "renderer.pvm")           // automatic binding of Proj*View*Model matrix
-	shader.InitBindingForAttribute("xy", "vec2", "geometry.coords")       // automatic binding of point coordinates
-	shader.InitBindingForAttribute("ixy", "vec2", "instance.pose:5:0")    // automatic binding of instance pose
-	shader.InitBindingForAttribute("icolor", "vec3", "instance.pose:5:2") // automatic binding of instance color
-	shader.CheckBindings()                                                // check validity of the shader
+	shader, _ := wcommon.NewShader(wctx, vertex_shader_code, fragment_shader_code)
+	shader.SetBindingForUniform("pvm", "mat3", "renderer.pvm")           // Proj*View*Model matrix
+	shader.SetBindingForAttribute("xy", "vec2", "geometry.coords")       // point coordinates
+	shader.SetBindingForAttribute("ixy", "vec2", "instance.pose:5:0")    // instance pose
+	shader.SetBindingForAttribute("icolor", "vec3", "instance.pose:5:2") // instance color
+	shader.CheckBindings()                                               // check validity of the shader
 	return shader
 }

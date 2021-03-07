@@ -3,25 +3,25 @@ package webgl3d
 import (
 	"fmt"
 
-	"github.com/go4orward/gowebgl/common"
-	"github.com/go4orward/gowebgl/common/geom3d"
+	"github.com/go4orward/gowebgl/wcommon"
+	"github.com/go4orward/gowebgl/wcommon/geom3d"
 )
 
 type SceneObject struct {
-	Geometry    *Geometry
-	Material    *common.Material  // material
-	VShader     *common.Shader    // vert shader and its bindings
-	EShader     *common.Shader    // edge shader and its bindings
-	FShader     *common.Shader    // face shader and its bindings
-	modelmatrix geom3d.Matrix4    //
-	UseDepth    bool              // depth test flag (default is true)
-	UseBlend    bool              // blending flag with alpha (default is false)
-	poses       *SceneObjectPoses // poses for multiple instances of this (geometry+material) object
-	children    []*SceneObject    //
+	Geometry    wcommon.Geometry          // geometry interface
+	Material    *wcommon.Material         // material
+	VShader     *wcommon.Shader           // vert shader and its bindings
+	EShader     *wcommon.Shader           // edge shader and its bindings
+	FShader     *wcommon.Shader           // face shader and its bindings
+	modelmatrix geom3d.Matrix4            //
+	UseDepth    bool                      // depth test flag (default is true)
+	UseBlend    bool                      // blending flag with alpha (default is false)
+	poses       *wcommon.SceneObjectPoses // poses for multiple instances of this (geometry+material) object
+	children    []*SceneObject            //
 }
 
-func NewSceneObject(geometry *Geometry, material *common.Material,
-	vshader *common.Shader, eshader *common.Shader, fshader *common.Shader) *SceneObject {
+func NewSceneObject(geometry wcommon.Geometry, material *wcommon.Material,
+	vshader *wcommon.Shader, eshader *wcommon.Shader, fshader *wcommon.Shader) *SceneObject {
 	// 'geometry' : geometric shape (vertices, edges, faces) to be rendered
 	// 'material' : color, texture, or other material properties	: OPTIONAL (can be 'nil')
 	// 'vshader' : shader for VERTICES (POINTS) 					: OPTIONAL (can be 'nil')
@@ -72,7 +72,7 @@ func (self *SceneObject) ShowInfo() {
 // Basic Access
 // ----------------------------------------------------------------------------
 
-func (self *SceneObject) SetInstancePoses(poses *SceneObjectPoses) *SceneObject {
+func (self *SceneObject) SetInstancePoses(poses *wcommon.SceneObjectPoses) *SceneObject {
 	self.poses = poses
 	return self
 }

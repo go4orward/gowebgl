@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"math"
 
-	"github.com/go4orward/gowebgl/common/geom3d"
+	"github.com/go4orward/gowebgl/wcommon/geom3d"
 )
 
 type PerspectiveProjection struct {

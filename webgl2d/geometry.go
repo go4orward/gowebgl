@@ -5,8 +5,8 @@ import (
 	"math"
 	"syscall/js"
 
-	"github.com/go4orward/gowebgl/common"
-	"github.com/go4orward/gowebgl/common/geom2d"
+	"github.com/go4orward/gowebgl/wcommon"
+	"github.com/go4orward/gowebgl/wcommon/geom2d"
 )
 
 // ----------------------------------------------------------------------------
@@ -27,8 +27,8 @@ type Geometry struct {
 	// Note that, for PER_FACE texture UV-coordinates, vertices are duplicated for each face
 	fpoint_vidx_list  []uint32 // index of vertex_list of each face after PER_FACE data duplication
 	fpoint_vert_total int      // total count of vertices after PER_FACE data duplication
-	fpoint_info       [3]int   // data size of a point (for triangles) : [ stride, xyz_offset, uv_offset ]
-	vpoint_info       [3]int   // data size of a point (for points & lines)
+	fpoint_info       [4]int   // data size of a point (for triangles) : [ stride, xyz_offset, uv_offset, RESERVED ]
+	vpoint_info       [4]int   // data size of a point (for points & lines)
 
 	webgl_buffer_vpoints js.Value // WebGL data buffer for data_buffer_vpoints (points for vertices)
 	webgl_buffer_fpoints js.Value // WebGL data buffer for data_buffer_fpoints (points for PER_FACE vertices)
@@ -56,8 +56,8 @@ func (self *Geometry) Clear(geom bool, data_buf bool, webgl_buf bool) *Geometry 
 		self.data_buffer_faces = nil
 		self.fpoint_vidx_list = nil
 		self.fpoint_vert_total = 0
-		self.fpoint_info = [3]int{0, 0, 0}
-		self.vpoint_info = [3]int{0, 0, 0}
+		self.fpoint_info = [4]int{0, 0, 0, 0}
+		self.vpoint_info = [4]int{0, 0, 0, 0}
 	}
 	if webgl_buf || data_buf || geom {
 		self.webgl_buffer_vpoints = js.Null()
@@ -314,14 +314,14 @@ func (self *Geometry) get_fpoint_new_vidx(fidx int, i int) int {
 	return int(self.fpoint_vidx_list[fidx]) + i
 }
 
-func (self *Geometry) buffer_copy_xy(buf []float32, pinfo [3]int, new_vidx int, vidx int) {
+func (self *Geometry) buffer_copy_xy(buf []float32, pinfo [4]int, new_vidx int, vidx int) {
 	stride, offset := pinfo[0], pinfo[1] // XY coordinates
 	pos := new_vidx*stride + offset
 	buf[pos+0] = self.verts[vidx][0]
 	buf[pos+1] = self.verts[vidx][1]
 }
 
-func (self *Geometry) buffer_copy_uv(buf []float32, pinfo [3]int, new_vidx int, tuv_idx int, tuv_offset int) {
+func (self *Geometry) buffer_copy_uv(buf []float32, pinfo [4]int, new_vidx int, tuv_idx int, tuv_offset int) {
 	stride, offset := pinfo[0], pinfo[2] // UV texture coordinates
 	u := uint32(self.tuvs[tuv_idx][tuv_offset+0] * 65535)
 	v := uint32(self.tuvs[tuv_idx][tuv_offset+1] * 65535)
@@ -331,14 +331,14 @@ func (self *Geometry) buffer_copy_uv(buf []float32, pinfo [3]int, new_vidx int, 
 
 func (self *Geometry) BuildDataBuffers(for_points bool, for_lines bool, for_faces bool) {
 	// create data buffer for vertex points
-	self.data_buffer_vpoints, self.vpoint_info = nil, [3]int{0, 0, 0}
-	self.data_buffer_fpoints, self.fpoint_info = nil, [3]int{0, 0, 0}
+	self.data_buffer_vpoints, self.vpoint_info = nil, [4]int{0, 0, 0, 0}
+	self.data_buffer_fpoints, self.fpoint_info = nil, [4]int{0, 0, 0, 0}
 	points_per_face := false
 	if for_faces {
 		if self.HasTextureFor("FACE") {
 			points_per_face = true
 			self.count_fpoint_vidx_list()
-			self.fpoint_info = [3]int{(2 + 1), 0, 2} // stride, xyz_offset, uv_offset
+			self.fpoint_info = [4]int{(2 + 1), 0, 2, 0} // stride, xyz_offset, uv_offset, RESERVED
 			self.data_buffer_fpoints = make([]float32, self.fpoint_vert_total*self.fpoint_info[0])
 			for fidx, face_vlist := range self.faces {
 				for i := 0; i < len(face_vlist); i++ {
@@ -348,7 +348,7 @@ func (self *Geometry) BuildDataBuffers(for_points bool, for_lines bool, for_face
 				}
 			}
 		} else if self.HasTextureFor("VERTEX") {
-			self.fpoint_info = [3]int{(2 + 1), 0, 2} // stride, xyz_offset, uv_offset
+			self.fpoint_info = [4]int{(2 + 1), 0, 2, 0} // stride, xyz_offset, uv_offset, RESERVED
 			self.data_buffer_fpoints = make([]float32, len(self.verts)*self.fpoint_info[0])
 			for vidx := 0; vidx < len(self.verts); vidx++ {
 				self.buffer_copy_xy(self.data_buffer_fpoints, self.fpoint_info, vidx, vidx)
@@ -357,7 +357,7 @@ func (self *Geometry) BuildDataBuffers(for_points bool, for_lines bool, for_face
 			self.data_buffer_vpoints = self.data_buffer_fpoints
 			self.vpoint_info = self.fpoint_info
 		} else {
-			self.fpoint_info = [3]int{(2 + 0), 0, 0} // stride, xyz_offset, uv_offset
+			self.fpoint_info = [4]int{(2 + 0), 0, 0, 0} // stride, xyz_offset, uv_offset, RESERVED
 			self.data_buffer_fpoints = make([]float32, len(self.verts)*self.fpoint_info[0])
 			for vidx := 0; vidx < len(self.verts); vidx++ {
 				self.buffer_copy_xy(self.data_buffer_fpoints, self.fpoint_info, vidx, vidx)
@@ -369,7 +369,7 @@ func (self *Geometry) BuildDataBuffers(for_points bool, for_lines bool, for_face
 		self.data_buffer_vpoints = nil
 	}
 	if (for_points || for_lines) && self.data_buffer_vpoints == nil {
-		self.vpoint_info = [3]int{2, 0, 0}
+		self.vpoint_info = [4]int{2, 0, 0, 0}
 		self.data_buffer_vpoints = make([]float32, len(self.verts)*self.vpoint_info[0])
 		for vidx := 0; vidx < len(self.verts); vidx++ {
 			self.buffer_copy_xy(self.data_buffer_vpoints, self.vpoint_info, vidx, vidx)
@@ -444,7 +444,7 @@ func (self *Geometry) BuildDataBuffersForWireframe() {
 			self.data_buffer_vpoints[vpos+1] = xy[1]
 			vpos += 2
 		}
-		self.vpoint_info = [3]int{2, 0, 0}
+		self.vpoint_info = [4]int{2, 0, 0, 0}
 	}
 	// create data buffer for edges, by extracting wireframe from faces
 	self.data_buffer_lines = make([]uint32, 0)
@@ -465,14 +465,14 @@ func (self *Geometry) IsWebGLBufferReady() bool {
 	return !self.webgl_buffer_vpoints.IsNull()
 }
 
-func (self *Geometry) BuildWebGLBuffers(wctx *common.WebGLContext, for_points bool, for_lines bool, for_faces bool) {
+func (self *Geometry) BuildWebGLBuffers(wctx *wcommon.WebGLContext, for_points bool, for_lines bool, for_faces bool) {
 	// THIS FUCNTION IS MEANT TO BE CALLED BY RENDERER. NO NEED TO BE EXPORTED
 	context := wctx.GetContext()     // js.Value
-	constants := wctx.GetConstants() // *common.Constants
+	constants := wctx.GetConstants() // *wcommon.Constants
 	if for_points && self.data_buffer_vpoints != nil {
 		self.webgl_buffer_vpoints = context.Call("createBuffer", constants.ARRAY_BUFFER)
 		context.Call("bindBuffer", constants.ARRAY_BUFFER, self.webgl_buffer_vpoints)
-		var vertices_array = common.ConvertGoSliceToJsTypedArray(self.data_buffer_vpoints)
+		var vertices_array = wcommon.ConvertGoSliceToJsTypedArray(self.data_buffer_vpoints)
 		context.Call("bufferData", constants.ARRAY_BUFFER, vertices_array, constants.STATIC_DRAW)
 		context.Call("bindBuffer", constants.ARRAY_BUFFER, nil)
 	} else {
@@ -481,7 +481,7 @@ func (self *Geometry) BuildWebGLBuffers(wctx *common.WebGLContext, for_points bo
 	if for_lines && self.data_buffer_lines != nil {
 		self.webgl_buffer_lines = context.Call("createBuffer", constants.ELEMENT_ARRAY_BUFFER)
 		context.Call("bindBuffer", constants.ELEMENT_ARRAY_BUFFER, self.webgl_buffer_lines)
-		var indices_array = common.ConvertGoSliceToJsTypedArray(self.data_buffer_lines)
+		var indices_array = wcommon.ConvertGoSliceToJsTypedArray(self.data_buffer_lines)
 		context.Call("bufferData", constants.ELEMENT_ARRAY_BUFFER, indices_array, constants.STATIC_DRAW)
 		context.Call("bindBuffer", constants.ELEMENT_ARRAY_BUFFER, nil)
 	} else {
@@ -491,13 +491,13 @@ func (self *Geometry) BuildWebGLBuffers(wctx *common.WebGLContext, for_points bo
 		if self.data_buffer_fpoints != nil {
 			self.webgl_buffer_fpoints = context.Call("createBuffer", constants.ARRAY_BUFFER)
 			context.Call("bindBuffer", constants.ARRAY_BUFFER, self.webgl_buffer_fpoints)
-			var points_array = common.ConvertGoSliceToJsTypedArray(self.data_buffer_fpoints)
+			var points_array = wcommon.ConvertGoSliceToJsTypedArray(self.data_buffer_fpoints)
 			context.Call("bufferData", constants.ARRAY_BUFFER, points_array, constants.STATIC_DRAW)
 			context.Call("bindBuffer", constants.ARRAY_BUFFER, nil)
 		}
 		self.webgl_buffer_faces = context.Call("createBuffer", constants.ELEMENT_ARRAY_BUFFER)
 		context.Call("bindBuffer", constants.ELEMENT_ARRAY_BUFFER, self.webgl_buffer_faces)
-		var indices_array = common.ConvertGoSliceToJsTypedArray(self.data_buffer_faces)
+		var indices_array = wcommon.ConvertGoSliceToJsTypedArray(self.data_buffer_faces)
 		context.Call("bufferData", constants.ELEMENT_ARRAY_BUFFER, indices_array, constants.STATIC_DRAW)
 		context.Call("bindBuffer", constants.ELEMENT_ARRAY_BUFFER, nil)
 	} else {
@@ -505,7 +505,7 @@ func (self *Geometry) BuildWebGLBuffers(wctx *common.WebGLContext, for_points bo
 	}
 }
 
-func (self *Geometry) GetWebGLBuffer(draw_mode int) (js.Value, int, [3]int) {
+func (self *Geometry) GetWebGLBuffer(draw_mode int) (js.Value, int, [4]int) {
 	switch draw_mode {
 	case 1: // "POINTS", "VERTICES"
 		if self.data_buffer_fpoints == nil {
@@ -516,11 +516,11 @@ func (self *Geometry) GetWebGLBuffer(draw_mode int) (js.Value, int, [3]int) {
 			return self.webgl_buffer_fpoints, len(self.data_buffer_fpoints), self.fpoint_info
 		}
 	case 2: // "LINES", "EDGES"
-		return self.webgl_buffer_lines, len(self.data_buffer_lines), [3]int{0, 0, 0}
+		return self.webgl_buffer_lines, len(self.data_buffer_lines), [4]int{0, 0, 0, 0}
 	case 3: // "TRIANGLES", "FACES"
-		return self.webgl_buffer_faces, len(self.data_buffer_faces), [3]int{0, 0, 0}
+		return self.webgl_buffer_faces, len(self.data_buffer_faces), [4]int{0, 0, 0, 0}
 	default:
 		fmt.Printf("Invalid mode '%s' for GetWebGLBuffer()\n")
-		return js.Null(), 0, [3]int{0, 0, 0}
+		return js.Null(), 0, [4]int{0, 0, 0, 0}
 	}
 }

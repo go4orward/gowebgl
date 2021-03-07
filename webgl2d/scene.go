@@ -1,8 +1,8 @@
 package webgl2d
 
 import (
-	"github.com/go4orward/gowebgl/common"
-	"github.com/go4orward/gowebgl/common/geom2d"
+	"github.com/go4orward/gowebgl/wcommon"
+	"github.com/go4orward/gowebgl/wcommon/geom2d"
 )
 
 type Scene struct {
@@ -26,7 +26,7 @@ func NewScene(bkg_color string) *Scene {
 // ----------------------------------------------------------------------------
 
 func (self *Scene) SetBkgColor(color string) *Scene {
-	rgba := common.ParseHexColor(color)
+	rgba := wcommon.ParseHexColor(color)
 	self.bkgcolor = [3]float32{rgba[0], rgba[1], rgba[2]}
 	return self
 }
@@ -89,9 +89,9 @@ func (self *Scene) GetBBoxSizeCenter(renew bool) ([2][2]float32, [2]float32, [2]
 // Managing OverlayLayers
 // ----------------------------------------------------------------------------
 
-func (self *Scene) AddOverlay(overlay Overlay) *Scene {
-	if overlay != nil {
-		self.overlays = append(self.overlays, overlay)
+func (self *Scene) AddOverlay(overlay ...Overlay) *Scene {
+	for i := 0; i < len(overlay); i++ {
+		self.overlays = append(self.overlays, overlay[i])
 	}
 	return self
 }

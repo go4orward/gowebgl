@@ -5,29 +5,29 @@ import (
 	"fmt"
 	"syscall/js"
 
-	"github.com/go4orward/gowebgl/common"
+	"github.com/go4orward/gowebgl/wcommon"
 	"github.com/go4orward/gowebgl/webgl3d"
 )
 
 func main() {
 	// THIS CODE IS SUPPOSED TO BE BUILT AS WEBASSEMBLY AND RUN INSIDE A BROWSER.
 	// BUILD IT LIKE 'GOOS=js GOARCH=wasm go build -o gowebgl.wasm gowebgl/webgl3d_example.go'.
-	fmt.Println("Hello WebGL!")                       // printed in the browser console
-	wctx, err := common.NewWebGLContext("wasmcanvas") // ID of canvas element
+	fmt.Println("Hello WebGL!")                        // printed in the browser console
+	wctx, err := wcommon.NewWebGLContext("wasmcanvas") // ID of canvas element
 	if err != nil {
 		js.Global().Call("alert", "Failed to start WebGL : "+err.Error())
 		return
 	}
-	scene := webgl3d.NewScene("#ffffff")
+	scene := webgl3d.NewScene("#ffffff") // Scene with WHITE background
 	if false {
 		scene.Add(webgl3d.NewSceneObject_CylinderWireframe(wctx)) // a pre-defined example of SceneObject
 		// scene.Add(webgl3d.NewSceneObject_CubeInstances(wctx)) // a pre-defined example of SceneObject
 	} else {
-		geometry := webgl3d.NewGeometry_CubeWithTexture(1, 1, 1)   // create geometry (a cube of size 1.0)
-		geometry.BuildNormalsForFace()                             // calculate normal vectors for each face
-		geometry.BuildDataBuffers(true, false, true)               // build data buffers for vertices and faces
-		material := common.NewMaterial(wctx, "/assets/gopher.png") // create material (with texture image)
-		shader := webgl3d.NewShader_NormalTexture(wctx)            // use the standard NORMAL+TEXTURE shader
+		geometry := webgl3d.NewGeometry_CubeWithTexture(1, 1, 1)    // create geometry (a cube of size 1.0)
+		geometry.BuildNormalsForFace()                              // calculate normal vectors for each face
+		geometry.BuildDataBuffers(true, false, true)                // build data buffers for vertices and faces
+		material := wcommon.NewMaterial(wctx, "/assets/gopher.png") // create material (with texture image)
+		shader := webgl3d.NewShader_NormalTexture(wctx)             // use the standard NORMAL+TEXTURE shader
 		scene.Add(webgl3d.NewSceneObject(geometry, material, nil, nil, shader))
 	}
 	camera := webgl3d.NewPerspectiveCamera(wctx.GetWH(), 15, 1.0) // FOV default is 15° (in degree)
