@@ -178,13 +178,15 @@ func (self *Renderer) render_scene_object_with_shader(sobj *SceneObject, proj *g
 			}
 		}
 	case 1: // draw POINTS (VERTICES)
-		_, count, _ := sobj.Geometry.GetWebGLBuffer(draw_mode)
+		_, count, pinfo := sobj.Geometry.GetWebGLBuffer(draw_mode)
+		fmt.Println(count, pinfo)
 		if count > 0 {
+			vert_count := count / pinfo[0] // number of vertices
 			if sobj.poses == nil {
-				context.Call("drawArrays", constants.POINTS, 0, count) // (mode, first, count)
+				context.Call("drawArrays", constants.POINTS, 0, vert_count) // (mode, first, count)
 			} else {
 				ext, pose_count := self.wctx.GetExtension("ANGLE"), sobj.poses.Count
-				ext.Call("drawArraysInstancedANGLE", constants.POINTS, 0, count, pose_count)
+				ext.Call("drawArraysInstancedANGLE", constants.POINTS, 0, vert_count, pose_count)
 			}
 		}
 	default:
@@ -204,82 +206,89 @@ func (self *Renderer) bind_uniform(uname string, umap map[string]interface{},
 		return err
 	}
 	location, dtype := umap["location"].(js.Value), umap["dtype"].(string)
-	autobinding := umap["autobinding"].(string)
-	// fmt.Printf("Uniform (%s) : autobinding= '%s'\n", dtype, autobinding)
-	autobinding_split := strings.Split(autobinding, ":")
-	autobinding0 := autobinding_split[0]
-	switch autobinding0 {
-	case "renderer.proj": // mat4
-		e := (*proj.GetElements())[:]
-		m := wcommon.ConvertGoSliceToJsTypedArray(e)         // Projection matrix, converted to JavaScript 'Float32Array'
-		context.Call("uniformMatrix4fv", location, false, m) // gl.uniformMatrix4fv(location, transpose, values_array)
-		return nil
-	case "renderer.vwmd": // mat4
-		e := (*vwmd.GetElements())[:]
-		m := wcommon.ConvertGoSliceToJsTypedArray(e)         // View * Models matrix, converted to JavaScript 'Float32Array'
-		context.Call("uniformMatrix4fv", location, false, m) // gl.uniformMatrix4fv(location, transpose, values_array)
-		return nil
-	case "renderer.pvm": // mat4
-		pvm := proj.MultiplyToTheRight(vwmd)                 // (Proj * View * Models) matrix
-		e := (*pvm.GetElements())[:]                         //
-		m := wcommon.ConvertGoSliceToJsTypedArray(e)         // P*V*M matrix, converted to JavaScript 'Float32Array'
-		context.Call("uniformMatrix4fv", location, false, m) // gl.uniformMatrix4fv(location, transpose, values_array)
-		return nil
-	case "material.color":
-		c := [4]float32{0, 1, 1, 1}
-		if material != nil {
-			c = material.GetDrawModeColor(draw_mode) // get color from material (for the DrawMode)
-		}
-		switch dtype {
-		case "vec3":
-			context.Call("uniform3f", location, c[0], c[1], c[2])
+	if umap["autobinding"] != nil {
+		autobinding := umap["autobinding"].(string)
+		// fmt.Printf("Uniform (%s) : autobinding= '%s'\n", dtype, autobinding)
+		autobinding_split := strings.Split(autobinding, ":")
+		autobinding0 := autobinding_split[0]
+		switch autobinding0 {
+		case "renderer.aspect": // vec2
+			wh := self.wctx.GetWH()
+			context.Call("uniform2f", location, float32(wh[0]), float32(wh[1]))
 			return nil
-		case "vec4":
-			context.Call("uniform4f", location, c[0], c[1], c[2], c[3])
+		case "renderer.proj": // mat4
+			e := (*proj.GetElements())[:]
+			m := wcommon.ConvertGoSliceToJsTypedArray(e)         // Projection matrix, converted to JavaScript 'Float32Array'
+			context.Call("uniformMatrix4fv", location, false, m) // gl.uniformMatrix4fv(location, transpose, values_array)
 			return nil
-		}
-	case "material.texture":
-		if material == nil || !material.IsTextureReady() || material.IsTextureLoading() {
-			return errors.New("Texture is not ready")
-		}
-		txt_unit := 0
-		if len(autobinding_split) >= 2 {
-			txt_unit, _ = strconv.Atoi(autobinding_split[1])
-		}
-		texture_unit := js.ValueOf(constants.TEXTURE0.Int() + txt_unit)
-		context.Call("activeTexture", texture_unit)                              // activate texture unit N
-		context.Call("bindTexture", constants.TEXTURE_2D, material.GetTexture()) // bind the texture
-		context.Call("uniform1i", location, txt_unit)                            // give shader the unit number
-		return nil
-	case "lighting.dlight": // mat3
-		dlight := geom2d.NewMatrix3().Set(0, 1, 0, 0, 1, 0, 1, 1, 0) // directional light (in camera space)
-		e := (*dlight.GetElements())[:]                              // (direction[3] + intensity[3] + ambient[3])
-		m := wcommon.ConvertGoSliceToJsTypedArray(e)                 // converted to JavaScript 'Float32Array'
-		context.Call("uniformMatrix3fv", location, false, m)         // gl.uniformMatrix4fv(location, transpose, values_array)
-		return nil
-	default:
-		value := umap["value"]
-		if value != nil {
+		case "renderer.vwmd": // mat4
+			e := (*vwmd.GetElements())[:]
+			m := wcommon.ConvertGoSliceToJsTypedArray(e)         // View * Models matrix, converted to JavaScript 'Float32Array'
+			context.Call("uniformMatrix4fv", location, false, m) // gl.uniformMatrix4fv(location, transpose, values_array)
+			return nil
+		case "renderer.pvm": // mat4
+			pvm := proj.MultiplyToTheRight(vwmd)                 // (Proj * View * Models) matrix
+			e := (*pvm.GetElements())[:]                         //
+			m := wcommon.ConvertGoSliceToJsTypedArray(e)         // P*V*M matrix, converted to JavaScript 'Float32Array'
+			context.Call("uniformMatrix4fv", location, false, m) // gl.uniformMatrix4fv(location, transpose, values_array)
+			return nil
+		case "material.color":
+			c := [4]float32{0, 1, 1, 1}
+			if material != nil {
+				c = material.GetDrawModeColor(draw_mode) // get color from material (for the DrawMode)
+			}
 			switch dtype {
-			case "float":
-				context.Call("uniform1f", location, value.(float32))
-				return nil
-			case "vec2":
-				v := value.([]float32)
-				context.Call("uniform2f", location, v[0], v[1])
-				return nil
 			case "vec3":
-				v := value.([]float32)
-				context.Call("uniform3f", location, v[0], v[1], v[2])
+				context.Call("uniform3f", location, c[0], c[1], c[2])
 				return nil
 			case "vec4":
-				v := value.([]float32)
-				context.Call("uniform4f", location, v[0], v[1], v[2], v[3])
+				context.Call("uniform4f", location, c[0], c[1], c[2], c[3])
 				return nil
 			}
+		case "material.texture":
+			if material == nil || !material.IsTextureReady() || material.IsTextureLoading() {
+				return errors.New("Texture is not ready")
+			}
+			txt_unit := 0
+			if len(autobinding_split) >= 2 {
+				txt_unit, _ = strconv.Atoi(autobinding_split[1])
+			}
+			texture_unit := js.ValueOf(constants.TEXTURE0.Int() + txt_unit)
+			context.Call("activeTexture", texture_unit)                              // activate texture unit N
+			context.Call("bindTexture", constants.TEXTURE_2D, material.GetTexture()) // bind the texture
+			context.Call("uniform1i", location, txt_unit)                            // give shader the unit number
+			return nil
+		case "lighting.dlight": // mat3
+			dlight := geom2d.NewMatrix3().Set(0, 1, 0, 0, 1, 0, 1, 1, 0) // directional light (in camera space)
+			e := (*dlight.GetElements())[:]                              // (direction[3] + intensity[3] + ambient[3])
+			m := wcommon.ConvertGoSliceToJsTypedArray(e)                 // converted to JavaScript 'Float32Array'
+			context.Call("uniformMatrix3fv", location, false, m)         // gl.uniformMatrix4fv(location, transpose, values_array)
+			return nil
 		}
+		return fmt.Errorf("Failed to bind uniform '%s' (%s) with %v", uname, dtype, autobinding, umap)
+	} else if umap["value"] != nil {
+		v := umap["value"].([]float32)
+		switch dtype {
+		case "int":
+			context.Call("uniform1i", location, int(v[0]))
+			return nil
+		case "float":
+			context.Call("uniform1f", location, v[0])
+			return nil
+		case "vec2":
+			context.Call("uniform2f", location, v[0], v[1])
+			return nil
+		case "vec3":
+			context.Call("uniform3f", location, v[0], v[1], v[2])
+			return nil
+		case "vec4":
+			context.Call("uniform4f", location, v[0], v[1], v[2], v[3])
+			return nil
+		}
+		return fmt.Errorf("Failed to bind uniform '%s' (%s) with %v", uname, dtype, v)
+	} else {
+		return fmt.Errorf("Failed to bind uniform '%s' (%s)", uname, dtype)
 	}
-	return fmt.Errorf("Failed to bind uniform '%s' (%s) with %v", uname, dtype, autobinding, umap)
 }
 
 func (self *Renderer) bind_attribute(aname string, amap map[string]interface{},

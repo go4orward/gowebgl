@@ -13,7 +13,7 @@ var alphabet_texture *wcommon.Material = nil // Alphabet texture
 
 type OverlayLabel struct {
 	text    string       // text of the label
-	xy      [2]float32   // origin of the label (in WORLD space)
+	xyz     [3]float32   // origin of the label (in WORLD space)
 	chwh    [2]float32   // character width & height
 	color   string       // color of the label (like "#ff0000")
 	offset  [2]float32   // offset from origin (in pixels in CAMERA space)
@@ -55,9 +55,9 @@ func (self *OverlayLabelLayer) Render(proj *geom3d.Matrix4, view *geom3d.Matrix4
 // Managing Labels
 // ----------------------------------------------------------------------------
 
-func (self *OverlayLabelLayer) CreateLabel(label_text string, xy [2]float32, color string) *OverlayLabel {
+func (self *OverlayLabelLayer) CreateLabel(label_text string, xyz [3]float32, color string) *OverlayLabel {
 	chwh := alphabet_texture.GetAlaphabetCharacterWH(1.0)
-	return &OverlayLabel{text: label_text, xy: xy, chwh: chwh, color: color}
+	return &OverlayLabel{text: label_text, xyz: xyz, chwh: chwh, color: color}
 }
 
 func (self *OverlayLabelLayer) FindLabel(label_text string) *OverlayLabel {
@@ -77,11 +77,11 @@ func (self *OverlayLabelLayer) AddLabel(label *OverlayLabel, build bool) *Overla
 	return self
 }
 
-func (self *OverlayLabelLayer) AddLabelText(label_text string, xy [2]float32, color string, offref string) *OverlayLabelLayer {
+func (self *OverlayLabelLayer) AddLabelText(label_text string, xyz [3]float32, color string, offref string) *OverlayLabelLayer {
 	// Simple version to add a Label, instead of doing
 	//   label := layer.CreateLabel();  label.SetPose().BuildSceneObjects();  layer.AddLabel(label)
 	chwh := alphabet_texture.GetAlaphabetCharacterWH(1.0)
-	label := &OverlayLabel{text: label_text, xy: xy, chwh: chwh, color: color}
+	label := &OverlayLabel{text: label_text, xyz: xyz, chwh: chwh, color: color}
 	label.SetPose(0, offref, [2]float32{0, 0})
 	self.Labels = append(self.Labels, label)
 	label.build_labeltext_object(self.wctx) // SceneObject for the label text is built (without background)
@@ -143,60 +143,57 @@ func (self *OverlayLabel) build_labeltext_object(wctx *wcommon.WebGLContext) *Ov
 	geometry.BuildDataBuffers(true, false, false)
 	var vertex_shader_code = `
 		precision mediump float;
-		uniform   mat3  pvm;		// Projection * View * Model matrix
+		uniform   mat4  proj;		// Projection matrix
+		uniform   mat4  vwmd;		// View*Model matrix
 		uniform   vec2  asp;		// aspect ratio, w : h
-		uniform   vec4  orgoff;		// origin & offset of the label (origin: WORLD_XY, offset: CAMERA XY in pixel)
-		uniform   vec4  whrlen;		// character width & height, and label length
+		uniform   vec3  orgn;		// origin of the label (WORLD XYZ coordinates)
+		uniform   vec3  offr;		// offset (CAMERA XY in pixels) & rotation angle
+		uniform   vec3  whlen;		// character width & height, and label length
 		attribute vec2  gvxy;		// geometry's vertex XY position (CAMERA XY in pixel)
-		attribute vec2  chic;		// character index & code for each character
-		varying float v_code; 		// index of the character in the alphabet texture
+		attribute vec2  cpose;		// character index & code
+		varying float v_code; 		// character code (index of the character in the alphabet texture)
 		void main() {
-			vec3 origin = pvm * vec3(orgoff.xy, 1.0);
-			vec2 lb_off = vec2( orgoff.z + whrlen[0]/2.0, orgoff.w );
-			vec2 ch_off = vec2( chic[0] * whrlen[0], 0.0 );
+			vec4 origin = proj * vwmd * vec4(orgn, 1.0);
+			vec2 lb_off = vec2( offr.x + whlen[0]/2.0, offr.y );
+			vec2 ch_off = vec2( cpose[0] * whlen[0], 0.0 );
 			vec2 offset = (lb_off + ch_off + gvxy) * 2.0 / asp[0];
 			// vec2 offset = vec2(offset.x * 2.0 / asp[0], offset.y * 2.0 / asp[0]);
-			gl_Position = vec4(origin.xy + offset.xy, 0.0, 1.0);
-			gl_PointSize = whrlen[1];	// character height
-			v_code  = chic[1];
+			gl_Position = vec4(origin.xy + offset.xy, origin.z, origin.w);
+			gl_PointSize = whlen[1];	// character height
+			v_code  = cpose[1];
 		}`
 	var fragment_shader_code = `
 		precision mediump float;
 		uniform sampler2D texture;	// alphabet texture (ASCII characters from SPACE to DEL)
-		uniform   vec4 	whrlen;		// character width & height, and label length
+		uniform   vec3 	whlen;		// character width & height, and label length
 		uniform   vec4  color;		// color of the label
-		varying   float v_code;     // character code (index of the alphabet texture)
+		varying   float v_code;     // character code (index of the character in the alphabet texture)
 		void main() {
 			vec2 uv = gl_PointCoord;
 			if (uv[0] < 0.0 || uv[0] > 1.0) discard;
 			if (uv[1] < 0.0 || uv[1] > 1.0) discard;
-			float u = uv[0] * (whrlen[1]/whrlen[0]) - 0.5, v = uv[1];
+			float u = uv[0] * (whlen[1]/whlen[0]) - 0.5, v = uv[1];
 			if (u < 0.0 || u > 1.0 || v < 0.0 || v > 1.0) discard;
-			uv = vec2((u + v_code)/whrlen[3], v);	// position in the texture (relative to label_length)
+			uv = vec2((u + v_code)/whlen[2], v);	// position in the texture (relative to label_length)
 			gl_FragColor = texture2D(texture, uv) * color;
 		}`
-	orgoff := []float32{self.xy[0], self.xy[1], float32(self.offset[0]), float32(self.offset[1])}
-	whrlen := []float32{self.chwh[0], self.chwh[1], 0, float32(alphabet_texture.GetAlaphabetLength())}
-	lbrgba := wcommon.GetRGBAFromString(self.color) // label color RGBA
-	// fmt.Println(orgoff, whrlen, lbrgba)
+	offr := []float32{float32(self.offset[0]), float32(self.offset[1]), 0}
+	whlen := []float32{self.chwh[0], self.chwh[1], float32(alphabet_texture.GetAlaphabetLength())}
+	lrgba := wcommon.GetRGBAFromString(self.color) // label color RGBA
+	// fmt.Println(orgoff, whlen, lbrgba)
 	shader, _ := wcommon.NewShader(wctx, vertex_shader_code, fragment_shader_code)
 	shader.SetBindingForUniform("pvm", "mat3", "renderer.pvm")              // Proj*View*Model matrix
 	shader.SetBindingForUniform("asp", "vec2", "renderer.aspect")           // AspectRatio
-	shader.SetBindingForUniform("orgoff", "vec4", orgoff)                   // label origin & offset
-	shader.SetBindingForUniform("whrlen", "vec4", whrlen)                   // ch_width, ch_height, rotation, label_length
-	shader.SetBindingForUniform("color", "vec4", lbrgba[:])                 // label color
+	shader.SetBindingForUniform("orgn", "vec3", self.xyz[:])                // label origin
+	shader.SetBindingForUniform("offr", "vec3", offr)                       // label offset & rotation_angle
+	shader.SetBindingForUniform("whlen", "vec3", whlen)                     // ch_width, ch_height, alphabet_length
+	shader.SetBindingForUniform("color", "vec4", lrgba[:])                  // label color
 	shader.SetBindingForUniform("texture", "sampler2D", "material.texture") // texture sampler (unit:0)
 	shader.SetBindingForAttribute("gvxy", "vec2", "geometry.coords")        // point coordinates
-	shader.SetBindingForAttribute("chic", "vec2", "instance.pose:2:0")      // instance pose (:<stride>:<offset>)
+	shader.SetBindingForAttribute("cpose", "vec2", "instance.pose:2:0")     // character pose (:<stride>:<offset>)
 	shader.CheckBindings()                                                  // check validity of the shader
 	scnobj := NewSceneObject(geometry, alphabet_texture, shader, nil, nil)  // shader for drawing POINTS (for each character)
-	label_rune := []rune(self.text)
-	charcodes := wcommon.NewSceneObjectPoses(2, len(label_rune), nil)
-	for i := 0; i < len(label_rune); i++ { // save character index & code for each rune
-		charcodes.SetPose(i, 0, float32(i), float32(alphabet_texture.GetAlaphabetCharacterIndex(label_rune[i])))
-	}
-	// fmt.Printf("%v  %v\n", label_rune, cidx_list)
-	scnobj.SetInstancePoses(charcodes) // SceneObjectPoses
+	scnobj.SetInstancePoses(alphabet_texture.GetAlaphabetPosesForLabel(self.text))
 	scnobj.UseBlend = true
 	self.txtobj = scnobj
 	return self
@@ -244,14 +241,15 @@ func (self *OverlayLabel) build_background_object(wctx *wcommon.WebGLContext) *O
 	}
 	var vertex_shader_code = `
 		precision mediump float;
-		uniform   mat3  pvm;		// Projection * View * Model matrix
-		uniform   vec2  org;		// origin of the label (WORLD XY coordinates)
+		uniform   mat4  proj;		// Projection matrix
+		uniform   mat4  vwmd;		// View*Model matrix
+		uniform   vec3  orgn;		// origin of the label (WORLD XYZ coordinates)
 		uniform   vec2  asp;		// aspect ratio, w : h
 		attribute vec2  gvxy;		// geometry's vertex XY position (CAMERA XY in pixel)
 		void main() {
-			vec3 origin = pvm * vec3(org, 1.0);
-			vec2 offset = gvxy * 2.0 / asp[0];
-			gl_Position = vec4(origin.xy + offset.xy, 0.0, 1.0);
+			vec4 origin = proj * vwmd * vec4(orgn, 1.0);
+			vec2 offset = (gvxy * 2.0 / asp[0]) * origin.w;
+			gl_Position = vec4(origin.xy + offset.xy, origin.z, origin.w);
 		}`
 	var fragment_shader_code = `
 		precision mediump float;
@@ -260,11 +258,12 @@ func (self *OverlayLabel) build_background_object(wctx *wcommon.WebGLContext) *O
 			gl_FragColor = color;
 		}`
 	shader, _ := wcommon.NewShader(wctx, vertex_shader_code, fragment_shader_code)
-	shader.SetBindingForUniform("pvm", "mat3", "renderer.pvm")        // Proj*View*Model matrix
-	shader.SetBindingForUniform("org", "vec2", self.xy[:])            // label origin
+	shader.SetBindingForUniform("proj", "mat4", "renderer.proj")      // Projection matrix
+	shader.SetBindingForUniform("vwmd", "mat4", "renderer.vwmd")      // View*Model matrix
+	shader.SetBindingForUniform("orgn", "vec3", self.xyz[:])          // label origin
 	shader.SetBindingForUniform("asp", "vec2", "renderer.aspect")     // AspectRatio
 	shader.SetBindingForUniform("color", "vec4", "material.color")    // label color
-	shader.SetBindingForAttribute("gvxy", "vec2", "geometry.coords")  // point coordinates
+	shader.SetBindingForAttribute("gvxy", "vec2", "geometry.coords")  // point coordinates from 2D geometry
 	shader.CheckBindings()                                            // check validity of the shader
 	scnobj := NewSceneObject(geometry, material, nil, shader, shader) // shader for drawing EDGEs & FACEs
 	self.bkgobj = scnobj

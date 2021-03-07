@@ -29,6 +29,9 @@ func main() {
 		material := wcommon.NewMaterial(wctx, "/assets/gopher.png") // create material (with texture image)
 		shader := webgl3d.NewShader_NormalTexture(wctx)             // use the standard NORMAL+TEXTURE shader
 		scene.Add(webgl3d.NewSceneObject(geometry, material, nil, nil, shader))
+		llayer := webgl3d.NewOverlayLabelLayer(wctx, true)
+		llayer.AddLabelText("ABC", [3]float32{1, 1, 1}, "#ff0000", "L_BTM")
+		scene.AddOverlay(llayer)
 	}
 	camera := webgl3d.NewPerspectiveCamera(wctx.GetWH(), 15, 1.0) // FOV default is 15° (in degree)
 	camera.SetPose([3]float32{0, 0, 10}, [3]float32{0, 0, 0}, [3]float32{0, 1, 0})
@@ -58,9 +61,7 @@ func main() {
 			renderer.Clear(scene)               // prepare to render (clearing to white background)
 			renderer.RenderScene(scene, camera) // render the scene (iterating over all the SceneObjects in it)
 			renderer.RenderAxes(camera, 0.8)    // render the axes (just for visual reference)
-			// scene.Get(0).Rotate([3]float32{1, 0, 0}, 1.0)
-			scene.Get(0).Rotate([3]float32{0, 1, 0}, 1.0)
-			scene.Get(0).Rotate([3]float32{0, 0, 1}, 1.0)
+			// scene.Get(0).Rotate([3]float32{0, 1, 1}, 1.0)
 		})
 		<-make(chan bool) // wait for events (without exiting)
 	}

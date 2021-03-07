@@ -234,21 +234,15 @@ func (self *Renderer) bind_uniform(uname string, umap map[string]interface{},
 			context.Call("bindTexture", constants.TEXTURE_2D, material.GetTexture()) // bind the texture
 			context.Call("uniform1i", location, txt_unit)                            // give shader the unit number
 			return nil
-		case "renderer.aspect":
-			switch dtype {
-			case "vec2":
-				wh := self.wctx.GetWH()
-				context.Call("uniform2f", location, float32(wh[0]), float32(wh[1]))
-				return nil
-			}
-		case "renderer.pvm":
-			switch dtype {
-			case "mat3":
-				elements := pvm.GetElements()
-				e := wcommon.ConvertGoSliceToJsTypedArray(elements[:]) // ModelView matrix, converted to JavaScript 'Float32Array'
-				context.Call("uniformMatrix3fv", location, false, e)   // gl.uniformMatrix3fv(location, transpose, values_array)
-				return nil
-			}
+		case "renderer.aspect": // vec2
+			wh := self.wctx.GetWH()
+			context.Call("uniform2f", location, float32(wh[0]), float32(wh[1]))
+			return nil
+		case "renderer.pvm": // mat3
+			elements := pvm.GetElements()
+			e := wcommon.ConvertGoSliceToJsTypedArray(elements[:]) // ModelView matrix, converted to JavaScript 'Float32Array'
+			context.Call("uniformMatrix3fv", location, false, e)   // gl.uniformMatrix3fv(location, transpose, values_array)
+			return nil
 		}
 		return fmt.Errorf("Failed to bind uniform '%s' (%s) with %v", uname, dtype, autobinding)
 	} else if umap["value"] != nil {

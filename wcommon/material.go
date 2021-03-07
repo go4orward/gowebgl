@@ -315,3 +315,14 @@ func (self *Material) GetAlaphabetCharacterIndex(c rune) int {
 		return (127 - 32) // '?'
 	}
 }
+
+func (self *Material) GetAlaphabetPosesForLabel(label_text string) *SceneObjectPoses {
+	// Get SceneObjectPoses of the 'label_text' (as a list of index & code pairs),
+	//   which can be used for rendering the 'label_text' in OverlayLabelLayer
+	label_runes := []rune(label_text)
+	characters := NewSceneObjectPoses(2, len(label_runes), nil)
+	for i := 0; i < len(label_runes); i++ { // save character index & code for each rune
+		characters.SetPose(i, 0, float32(i), float32(self.GetAlaphabetCharacterIndex(label_runes[i])))
+	}
+	return characters
+}

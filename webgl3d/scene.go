@@ -5,7 +5,7 @@ import "github.com/go4orward/gowebgl/wcommon"
 type Scene struct {
 	bkgcolor [3]float32     // background color of the scene
 	objects  []*SceneObject // SceneObjects in the scene
-	overlays []Overlay      // list of Overlay layers (interface)
+	overlays []Overlay      // list of Overlay (interface) layers
 }
 
 func NewScene(bkg_color string) *Scene {
