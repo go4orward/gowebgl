@@ -5,14 +5,14 @@ import (
 	"fmt"
 	"syscall/js"
 
-	"github.com/go4orward/gowebgl/common"
+	"github.com/go4orward/gowebgl/wcommon"
 )
 
 func main() {
 	// THIS CODE IS SUPPOSED TO BE BUILT AS WEBASSEMBLY AND RUN INSIDE A BROWSER.
 	// BUILD IT LIKE 'GOOS=js GOARCH=wasm go build -o gowebgl.wasm gowebgl/webgl_example.go'.
-	fmt.Println("Hello WebGL!")                       // printed in the browser console
-	wctx, err := common.NewWebGLContext("wasmcanvas") // ID of canvas element
+	fmt.Println("Hello WebGL!")                        // printed in the browser console
+	wctx, err := wcommon.NewWebGLContext("wasmcanvas") // ID of canvas element
 	if err != nil {
 		js.Global().Call("alert", "Failed to start WebGL : "+err.Error())
 		return
@@ -34,8 +34,8 @@ func main() {
 	//// Geometry ////
 	// var vertices_array = js.TypedArrayOf(vertices)   // Since js.TypedArrayOf() of Go1.11 is no longer supported,
 	// var indices_array = js.TypedArrayOf(indices)     // we have to use js.CopyBytesToJS() instead.
-	var vertices_array = common.ConvertGoSliceToJsTypedArray(vertices)
-	var indices_array = common.ConvertGoSliceToJsTypedArray(indices)
+	var vertices_array = wcommon.ConvertGoSliceToJsTypedArray(vertices)
+	var indices_array = wcommon.ConvertGoSliceToJsTypedArray(indices)
 	vertexBuffer := context.Call("createBuffer", constants.ARRAY_BUFFER)                             // create buffer
 	context.Call("bindBuffer", constants.ARRAY_BUFFER, vertexBuffer)                                 // bind the buffer
 	context.Call("bufferData", constants.ARRAY_BUFFER, vertices_array, constants.STATIC_DRAW)        // pass data to buffer
