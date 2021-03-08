@@ -77,7 +77,8 @@ func (self *OverlayLabelLayer) AddLabel(label *OverlayLabel, build bool) *Overla
 }
 
 func (self *OverlayLabelLayer) AddLabelText(label_text string, xy [2]float32, color string, offref string) *OverlayLabelLayer {
-	// Simple version to add a Label, instead of doing
+	// Convenience function to quickly add a Label,
+	//   which simplifies all the following steps:
 	//   label := layer.CreateLabel();  label.SetPose().BuildSceneObjects();  layer.AddLabel(label)
 	chwh := alphabet_texture.GetAlaphabetCharacterWH(1.0)
 	label := &OverlayLabel{text: label_text, xy: xy, chwh: chwh, color: color}

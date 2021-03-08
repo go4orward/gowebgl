@@ -53,7 +53,11 @@ func (self *Material) ShowInfo() {
 
 func (self *Material) SetColorForDrawMode(draw_mode int, color string) *Material {
 	// 'draw_mode' :  0:common, 1:vertex, 2:edges, 3:faces
-	return self.SetDrawModeColor(draw_mode, GetRGBAFromString(color))
+	if color != "" {
+		return self.SetDrawModeColor(draw_mode, GetRGBAFromString(color))
+	} else {
+		return self
+	}
 }
 
 func (self *Material) SetDrawModeColor(draw_mode int, color [4]float32) *Material {

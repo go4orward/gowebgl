@@ -22,7 +22,7 @@ func main() {
 	scene := webgl2d.NewScene("#ffffff") // Scene with WHITE background
 	if true {
 		scene.Add(webgl2d.NewSceneObject_RectInstances(wctx)) // multiple instances of rectangles
-		mlayer := webgl2d.NewOverlayMarkerLayer(wctx).AddArrowMarkersToTest()
+		mlayer := webgl2d.NewOverlayMarkerLayer(wctx).AddMarkerArrowHeadsToTest()
 		llayer := webgl2d.NewOverlayLabelLayer(wctx, false).AddLabelText("AhjgyZ", [2]float32{40, 80}, "#ff0000", "")
 		llayer.FindLabel("AhjgyZ").SetPose(0, "L_BTM", [2]float32{30, 30}).SetBackground("under:#000000").BuildSceneObjects(wctx)
 		scene.AddOverlay(mlayer, llayer)
