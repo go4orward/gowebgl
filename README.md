@@ -37,7 +37,7 @@ $ ./wasm_test_server    # open your browser, and visit http://localhost:8080
 
 ## ToDo List
 
-- overlay (marker/label) layers for 3D & Globe
+- overlay (marker/label) layers for Globe
 - user selection using collision detection with a ray from camera
 - graticules on the globe
 - coast lines and country border lines on the world map
