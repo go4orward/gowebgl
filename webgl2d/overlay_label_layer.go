@@ -34,10 +34,6 @@ func NewOverlayLabelLayer(wctx *wcommon.WebGLContext, fontsize int, outlined boo
 	return &self
 }
 
-func (self *OverlayLabelLayer) GetAlaphabetTexture() *wcommon.Material {
-	return self.alphabet_texture
-}
-
 func (self *OverlayLabelLayer) Render(pvm *geom2d.Matrix3) {
 	// 'Overlay' interface function, called by Renderer
 	renderer := NewRenderer(self.wctx)
@@ -55,9 +51,16 @@ func (self *OverlayLabelLayer) Render(pvm *geom2d.Matrix3) {
 // Managing Labels
 // ----------------------------------------------------------------------------
 
-func (self *OverlayLabelLayer) AddLabel(label ...*OverlayLabel) *OverlayLabelLayer {
-	for i := 0; i < len(label); i++ {
-		self.Labels = append(self.Labels, label[i])
+func (self *OverlayLabelLayer) AddLabel(labels ...*OverlayLabel) *OverlayLabelLayer {
+	for i := 0; i < len(labels); i++ {
+		label := labels[i]
+		if label.txtobj == nil && label.text != "" {
+			label.build_labeltext_object(self.wctx, self.alphabet_texture)
+		}
+		if label.bkgobj == nil && label.bkgtype != "" {
+			label.build_background_object(self.wctx)
+		}
+		self.Labels = append(self.Labels, label)
 	}
 	return self
 }
@@ -74,18 +77,16 @@ func (self *OverlayLabelLayer) FindLabel(label_text string) *OverlayLabel {
 func (self *OverlayLabelLayer) CreateLabel(label_text string, xy [2]float32, color string) *OverlayLabel {
 	chwh := self.alphabet_texture.GetAlaphabetCharacterWH(1.0)
 	label := &OverlayLabel{text: label_text, xy: xy, chwh: chwh, color: color}
-	// Note that label.Build() function needs to be called later.
 	return label
 }
 
 func (self *OverlayLabelLayer) AddTextLabel(label_text string, xy [2]float32, color string, offref string) *OverlayLabelLayer {
 	// Convenience function to quickly add a Label,
 	//   which simplifies all the following steps:
-	//   label := layer.CreateLabel();  label.SetPose().BuildSceneObjects();  layer.AddLabel(label)
+	//   label := layer.CreateLabel();  label.SetPose();  layer.AddLabel(label)
 	chwh := self.alphabet_texture.GetAlaphabetCharacterWH(1.0)
 	label := &OverlayLabel{text: label_text, xy: xy, chwh: chwh, color: color}
 	label.SetPose(0, offref, [2]float32{0, 0})
-	label.build_labeltext_object(self.wctx, self.alphabet_texture)
 	self.AddLabel(label)
 	return self
 }
@@ -137,12 +138,6 @@ func (self *OverlayLabel) SetBackground(bkgtype string) *OverlayLabel {
 // Building SceneObjects
 // ----------------------------------------------------------------------------
 
-func (self *OverlayLabel) Build(wctx *wcommon.WebGLContext, alphabet_texture *wcommon.Material) *OverlayLabel {
-	self.build_labeltext_object(wctx, alphabet_texture) // rebuild SceneObject for text
-	self.build_background_object(wctx)                  // rebuild SceneObject for background
-	return self
-}
-
 func (self *OverlayLabel) build_labeltext_object(wctx *wcommon.WebGLContext, alphabet_texture *wcommon.Material) *OverlayLabel {
 	geometry := NewGeometry()
 	geometry.SetVertices([][2]float32{{0, 0}}) // geometry with a single vertex
@@ -159,10 +154,8 @@ func (self *OverlayLabel) build_labeltext_object(wctx *wcommon.WebGLContext, alp
 		varying float v_code; 		// character code (index of the character in the alphabet texture)
 		void main() {
 			vec3 origin = pvm * vec3(orgn, 1.0);
-			vec2 lb_off = vec2( offr.x + whlen[0]/2.0, offr.y );
-			vec2 ch_off = vec2( cpose[0] * whlen[0], 0.0 );
-			vec2 offset = (lb_off + ch_off + gvxy) * 2.0 / asp[0];
-			// vec2 offset = vec2(offset.x * 2.0 / asp[0], offset.y * 2.0 / asp[0]);
+			vec2 ch_off = vec2(offr.x + whlen[0]/2.0, offr.y) + vec2(cpose[0] * whlen[0], 0.0);
+			vec2 offset = vec2((ch_off.x + gvxy.x) * 2.0 / asp[0], (ch_off.y + gvxy.y) * 2.0 / asp[1]);
 			gl_Position = vec4(origin.xy + offset.xy, 0.0, 1.0);
 			gl_PointSize = whlen[1];	// character height
 			v_code  = cpose[1];
@@ -215,7 +208,7 @@ func (self *OverlayLabel) build_background_object(wctx *wcommon.WebGLContext) *O
 	rbtm := [2]float32{self.offset[0] + tlen + 4, self.offset[1] - self.chwh[1]/2}
 	bkgtype_split := strings.Split(self.bkgtype, ":")
 	if len(bkgtype_split) < 2 {
-		fmt.Printf("Failed to BuildBkgObject() : invalid background type '%s'\n", self.bkgtype)
+		fmt.Printf("Failed to build_background_object() : invalid background type '%s'\n", self.bkgtype)
 		return self
 	}
 	bkgtype0 := bkgtype_split[0]
@@ -244,7 +237,7 @@ func (self *OverlayLabel) build_background_object(wctx *wcommon.WebGLContext) *O
 		}
 		geometry.BuildDataBuffers(true, true, false)
 	default:
-		fmt.Printf("Failed to BuildBkgObject() : invalid background type '%s'\n", self.bkgtype)
+		fmt.Printf("Failed to build_background_object() : invalid background type '%s'\n", self.bkgtype)
 		return self
 	}
 	var vertex_shader_code = `
@@ -255,7 +248,7 @@ func (self *OverlayLabel) build_background_object(wctx *wcommon.WebGLContext) *O
 		attribute vec2  gvxy;		// geometry's vertex XY position (CAMERA XY in pixel)
 		void main() {
 			vec3 origin = pvm * vec3(orgn, 1.0);
-			vec2 offset = gvxy * 2.0 / asp[0];
+			vec2 offset = vec2(gvxy.x * 2.0 / asp[0], gvxy.y * 2.0 / asp[1]);
 			gl_Position = vec4(origin.xy + offset.xy, 0.0, 1.0);
 		}`
 	var fragment_shader_code = `

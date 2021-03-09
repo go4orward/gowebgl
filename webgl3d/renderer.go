@@ -179,7 +179,6 @@ func (self *Renderer) render_scene_object_with_shader(sobj *SceneObject, proj *g
 		}
 	case 1: // draw POINTS (VERTICES)
 		_, count, pinfo := sobj.Geometry.GetWebGLBuffer(draw_mode)
-		fmt.Println(count, pinfo)
 		if count > 0 {
 			vert_count := count / pinfo[0] // number of vertices
 			if sobj.poses == nil {

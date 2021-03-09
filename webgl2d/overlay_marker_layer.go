@@ -75,26 +75,26 @@ func (self *OverlayMarkerLayer) AddArrowHeadMarkerForTest() *OverlayMarkerLayer 
 // Marker Examples
 // ----------------------------------------------------------------------------
 
-func (self *OverlayMarkerLayer) CreateArrowMarker(size float32, color string, outline_color string, multiple bool) *SceneObject {
+func (self *OverlayMarkerLayer) CreateArrowMarker(size float32, color string, outline_color string, use_poses bool) *SceneObject {
 	geometry := NewGeometry() // ARROW pointing left, with tip at (0,0)
 	geometry.SetVertices([][2]float32{{0, 0}, {0.5, -0.3}, {0.5, -0.15}, {1, -0.15}, {1, 0.15}, {0.5, 0.15}, {0.5, 0.3}})
 	geometry.SetFaces([][]uint32{{0, 1, 2, 3, 4, 5, 6}})
 	geometry.SetEdges([][]uint32{{0, 1, 2, 3, 4, 5, 6, 0}})
 	geometry.Scale(size, size).BuildDataBuffers(true, true, true) // marker size is 10 pixels
 	material := wcommon.NewMaterial(self.wctx, color).SetColorForDrawMode(2, outline_color)
-	shader := self.GetShaderForMarker(multiple)
+	shader := self.GetShaderForMarker(use_poses)
 	marker := NewSceneObject(geometry, material, nil, shader, shader)
 	return marker
 }
 
-func (self *OverlayMarkerLayer) CreateArrowHeadMarker(size float32, color string, outline_color string, multiple bool) *SceneObject {
+func (self *OverlayMarkerLayer) CreateArrowHeadMarker(size float32, color string, outline_color string, use_poses bool) *SceneObject {
 	geometry := NewGeometry() // ARROW pointing left, with tip at (0,0)
 	geometry.SetVertices([][2]float32{{0, 0}, {1, -0.6}, {1, +0.6}})
 	geometry.SetFaces([][]uint32{{0, 1, 2}})
 	geometry.SetEdges([][]uint32{{0, 1, 2, 0}})
 	geometry.Scale(size, size).BuildDataBuffers(true, true, true) // marker size is 10 pixels
 	material := wcommon.NewMaterial(self.wctx, color).SetColorForDrawMode(2, outline_color)
-	shader := self.GetShaderForMarker(multiple)
+	shader := self.GetShaderForMarker(use_poses)
 	marker := NewSceneObject(geometry, material, nil, shader, shader)
 	return marker
 }
@@ -103,9 +103,9 @@ func (self *OverlayMarkerLayer) CreateArrowHeadMarker(size float32, color string
 // Shader for Marker
 // ----------------------------------------------------------------------------
 
-func (self *OverlayMarkerLayer) GetShaderForMarker(multiple bool) *wcommon.Shader {
+func (self *OverlayMarkerLayer) GetShaderForMarker(use_poses bool) *wcommon.Shader {
 	var shader *wcommon.Shader = nil
-	if !multiple { // Shader for single instance (located at (0,0))
+	if !use_poses { // Shader for single instance (located at (0,0))
 		var vertex_shader_code = `
 		precision mediump float;
 		uniform   mat3 pvm;		// Projection * View * Model matrix
@@ -113,7 +113,7 @@ func (self *OverlayMarkerLayer) GetShaderForMarker(multiple bool) *wcommon.Shade
 		attribute vec2 gvxy;	// vertex XY coordinates (pixels in CAMERA space)
 		void main() {
 			vec3 origin = pvm * vec3(0.0, 0.0, 1.0);
-			vec2 offset = vec2(gvxy.x * 2.0 / asp[0], gvxy.y * 2.0 / asp[0]);
+			vec2 offset = vec2(gvxy.x * 2.0 / asp[0], gvxy.y * 2.0 / asp[1]);
 			gl_Position = vec4(origin.x + offset.x, origin.y + offset.y, 0.0, 1.0);
 		}`
 		var fragment_shader_code = `
@@ -136,7 +136,7 @@ func (self *OverlayMarkerLayer) GetShaderForMarker(multiple bool) *wcommon.Shade
 		attribute vec2 gvxy;	// vertex XY coordinates (pixels in CAMERA space)
 		void main() {
 			vec3 origin = pvm * vec3(orgn, 1.0);
-			vec2 offset = vec2(gvxy.x * 2.0 / asp[0], gvxy.y * 2.0 / asp[0]);
+			vec2 offset = vec2(gvxy.x * 2.0 / asp[0], gvxy.y * 2.0 / asp[1]);
 			gl_Position = vec4(origin.x + offset.x, origin.y + offset.y, 0.0, 1.0);
 		}`
 		var fragment_shader_code = `
@@ -146,11 +146,11 @@ func (self *OverlayMarkerLayer) GetShaderForMarker(multiple bool) *wcommon.Shade
 			gl_FragColor = vec4(color.r, color.g, color.b, 1.0);
 		}`
 		shader, _ = wcommon.NewShader(self.wctx, vertex_shader_code, fragment_shader_code)
-		shader.SetBindingForUniform("pvm", "mat3", "renderer.pvm")         // automatic binding of Proj*View*Model matrix
-		shader.SetBindingForUniform("asp", "vec2", "renderer.aspect")      // automatic binding of AspectRatio
-		shader.SetBindingForUniform("color", "vec3", "material.color")     // automatic binding of material color
-		shader.SetBindingForAttribute("orgn", "vec2", "instance.pose:2:0") // automatic binding of instance pose (:<stride>:<offset>)
-		shader.SetBindingForAttribute("gvxy", "vec2", "geometry.coords")   // automatic binding of point coordinates
+		shader.SetBindingForUniform("pvm", "mat3", "renderer.pvm")         // Proj*View*Model matrix
+		shader.SetBindingForUniform("asp", "vec2", "renderer.aspect")      // AspectRatio
+		shader.SetBindingForUniform("color", "vec3", "material.color")     // material color
+		shader.SetBindingForAttribute("orgn", "vec2", "instance.pose:2:0") // instance pose (:<stride>:<offset>)
+		shader.SetBindingForAttribute("gvxy", "vec2", "geometry.coords")   // point coordinates
 	}
 	shader.CheckBindings() // check validity of the shader
 	return shader

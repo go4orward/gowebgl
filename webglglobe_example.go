@@ -48,6 +48,6 @@ func main() {
 			renderer.RenderWorld(globe, wcamera)   // render the Globe (and all the layers & glowring)
 			globe.Rotate([3]float32{0, 0, 1}, 0.1) // rotate the Globe
 		})
-		<-make(chan bool) // wait for events (without exiting)
 	}
+	<-make(chan bool) // wait for events (without exiting)
 }

@@ -24,8 +24,7 @@ func main() {
 		scene.Add(webgl2d.NewSceneObject_RectangleInstancesExample(wctx)) // multiple instances of rectangles
 		mlayer := webgl2d.NewOverlayMarkerLayer(wctx).AddArrowHeadMarkerForTest()
 		llayer := webgl2d.NewOverlayLabelLayer(wctx, 20, false).AddTextLabel("AhjgyZ", [2]float32{40, 80}, "#ff0000", "")
-		label2 := llayer.CreateLabel("Hello!", [2]float32{20, 100}, "#0000ff").SetPose(0, "L_BTM", [2]float32{30, 30})
-		label2.SetBackground("under:#000000").Build(wctx, llayer.GetAlaphabetTexture())
+		label2 := llayer.CreateLabel("Hello!", [2]float32{20, 100}, "#0000ff").SetPose(0, "L_BTM", [2]float32{30, 30}).SetBackground("under:#000000")
 		scene.AddOverlay(mlayer, llayer.AddLabel(label2))
 	} else {
 		geometry := webgl2d.NewGeometry_Rectangle(1.0) // create geometry (a rectangle)
@@ -81,6 +80,6 @@ func main() {
 			renderer.RenderScene(scene, camera) // render the scene (iterating over all the SceneObjects in it)
 			renderer.RenderAxes(camera, 1.0)    // render the axes (just for visual reference)
 		})
-		<-make(chan bool) // wait for events (without exiting)
 	}
+	<-make(chan bool) // wait for events (without exiting)
 }

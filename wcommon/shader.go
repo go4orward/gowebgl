@@ -143,17 +143,21 @@ func (self *Shader) CheckBindings() {
 	}
 	for uname, umap := range self.uniforms {
 		location := context.Call("getUniformLocation", self.shader_program, uname)
-		umap["location"] = location
-		if umap["dtype"] == nil || (umap["autobinding"] == "" && umap["value"] == nil) {
+		if location.IsNull() {
+			fmt.Printf("Uniform '%s' cannot be found in the shader program\n", uname)
+		} else if umap["dtype"] == nil || (umap["autobinding"] == "" && umap["value"] == nil) {
 			fmt.Printf("Invalid binding for uniform '%s' : %v \n", uname, umap)
 		}
+		umap["location"] = location
 	}
 	// check attribute locations
 	for aname, amap := range self.attributes {
 		location := context.Call("getAttribLocation", self.shader_program, aname)
-		amap["location"] = location
-		if amap["dtype"] == nil || (amap["autobinding"] == "" && amap["buffer"] == nil) {
+		if location.IsNull() {
+			fmt.Printf("Attribute '%s' cannot be found in the shader program\n", aname)
+		} else if amap["dtype"] == nil || (amap["autobinding"] == "" && amap["buffer"] == nil) {
 			fmt.Printf("Invalid binding for attribute '%s' : %v \n", aname, amap)
 		}
+		amap["location"] = location
 	}
 }
