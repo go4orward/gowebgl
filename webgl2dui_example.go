@@ -21,11 +21,12 @@ func main() {
 	}
 	scene := webgl2d.NewScene("#ffffff") // Scene with WHITE background
 	if true {
-		scene.Add(webgl2d.NewSceneObject_RectInstances(wctx)) // multiple instances of rectangles
-		mlayer := webgl2d.NewOverlayMarkerLayer(wctx).AddMarkerArrowHeadsToTest()
-		llayer := webgl2d.NewOverlayLabelLayer(wctx, false).AddLabelText("AhjgyZ", [2]float32{40, 80}, "#ff0000", "")
-		llayer.FindLabel("AhjgyZ").SetPose(0, "L_BTM", [2]float32{30, 30}).SetBackground("under:#000000").BuildSceneObjects(wctx)
-		scene.AddOverlay(mlayer, llayer)
+		scene.Add(webgl2d.NewSceneObject_RectangleInstancesExample(wctx)) // multiple instances of rectangles
+		mlayer := webgl2d.NewOverlayMarkerLayer(wctx).AddArrowHeadMarkerForTest()
+		llayer := webgl2d.NewOverlayLabelLayer(wctx, 20, false).AddTextLabel("AhjgyZ", [2]float32{40, 80}, "#ff0000", "")
+		label2 := llayer.CreateLabel("Hello!", [2]float32{20, 100}, "#0000ff").SetPose(0, "L_BTM", [2]float32{30, 30})
+		label2.SetBackground("under:#000000").Build(wctx, llayer.GetAlaphabetTexture())
+		scene.AddOverlay(mlayer, llayer.AddLabel(label2))
 	} else {
 		geometry := webgl2d.NewGeometry_Rectangle(1.0) // create geometry (a rectangle)
 		geometry.SetTextureUVs([][]float32{{0, 1}, {1, 1}, {1, 0}, {0, 0}})

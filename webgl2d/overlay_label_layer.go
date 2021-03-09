@@ -8,8 +8,6 @@ import (
 	"github.com/go4orward/gowebgl/wcommon/geom2d"
 )
 
-var alphabet_texture *wcommon.Material = nil // Alphabet texture
-
 type OverlayLabel struct {
 	text    string       // text of the label
 	xy      [2]float32   // origin of the label (in WORLD space)
@@ -18,23 +16,26 @@ type OverlayLabel struct {
 	offset  [2]float32   // offset from origin (in pixels in CAMERA space)
 	offref  string       // offset reference type, like "L_TOP", "R_BTM", "CENTER", etc
 	angle   float32      // rotation angle
-	bkgtype string       // background type, like "box:#ffff00:#000000", "under:#000000", etc
+	bkgtype string       // background type, like "box:#aaaaff:#0000ff" or "under:#000000"
 	txtobj  *SceneObject // SceneObject for rendering the label text
 	bkgobj  *SceneObject // SceneObject for rendering the background
 }
 
 type OverlayLabelLayer struct {
-	wctx   *wcommon.WebGLContext //
-	Labels []*OverlayLabel       //
+	wctx             *wcommon.WebGLContext //
+	alphabet_texture *wcommon.Material     // Alphabet texture
+	Labels           []*OverlayLabel       //
 }
 
-func NewOverlayLabelLayer(wctx *wcommon.WebGLContext, outlined bool) *OverlayLabelLayer {
-	self := OverlayLabelLayer{wctx: wctx}
-	if alphabet_texture == nil {
-		alphabet_texture = wcommon.NewMaterial_AlphabetTexture(wctx, 20, "#ffffff", outlined)
-	}
+func NewOverlayLabelLayer(wctx *wcommon.WebGLContext, fontsize int, outlined bool) *OverlayLabelLayer {
+	self := OverlayLabelLayer{wctx: wctx} // let 'fontsize' of ALPHABET texture to be 20, by default
+	self.alphabet_texture = wcommon.NewMaterial_AlphabetTexture(wctx, fontsize, "#ffffff", outlined)
 	self.Labels = make([]*OverlayLabel, 0)
 	return &self
+}
+
+func (self *OverlayLabelLayer) GetAlaphabetTexture() *wcommon.Material {
+	return self.alphabet_texture
 }
 
 func (self *OverlayLabelLayer) Render(pvm *geom2d.Matrix3) {
@@ -54,9 +55,11 @@ func (self *OverlayLabelLayer) Render(pvm *geom2d.Matrix3) {
 // Managing Labels
 // ----------------------------------------------------------------------------
 
-func (self *OverlayLabelLayer) CreateLabel(label_text string, xy [2]float32, color string) *OverlayLabel {
-	chwh := alphabet_texture.GetAlaphabetCharacterWH(1.0)
-	return &OverlayLabel{text: label_text, xy: xy, chwh: chwh, color: color}
+func (self *OverlayLabelLayer) AddLabel(label ...*OverlayLabel) *OverlayLabelLayer {
+	for i := 0; i < len(label); i++ {
+		self.Labels = append(self.Labels, label[i])
+	}
+	return self
 }
 
 func (self *OverlayLabelLayer) FindLabel(label_text string) *OverlayLabel {
@@ -68,23 +71,22 @@ func (self *OverlayLabelLayer) FindLabel(label_text string) *OverlayLabel {
 	return nil
 }
 
-func (self *OverlayLabelLayer) AddLabel(label *OverlayLabel, build bool) *OverlayLabelLayer {
-	self.Labels = append(self.Labels, label)
-	if build {
-		label.BuildSceneObjects(self.wctx)
-	}
-	return self
+func (self *OverlayLabelLayer) CreateLabel(label_text string, xy [2]float32, color string) *OverlayLabel {
+	chwh := self.alphabet_texture.GetAlaphabetCharacterWH(1.0)
+	label := &OverlayLabel{text: label_text, xy: xy, chwh: chwh, color: color}
+	// Note that label.Build() function needs to be called later.
+	return label
 }
 
-func (self *OverlayLabelLayer) AddLabelText(label_text string, xy [2]float32, color string, offref string) *OverlayLabelLayer {
+func (self *OverlayLabelLayer) AddTextLabel(label_text string, xy [2]float32, color string, offref string) *OverlayLabelLayer {
 	// Convenience function to quickly add a Label,
 	//   which simplifies all the following steps:
 	//   label := layer.CreateLabel();  label.SetPose().BuildSceneObjects();  layer.AddLabel(label)
-	chwh := alphabet_texture.GetAlaphabetCharacterWH(1.0)
+	chwh := self.alphabet_texture.GetAlaphabetCharacterWH(1.0)
 	label := &OverlayLabel{text: label_text, xy: xy, chwh: chwh, color: color}
 	label.SetPose(0, offref, [2]float32{0, 0})
-	self.Labels = append(self.Labels, label)
-	label.build_labeltext_object(self.wctx) // SceneObject for the label text is built (without background)
+	label.build_labeltext_object(self.wctx, self.alphabet_texture)
+	self.AddLabel(label)
 	return self
 }
 
@@ -131,13 +133,17 @@ func (self *OverlayLabel) SetBackground(bkgtype string) *OverlayLabel {
 	return self
 }
 
-func (self *OverlayLabel) BuildSceneObjects(wctx *wcommon.WebGLContext) *OverlayLabel {
-	self.build_labeltext_object(wctx)  // rebuild SceneObject for text
-	self.build_background_object(wctx) // rebuild SceneObject for background
+// ----------------------------------------------------------------------------
+// Building SceneObjects
+// ----------------------------------------------------------------------------
+
+func (self *OverlayLabel) Build(wctx *wcommon.WebGLContext, alphabet_texture *wcommon.Material) *OverlayLabel {
+	self.build_labeltext_object(wctx, alphabet_texture) // rebuild SceneObject for text
+	self.build_background_object(wctx)                  // rebuild SceneObject for background
 	return self
 }
 
-func (self *OverlayLabel) build_labeltext_object(wctx *wcommon.WebGLContext) *OverlayLabel {
+func (self *OverlayLabel) build_labeltext_object(wctx *wcommon.WebGLContext, alphabet_texture *wcommon.Material) *OverlayLabel {
 	geometry := NewGeometry()
 	geometry.SetVertices([][2]float32{{0, 0}}) // geometry with a single vertex
 	geometry.BuildDataBuffers(true, false, false)
@@ -199,6 +205,9 @@ func (self *OverlayLabel) build_labeltext_object(wctx *wcommon.WebGLContext) *Ov
 }
 
 func (self *OverlayLabel) build_background_object(wctx *wcommon.WebGLContext) *OverlayLabel {
+	if self.bkgtype == "" {
+		return self
+	}
 	tlen := self.chwh[0] * float32(len([]rune(self.text)))
 	ltop := [2]float32{self.offset[0] - 4, self.offset[1] + self.chwh[1]/2}
 	lbtm := [2]float32{self.offset[0] - 4, self.offset[1] - self.chwh[1]/2}

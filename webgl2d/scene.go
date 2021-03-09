@@ -39,9 +39,9 @@ func (self *Scene) GetBkgColor() [3]float32 {
 // Managing SceneObjects
 // ----------------------------------------------------------------------------
 
-func (self *Scene) Add(sobj *SceneObject) *Scene {
-	if sobj != nil {
-		self.objects = append(self.objects, sobj)
+func (self *Scene) Add(scnobj ...*SceneObject) *Scene {
+	for i := 0; i < len(scnobj); i++ {
+		self.objects = append(self.objects, scnobj[i])
 	}
 	return self
 }

@@ -34,14 +34,14 @@ func NewSceneObject_HexagonWireframe(wctx *wcommon.WebGLContext) *SceneObject {
 	return NewSceneObject(geometry, material, nil, shader, nil) // set up the scene object (draw EDGES only)
 }
 
-func NewSceneObject_RectInstances(wctx *wcommon.WebGLContext) *SceneObject {
+func NewSceneObject_RectangleInstancesExample(wctx *wcommon.WebGLContext) *SceneObject {
 	// This example creates 200*80 instances of a single geometry, each with its own position and color
 	geometry := NewGeometry_Rectangle(0.8)                       // create a rectangle of size 1.0
 	geometry.BuildDataBuffers(true, false, true)                 //
 	material := wcommon.NewMaterial(wctx, "#888888")             // create material
 	shader := NewShader_InstancePoseColor(wctx)                  // create shader, and set its bindings
 	sobj := NewSceneObject(geometry, material, nil, nil, shader) // set up the scene object (draw FACES only)
-	poses := wcommon.NewSceneObjectPoses(5, 200*80, nil)
+	poses := wcommon.NewSceneObjectPoses(5, 200*80, nil)         // multiple poses for 200*80 rectangle instances
 	for row := 0; row < 200; row++ {
 		for col := 0; col < 80; col++ {
 			ii, jj := math.Abs(float64(row)-100)/100, math.Abs(float64(col)-40)/40

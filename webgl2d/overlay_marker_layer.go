@@ -33,40 +33,49 @@ func (self *OverlayMarkerLayer) Render(pvm *geom2d.Matrix3) {
 // Managing Markers
 // ----------------------------------------------------------------------------
 
-func (self *OverlayMarkerLayer) AddMarker(marker *SceneObject) *OverlayMarkerLayer {
-	self.Markers = append(self.Markers, marker)
+func (self *OverlayMarkerLayer) AddMarker(marker ...*SceneObject) *OverlayMarkerLayer {
+	for i := 0; i < len(marker); i++ {
+		self.Markers = append(self.Markers, marker[i])
+	}
 	return self
 }
 
-func (self *OverlayMarkerLayer) AddMarkerArrow(size float32, color string, outline_color string, rotation float32, xy [2]float32) *OverlayMarkerLayer {
+func (self *OverlayMarkerLayer) AddArrowMarker(size float32, color string, outline_color string, rotation float32, xy [2]float32) *OverlayMarkerLayer {
 	// Convenience function to quickly add a Arrow marker,
 	//   which is equivalent to : arrow := layer.CreateMarkerArrow();  layer.AddLabel(label)
-	arrow := self.CreateMarkerArrow(size, color, outline_color, false)
+	arrow := self.CreateArrowMarker(size, color, outline_color, false)
 	arrow.Rotate(rotation).Translate(xy[0], xy[1])
 	self.Markers = append(self.Markers, arrow)
 	return self
 }
 
-func (self *OverlayMarkerLayer) AddMarkerArrowHead(size float32, color string, outline_color string, rotation float32, xy [2]float32) *OverlayMarkerLayer {
+func (self *OverlayMarkerLayer) AddArrowHeadMarker(size float32, color string, outline_color string, rotation float32, xy [2]float32) *OverlayMarkerLayer {
 	// Convenience function to quickly add a Arrow marker,
 	//   which is equivalent to : ahead := layer.CreateMarkerArrowHead();  ahead.Translate();  layer.AddLabel(ahead)
-	ahead := self.CreateMarkerArrowHead(size, color, outline_color, false)
+	ahead := self.CreateArrowHeadMarker(size, color, outline_color, false)
 	ahead.Rotate(rotation).Translate(xy[0], xy[1])
 	self.Markers = append(self.Markers, ahead)
 	return self
 }
 
-func (self *OverlayMarkerLayer) AddMarkerArrowHeadsToTest() *OverlayMarkerLayer {
-	ahead := self.CreateMarkerArrowHead(20, "#ffaaaa", "#ff0000", true)
-	poses := wcommon.NewSceneObjectPoses(2, 3, []float32{0, 0, 40, 40, 40, 80})
-	return self.AddMarker(ahead.SetInstancePoses(poses))
+func (self *OverlayMarkerLayer) AddArrowHeadMarkerForTest() *OverlayMarkerLayer {
+	if true {
+		ahead1 := self.CreateArrowHeadMarker(20, "#ffaaaa", "#ff0000", false)
+		ahead2 := self.CreateArrowHeadMarker(20, "#ffaaaa", "#ff0000", false).Translate(40, 40)
+		ahead3 := self.CreateArrowHeadMarker(20, "#ffaaaa", "#ff0000", false).Translate(40, 80)
+		return self.AddMarker(ahead1, ahead2, ahead3)
+	} else {
+		ahead := self.CreateArrowHeadMarker(20, "#ffaaaa", "#ff0000", true)
+		poses := wcommon.NewSceneObjectPoses(2, 3, []float32{0, 0, 40, 40, 40, 80})
+		return self.AddMarker(ahead.SetInstancePoses(poses))
+	}
 }
 
 // ----------------------------------------------------------------------------
 // Marker Examples
 // ----------------------------------------------------------------------------
 
-func (self *OverlayMarkerLayer) CreateMarkerArrow(size float32, color string, outline_color string, multiple bool) *SceneObject {
+func (self *OverlayMarkerLayer) CreateArrowMarker(size float32, color string, outline_color string, multiple bool) *SceneObject {
 	geometry := NewGeometry() // ARROW pointing left, with tip at (0,0)
 	geometry.SetVertices([][2]float32{{0, 0}, {0.5, -0.3}, {0.5, -0.15}, {1, -0.15}, {1, 0.15}, {0.5, 0.15}, {0.5, 0.3}})
 	geometry.SetFaces([][]uint32{{0, 1, 2, 3, 4, 5, 6}})
@@ -78,7 +87,7 @@ func (self *OverlayMarkerLayer) CreateMarkerArrow(size float32, color string, ou
 	return marker
 }
 
-func (self *OverlayMarkerLayer) CreateMarkerArrowHead(size float32, color string, outline_color string, multiple bool) *SceneObject {
+func (self *OverlayMarkerLayer) CreateArrowHeadMarker(size float32, color string, outline_color string, multiple bool) *SceneObject {
 	geometry := NewGeometry() // ARROW pointing left, with tip at (0,0)
 	geometry.SetVertices([][2]float32{{0, 0}, {1, -0.6}, {1, +0.6}})
 	geometry.SetFaces([][]uint32{{0, 1, 2}})
