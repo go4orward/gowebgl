@@ -37,26 +37,25 @@ func NewSceneObject_CubeWithTexture(wctx *wcommon.WebGLContext) *SceneObject {
 
 func NewSceneObject_CubeInstances(wctx *wcommon.WebGLContext) *SceneObject {
 	// This example creates 40,000 instances of a single geometry, each with its own pose (tx, ty)
-	geometry := NewGeometry_Cube(0.08, 0.08, 0.08)               // create a cube of size 0.08
-	geometry.BuildNormalsForFace()                               // prepare face normal vectors
-	geometry.BuildDataBuffers(true, false, true)                 //
-	material := wcommon.NewMaterial(wctx, "#888888")             // create material
-	shader := NewShader_InstancePoseColor(wctx)                  // create shader, and set its bindings
-	sobj := NewSceneObject(geometry, material, nil, nil, shader) // set up the scene object (draw FACES only)
-	poses := wcommon.NewSceneObjectPoses(6, 10*10*10, nil)
+	geometry := NewGeometry_Cube(0.08, 0.08, 0.08)                 // create a cube of size 0.08
+	geometry.BuildNormalsForFace()                                 // prepare face normal vectors
+	geometry.BuildDataBuffers(true, false, true)                   //
+	material := wcommon.NewMaterial(wctx, "#888888")               // create material
+	shader := NewShader_InstancePoseColor(wctx)                    // create shader, and set its bindings
+	scnobj := NewSceneObject(geometry, material, nil, nil, shader) // set up the scene object (draw FACES only)
+	scnobj.SetupPoses(6, 10*10*10, nil)
 	for i := 0; i < 10; i++ {
 		for j := 0; j < 10; j++ {
 			for k := 0; k < 10; k++ {
-				poses.SetPose(i*100+j*10+k, 0, float32(i)/10, float32(j)/10, float32(k)/10) // tx, ty, tz
+				scnobj.SetPoseValues(i*100+j*10+k, 0, float32(i)/10, float32(j)/10, float32(k)/10) // tx, ty, tz
 				ii, jj, kk := math.Abs(float64(i)-5)/5, math.Abs(float64(j)-5)/5, math.Abs(float64(k)-5)/5
 				r, g, b := float32(ii), float32(jj), float32(kk)
-				poses.SetPose(i*100+j*10+k, 3, r, g, b) // color
+				scnobj.SetPoseValues(i*100+j*10+k, 3, r, g, b) // color
 			}
 		}
 	}
-	sobj.SetInstancePoses(poses)
-	sobj.Translate(-0.5, -0.5, -0.5)
-	return sobj
+	scnobj.Translate(-0.5, -0.5, -0.5)
+	return scnobj
 }
 
 func NewSceneObject_Airplane(wctx *wcommon.WebGLContext) *SceneObject {

@@ -166,9 +166,6 @@ func (self *Renderer) render_scene_object_with_shader(sobj *SceneObject, pvm *ge
 		if count > 0 {
 			context.Call("bindBuffer", constants.ELEMENT_ARRAY_BUFFER, buffer)
 			if sobj.poses == nil {
-				// pname := self.wctx.GetExtension("ANGLE").Get("VERTEX_ATTRIB_ARRAY_DIVISOR_ANGLE")
-				// loc2 := shader.GetAttributeBindings()["axy"]["location"].(js.Value)
-				// fmt.Printf("axy  : %v\n", context.Call("getVertexAttrib", loc2, pname))
 				context.Call("drawElements", constants.LINES, count, constants.UNSIGNED_INT, 0) // (mode, count, type, offset)
 			} else {
 				ext, pose_count := self.wctx.GetExtension("ANGLE"), sobj.poses.Count

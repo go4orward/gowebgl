@@ -72,11 +72,6 @@ func (self *SceneObject) ShowInfo() {
 // Basic Access
 // ----------------------------------------------------------------------------
 
-func (self *SceneObject) SetInstancePoses(poses *wcommon.SceneObjectPoses) *SceneObject {
-	self.poses = poses
-	return self
-}
-
 func (self *SceneObject) AddChild(child *SceneObject) *SceneObject {
 	if self.children == nil {
 		self.children = make([]*SceneObject, 0)
@@ -91,6 +86,28 @@ func (self *SceneObject) GetModelMatrix() *geom3d.Matrix4 {
 
 func (self *SceneObject) GetChildren() []*SceneObject {
 	return self.children
+}
+
+// ----------------------------------------------------------------------------
+// Multiple Instance Poses
+// ----------------------------------------------------------------------------
+
+func (self *SceneObject) SetPoses(poses *wcommon.SceneObjectPoses) *SceneObject {
+	// This function is OPTIONAL (only if multiple instances of the geometry are rendered)
+	self.poses = poses
+	return self
+}
+
+func (self *SceneObject) SetupPoses(size int, count int, data []float32) *SceneObject {
+	// This function is OPTIONAL (only if multiple instances of the geometry are rendered)
+	self.poses = wcommon.NewSceneObjectPoses(size, count, data)
+	return self
+}
+
+func (self *SceneObject) SetPoseValues(index int, offset int, values ...float32) *SceneObject {
+	// This function is OPTIONAL (only if multiple instances of the geometry are rendered)
+	self.poses.SetPose(index, offset, values...)
+	return self
 }
 
 // ----------------------------------------------------------------------------

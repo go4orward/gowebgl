@@ -47,6 +47,19 @@ func (self *OverlayLabelLayer) Render(pvm *geom2d.Matrix3) {
 	}
 }
 
+func (self *OverlayLabelLayer) ShowInfo() {
+	fmt.Printf("OverlayLabelLayer\n")
+	fmt.Printf("  ALPHABET : ")
+	self.alphabet_texture.ShowInfo()
+	for _, label := range self.Labels {
+		w, h := label.chwh[0], label.chwh[1]
+		offx, offy := label.offset[0], label.offset[1]
+		poses := label.txtobj.poses.DataBuffer
+		fmt.Printf("  Label '%s' (%.0fx%.0f) %s %3.0fr [%.0f %.0f]off by '%s' %v\n",
+			label.text, w, h, label.color, label.angle, offx, offy, label.offref, poses)
+	}
+}
+
 // ----------------------------------------------------------------------------
 // Managing Labels
 // ----------------------------------------------------------------------------
@@ -56,6 +69,7 @@ func (self *OverlayLabelLayer) AddLabel(labels ...*OverlayLabel) *OverlayLabelLa
 		label := labels[i]
 		if label.txtobj == nil && label.text != "" {
 			label.build_labeltext_object(self.wctx, self.alphabet_texture)
+			// label.txtobj.ShowInfo()
 		}
 		if label.bkgobj == nil && label.bkgtype != "" {
 			label.build_background_object(self.wctx)
@@ -91,6 +105,13 @@ func (self *OverlayLabelLayer) AddTextLabel(label_text string, xy [2]float32, co
 	return self
 }
 
+func (self *OverlayLabelLayer) AddLabelsForTest() *OverlayLabelLayer {
+	self.AddTextLabel("AhjgyZ", [2]float32{40, 80}, "#ff0000", "")
+	label2 := self.CreateLabel("Hello!", [2]float32{20, 100}, "#0000ff")
+	label2.SetPose(0, "L_BTM", [2]float32{30, 30}).SetBackground("under:#000000")
+	return self.AddLabel(label2)
+}
+
 // ----------------------------------------------------------------------------
 // Label Functions
 // ----------------------------------------------------------------------------
@@ -107,23 +128,23 @@ func (self *OverlayLabel) SetPose(rotation float32, offset_reference string, off
 	switch self.offref {
 	case "L_TOP":
 		self.offset = [2]float32{offset[0], offset[1] - text_height/2}
-	case "L_MID":
+	case "L_CTR":
 		self.offset = [2]float32{offset[0], offset[1]}
 	case "L_BTM":
 		self.offset = [2]float32{offset[0], offset[1] + text_height/2}
 	case "M_TOP":
 		self.offset = [2]float32{offset[0] - text_width/2, offset[1] - text_height/2}
-	case "CENTER":
+	case "M_CTR", "CENTER":
 		self.offset = [2]float32{offset[0] - text_width/2, offset[1]}
 	case "M_BTM":
 		self.offset = [2]float32{offset[0] - text_width/2, offset[1] + text_height/2}
 	case "R_TOP":
 		self.offset = [2]float32{offset[0] - text_width, offset[1] - text_height/2}
-	case "R_MID":
+	case "R_CTR":
 		self.offset = [2]float32{offset[0] - text_width, offset[1]}
 	case "R_BTM":
 		self.offset = [2]float32{offset[0] - text_width, offset[1] + text_height/2}
-	default: // same as "L_MID"
+	default: // same as "L_CTR"
 		self.offset = [2]float32{offset[0], offset[1]}
 	}
 	return self
@@ -139,9 +160,7 @@ func (self *OverlayLabel) SetBackground(bkgtype string) *OverlayLabel {
 // ----------------------------------------------------------------------------
 
 func (self *OverlayLabel) build_labeltext_object(wctx *wcommon.WebGLContext, alphabet_texture *wcommon.Material) *OverlayLabel {
-	geometry := NewGeometry()
-	geometry.SetVertices([][2]float32{{0, 0}}) // geometry with a single vertex
-	geometry.BuildDataBuffers(true, false, false)
+	geometry := NewGeometry_Origin()
 	var vertex_shader_code = `
 		precision mediump float;
 		uniform   mat3  pvm;		// Projection * View * Model matrix
@@ -172,13 +191,12 @@ func (self *OverlayLabel) build_labeltext_object(wctx *wcommon.WebGLContext, alp
 			if (uv[1] < 0.0 || uv[1] > 1.0) discard;
 			float u = uv[0] * (whlen[1]/whlen[0]) - 0.5, v = uv[1];
 			if (u < 0.0 || u > 1.0 || v < 0.0 || v > 1.0) discard;
-			uv = vec2((u + v_code)/whlen[2], v);	// position in the texture (relative to label_length)
+			uv = vec2((u + v_code)/whlen[2], v);	// position in the texture (relative to alphabet_length)
 			gl_FragColor = texture2D(texture, uv) * color;
 		}`
 	offr := []float32{float32(self.offset[0]), float32(self.offset[1]), 0}
 	whlen := []float32{self.chwh[0], self.chwh[1], float32(alphabet_texture.GetAlaphabetLength())}
 	lrgba := wcommon.GetRGBAFromString(self.color) // label color RGBA
-	// fmt.Println(self.xy, whlen, lbrgba)
 	shader, _ := wcommon.NewShader(wctx, vertex_shader_code, fragment_shader_code)
 	shader.SetBindingForUniform("pvm", "mat3", "renderer.pvm")              // Proj*View*Model matrix
 	shader.SetBindingForUniform("asp", "vec2", "renderer.aspect")           // AspectRatio
@@ -191,7 +209,7 @@ func (self *OverlayLabel) build_labeltext_object(wctx *wcommon.WebGLContext, alp
 	shader.SetBindingForAttribute("cpose", "vec2", "instance.pose:2:0")     // character pose (:<stride>:<offset>)
 	shader.CheckBindings()                                                  // check validity of the shader
 	scnobj := NewSceneObject(geometry, alphabet_texture, shader, nil, nil)  // shader for drawing POINTS (for each character)
-	scnobj.SetInstancePoses(alphabet_texture.GetAlaphabetPosesForLabel(self.text))
+	scnobj.SetPoses(alphabet_texture.GetAlaphabetPosesForLabel(self.text))
 	scnobj.UseBlend = true
 	self.txtobj = scnobj
 	return self
@@ -226,11 +244,11 @@ func (self *OverlayLabel) build_background_object(wctx *wcommon.WebGLContext) *O
 	case "under": // "under:#000000", "under:<UnderlineColor>"
 		geometry.SetVertices([][2]float32{{0, 0}, lbtm, rbtm})
 		switch self.offref {
-		case "L_TOP", "L_MID", "L_BTM":
+		case "L_TOP", "L_CTR", "L_BTM":
 			geometry.SetEdges([][]uint32{{0, 1, 2}})
-		case "R_TOP", "R_MID", "R_BTM":
+		case "R_TOP", "R_CTR", "R_BTM":
 			geometry.SetEdges([][]uint32{{1, 2, 0}})
-		case "M_TOP", "CENTER", "M_BTM":
+		case "M_TOP", "M_CTR", "CENTER", "M_BTM":
 			geometry.SetEdges([][]uint32{{1, 2}})
 		default:
 			geometry.SetEdges([][]uint32{{1, 2}})

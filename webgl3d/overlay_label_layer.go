@@ -92,6 +92,13 @@ func (self *OverlayLabelLayer) AddTextLabel(label_text string, xyz [3]float32, c
 	return self
 }
 
+func (self *OverlayLabelLayer) AddLabelsForTest() *OverlayLabelLayer {
+	self.AddTextLabel("AhjgyZ", [3]float32{0, .5, .5}, "#ff0000", "")
+	label2 := self.CreateLabel("Hello!", [3]float32{0, 1, 1}, "#0000ff")
+	label2.SetPose(0, "L_BTM", [2]float32{30, 30}).SetBackground("under:#000000")
+	return self.AddLabel(label2)
+}
+
 // ----------------------------------------------------------------------------
 // Label Functions
 // ----------------------------------------------------------------------------
@@ -140,9 +147,7 @@ func (self *OverlayLabel) SetBackground(bkgtype string) *OverlayLabel {
 // ----------------------------------------------------------------------------
 
 func (self *OverlayLabel) build_labeltext_object(wctx *wcommon.WebGLContext, alphabet_texture *wcommon.Material) *OverlayLabel {
-	geometry := webgl2d.NewGeometry()
-	geometry.SetVertices([][2]float32{{0, 0}}) // geometry with a single vertex
-	geometry.BuildDataBuffers(true, false, false)
+	geometry := webgl2d.NewGeometry_Origin()
 	var vertex_shader_code = `
 		precision mediump float;
 		uniform   mat4  proj;		// Projection matrix
@@ -175,13 +180,12 @@ func (self *OverlayLabel) build_labeltext_object(wctx *wcommon.WebGLContext, alp
 			if (uv[1] < 0.0 || uv[1] > 1.0) discard;
 			float u = uv[0] * (whlen[1]/whlen[0]) - 0.5, v = uv[1];
 			if (u < 0.0 || u > 1.0 || v < 0.0 || v > 1.0) discard;
-			uv = vec2((u + v_code)/whlen[2], v);	// position in the texture (relative to label_length)
+			uv = vec2((u + v_code)/whlen[2], v);	// position in the texture (relative to alphabet_length)
 			gl_FragColor = texture2D(texture, uv) * color;
 		}`
 	offr := []float32{float32(self.offset[0]), float32(self.offset[1]), 0}
 	whlen := []float32{self.chwh[0], self.chwh[1], float32(alphabet_texture.GetAlaphabetLength())}
 	lrgba := wcommon.GetRGBAFromString(self.color) // label color RGBA
-	// fmt.Println(orgoff, whlen, lbrgba)
 	shader, _ := wcommon.NewShader(wctx, vertex_shader_code, fragment_shader_code)
 	shader.SetBindingForUniform("proj", "mat4", "renderer.proj")            // Projection matrix
 	shader.SetBindingForUniform("vwmd", "mat4", "renderer.vwmd")            // View*Model matrix
@@ -195,7 +199,7 @@ func (self *OverlayLabel) build_labeltext_object(wctx *wcommon.WebGLContext, alp
 	shader.SetBindingForAttribute("cpose", "vec2", "instance.pose:2:0")     // character pose (:<stride>:<offset>)
 	shader.CheckBindings()                                                  // check validity of the shader
 	scnobj := NewSceneObject(geometry, alphabet_texture, shader, nil, nil)  // shader for drawing POINTS (for each character)
-	scnobj.SetInstancePoses(alphabet_texture.GetAlaphabetPosesForLabel(self.text))
+	scnobj.SetPoses(alphabet_texture.GetAlaphabetPosesForLabel(self.text))
 	scnobj.UseDepth = true
 	scnobj.UseBlend = true
 	self.txtobj = scnobj

@@ -23,14 +23,14 @@ func main() {
 		scene.Add(webgl3d.NewSceneObject_CylinderWireframe(wctx)) // a pre-defined example of SceneObject
 		// scene.Add(webgl3d.NewSceneObject_CubeInstances(wctx)) // a pre-defined example of SceneObject
 	} else {
-		geometry := webgl3d.NewGeometry_CubeWithTexture(1, 1, 1)    // create geometry (a cube of size 1.0)
-		geometry.BuildNormalsForFace()                              // calculate normal vectors for each face
-		geometry.BuildDataBuffers(true, false, true)                // build data buffers for vertices and faces
-		material := wcommon.NewMaterial(wctx, "/assets/gopher.png") // create material (with texture image)
-		shader := webgl3d.NewShader_NormalTexture(wctx)             // use the standard NORMAL+TEXTURE shader
-		scene.Add(webgl3d.NewSceneObject(geometry, material, nil, nil, shader))
-		llayer := webgl3d.NewOverlayLabelLayer(wctx, 20, true).AddTextLabel("AhiyZ", [3]float32{0, .5, .5}, "#ff0000", "L_BTM")
-		mlayer := webgl3d.NewOverlayMarkerLayer(wctx).AddArrowHeadMarkerForTest()
+		// geometry := webgl3d.NewGeometry_CubeWithTexture(1, 1, 1)    // create geometry (a cube of size 1.0)
+		// geometry.BuildNormalsForFace()                              // calculate normal vectors for each face
+		// geometry.BuildDataBuffers(true, false, true)                // build data buffers for vertices and faces
+		// material := wcommon.NewMaterial(wctx, "/assets/gopher.png") // create material (with texture image)
+		// shader := webgl3d.NewShader_NormalTexture(wctx)             // use the standard NORMAL+TEXTURE shader
+		// scene.Add(webgl3d.NewSceneObject(geometry, material, nil, nil, shader))
+		llayer := webgl3d.NewOverlayLabelLayer(wctx, 20, true).AddLabelsForTest()
+		mlayer := webgl3d.NewOverlayMarkerLayer(wctx).AddMarkersForTest()
 		scene.AddOverlay(mlayer, llayer)
 	}
 	camera := webgl3d.NewPerspectiveCamera(wctx.GetWH(), 15, 1.0) // FOV default is 15° (in degree)
@@ -61,7 +61,7 @@ func main() {
 			renderer.Clear(scene)               // prepare to render (clearing to white background)
 			renderer.RenderScene(scene, camera) // render the scene (iterating over all the SceneObjects in it)
 			renderer.RenderAxes(camera, 0.8)    // render the axes (just for visual reference)
-			scene.Get(0).Rotate([3]float32{0, 1, 1}, 1.0)
+			// scene.Get(0).Rotate([3]float32{0, 1, 1}, 1.0)
 		})
 	}
 	<-make(chan bool) // wait for events (without exiting)

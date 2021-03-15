@@ -116,6 +116,10 @@ func (self *Material) GetTexture() js.Value {
 	return self.texture
 }
 
+func (self *Material) GetTextureWH() [2]int {
+	return self.texture_wh
+}
+
 func (self *Material) IsTextureReady() bool {
 	return (!self.texture.IsNull() && self.texture_wh[0] > 0 && self.texture_wh[1] > 0)
 }

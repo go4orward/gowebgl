@@ -4,6 +4,16 @@ import (
 	"math"
 )
 
+var geometry_origin *Geometry // Geometry with only one vertex at (0,0)
+
+func NewGeometry_Origin() *Geometry {
+	if geometry_origin == nil { // A singlton is shared for all the uses
+		geometry_origin = NewGeometry().SetVertices([][2]float32{{0, 0}})
+		geometry_origin.BuildDataBuffers(true, false, false)
+	}
+	return geometry_origin
+}
+
 func NewGeometry_Rectangle(size float32) *Geometry {
 	hs := size / 2
 	geometry := NewGeometry() // create an empty geometry

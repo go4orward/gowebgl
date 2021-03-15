@@ -68,17 +68,17 @@ func (self *Renderer) RenderScene(scene *Scene, camera *Camera) {
 // Rendering SceneObject
 // ----------------------------------------------------------------------------
 
-func (self *Renderer) RenderSceneObject(sobj *SceneObject, proj *geom3d.Matrix4, vwmd *geom3d.Matrix4) error {
+func (self *Renderer) RenderSceneObject(scnobj *SceneObject, proj *geom3d.Matrix4, vwmd *geom3d.Matrix4) error {
 	context := self.wctx.GetContext()
 	constants := self.wctx.GetConstants()
 	// Set DepthTest & Blending options
-	if sobj.UseDepth {
+	if scnobj.UseDepth {
 		context.Call("enable", constants.DEPTH_TEST) // Enable depth test
 		context.Call("depthFunc", constants.LEQUAL)  // Near things obscure far things
 	} else {
 		context.Call("disable", constants.DEPTH_TEST) // Disable depth test
 	}
-	if sobj.UseBlend {
+	if scnobj.UseBlend {
 		context.Call("enable", constants.BLEND)                                 // for pre-multiplied alpha
 		context.Call("blendFunc", constants.ONE, constants.ONE_MINUS_SRC_ALPHA) // for pre-multiplied alpha
 		// context.Call("blendFunc", constants.SRC_ALPHA, constants.ONE_MINUS_SRC_ALPHA) // for non pre-multiplied alpha
@@ -86,48 +86,48 @@ func (self *Renderer) RenderSceneObject(sobj *SceneObject, proj *geom3d.Matrix4,
 		context.Call("disable", constants.BLEND) // Disable blending
 	}
 	// If necessary, then build WebGLBuffers for the SceneObject's Geometry
-	if sobj.Geometry.IsDataBufferReady() == false {
+	if scnobj.Geometry.IsDataBufferReady() == false {
 		return errors.New("Failed to RenderSceneObject() : empty geometry data buffer")
 	}
-	if sobj.Geometry.IsWebGLBufferReady() == false {
-		sobj.Geometry.BuildWebGLBuffers(self.wctx, true, true, true)
+	if scnobj.Geometry.IsWebGLBufferReady() == false {
+		scnobj.Geometry.BuildWebGLBuffers(self.wctx, true, true, true)
 	}
-	if sobj.poses != nil && sobj.poses.IsWebGLBufferReady() == false {
-		sobj.poses.BuildWebGLBuffer(self.wctx)
+	if scnobj.poses != nil && scnobj.poses.IsWebGLBufferReady() == false {
+		scnobj.poses.BuildWebGLBuffer(self.wctx)
 		if !self.wctx.IsExtensionReady("ANGLE") {
 			self.wctx.SetupExtension("ANGLE")
 		}
 	}
 	// R3: Render the object with FACE shader
-	if sobj.FShader != nil {
-		err := self.render_scene_object_with_shader(sobj, proj, vwmd, 3, sobj.FShader)
+	if scnobj.FShader != nil {
+		err := self.render_scene_object_with_shader(scnobj, proj, vwmd, 3, scnobj.FShader)
 		if err != nil {
 			return err
 		}
 	}
 	// R2: Render the object with EDGE shader
-	if sobj.EShader != nil {
-		err := self.render_scene_object_with_shader(sobj, proj, vwmd, 2, sobj.EShader)
+	if scnobj.EShader != nil {
+		err := self.render_scene_object_with_shader(scnobj, proj, vwmd, 2, scnobj.EShader)
 		if err != nil {
 			return err
 		}
 	}
 	// R1: Render the object with VERTEX shader
-	if sobj.VShader != nil {
-		err := self.render_scene_object_with_shader(sobj, proj, vwmd, 1, sobj.VShader)
+	if scnobj.VShader != nil {
+		err := self.render_scene_object_with_shader(scnobj, proj, vwmd, 1, scnobj.VShader)
 		if err != nil {
 			return err
 		}
 	}
 	// Render all the children
-	for _, child := range sobj.children {
+	for _, child := range scnobj.children {
 		new_viewmodel := vwmd.MultiplyToTheRight(&child.modelmatrix)
 		self.RenderSceneObject(child, proj, new_viewmodel)
 	}
 	return nil
 }
 
-func (self *Renderer) render_scene_object_with_shader(sobj *SceneObject, proj *geom3d.Matrix4, vwmd *geom3d.Matrix4, draw_mode int, shader *wcommon.Shader) error {
+func (self *Renderer) render_scene_object_with_shader(scnobj *SceneObject, proj *geom3d.Matrix4, vwmd *geom3d.Matrix4, draw_mode int, shader *wcommon.Shader) error {
 	context := self.wctx.GetContext()
 	constants := self.wctx.GetConstants()
 	// 1. Decide which Shader to use
@@ -137,7 +137,7 @@ func (self *Renderer) render_scene_object_with_shader(sobj *SceneObject, proj *g
 	context.Call("useProgram", shader.GetShaderProgram())
 	// 2. bind the uniforms of the shader program
 	for uname, umap := range shader.GetUniformBindings() {
-		if err := self.bind_uniform(uname, umap, draw_mode, sobj.Material, proj, vwmd); err != nil {
+		if err := self.bind_uniform(uname, umap, draw_mode, scnobj.Material, proj, vwmd); err != nil {
 			if err.Error() != "Texture is not ready" {
 				fmt.Println(err.Error())
 			}
@@ -146,7 +146,7 @@ func (self *Renderer) render_scene_object_with_shader(sobj *SceneObject, proj *g
 	}
 	// 3. bind the attributes of the shader program
 	for aname, amap := range shader.GetAttributeBindings() {
-		if err := self.bind_attribute(aname, amap, draw_mode, sobj.Geometry, sobj.poses); err != nil {
+		if err := self.bind_attribute(aname, amap, draw_mode, scnobj.Geometry, scnobj.poses); err != nil {
 			fmt.Println(err.Error())
 			return err
 		}
@@ -154,37 +154,37 @@ func (self *Renderer) render_scene_object_with_shader(sobj *SceneObject, proj *g
 	// 4. draw  (Note that ARRAY_BUFFER was binded already in the attribut-binding step)
 	switch draw_mode {
 	case 3: // draw TRIANGLES (FACES)
-		buffer, count, _ := sobj.Geometry.GetWebGLBuffer(draw_mode)
+		buffer, count, _ := scnobj.Geometry.GetWebGLBuffer(draw_mode)
 		if count > 0 {
 			context.Call("bindBuffer", constants.ELEMENT_ARRAY_BUFFER, buffer)
-			if sobj.poses == nil {
+			if scnobj.poses == nil {
 				// fmt.Printf("draw FACES with drawElements()\n")
 				context.Call("drawElements", constants.TRIANGLES, count, constants.UNSIGNED_INT, 0) // (mode, count, type, offset)
 			} else {
 				// fmt.Printf("draw FACES with drawElementsInstancedANGLE()\n")
-				ext, pose_count := self.wctx.GetExtension("ANGLE"), sobj.poses.Count
+				ext, pose_count := self.wctx.GetExtension("ANGLE"), scnobj.poses.Count
 				ext.Call("drawElementsInstancedANGLE", constants.TRIANGLES, count, constants.UNSIGNED_INT, 0, pose_count)
 			}
 		}
 	case 2: // draw LINES (EDGES)
-		buffer, count, _ := sobj.Geometry.GetWebGLBuffer(draw_mode)
+		buffer, count, _ := scnobj.Geometry.GetWebGLBuffer(draw_mode)
 		if count > 0 {
 			context.Call("bindBuffer", constants.ELEMENT_ARRAY_BUFFER, buffer)
-			if sobj.poses == nil {
+			if scnobj.poses == nil {
 				context.Call("drawElements", constants.LINES, count, constants.UNSIGNED_INT, 0) // (mode, count, type, offset)
 			} else {
-				ext, pose_count := self.wctx.GetExtension("ANGLE"), sobj.poses.Count
+				ext, pose_count := self.wctx.GetExtension("ANGLE"), scnobj.poses.Count
 				ext.Call("drawElementsInstancedANGLE", constants.LINES, count, constants.UNSIGNED_INT, 0, pose_count)
 			}
 		}
 	case 1: // draw POINTS (VERTICES)
-		_, count, pinfo := sobj.Geometry.GetWebGLBuffer(draw_mode)
+		_, count, pinfo := scnobj.Geometry.GetWebGLBuffer(draw_mode)
 		if count > 0 {
 			vert_count := count / pinfo[0] // number of vertices
-			if sobj.poses == nil {
+			if scnobj.poses == nil {
 				context.Call("drawArrays", constants.POINTS, 0, vert_count) // (mode, first, count)
 			} else {
-				ext, pose_count := self.wctx.GetExtension("ANGLE"), sobj.poses.Count
+				ext, pose_count := self.wctx.GetExtension("ANGLE"), scnobj.poses.Count
 				ext.Call("drawArraysInstancedANGLE", constants.POINTS, 0, vert_count, pose_count)
 			}
 		}
