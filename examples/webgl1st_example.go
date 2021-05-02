@@ -1,5 +1,5 @@
 // +build js,wasm
-package main
+package examples
 
 import (
 	"fmt"

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"math"
 
-	"github.com/go4orward/gowebgl/wcommon/geom3d"
+	"github.com/go4orward/gowebgl/geom3d"
 )
 
 type OrthographicProjection struct {

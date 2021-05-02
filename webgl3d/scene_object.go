@@ -3,8 +3,8 @@ package webgl3d
 import (
 	"fmt"
 
+	"github.com/go4orward/gowebgl/geom3d"
 	"github.com/go4orward/gowebgl/wcommon"
-	"github.com/go4orward/gowebgl/wcommon/geom3d"
 )
 
 type SceneObject struct {

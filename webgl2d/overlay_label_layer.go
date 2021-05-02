@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/go4orward/gowebgl/geom2d"
 	"github.com/go4orward/gowebgl/wcommon"
-	"github.com/go4orward/gowebgl/wcommon/geom2d"
 )
 
 type OverlayLabel struct {

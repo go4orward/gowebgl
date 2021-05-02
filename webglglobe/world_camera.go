@@ -3,7 +3,7 @@ package webglglobe
 import (
 	"math"
 
-	"github.com/go4orward/gowebgl/wcommon/geom3d"
+	"github.com/go4orward/gowebgl/geom3d"
 	"github.com/go4orward/gowebgl/webgl3d"
 )
 

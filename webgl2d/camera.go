@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"math"
 
-	"github.com/go4orward/gowebgl/wcommon/geom2d"
+	"github.com/go4orward/gowebgl/geom2d"
 )
 
 type Camera struct {
