@@ -2,6 +2,8 @@
 
 Interactive 2D & 3D Graphics Library using Go + WebAssembly + WebGL
 
+** THIS PROJECT WAS MOVED TO A NEW REPOSITORY [GoGL](https://github.com/go4orward/gogl) (May 9, 2021) **
+
 ## How to Build & Run
 
 Simplest example: &emsp; _(for explaining how WebGL works)_
@@ -48,6 +50,7 @@ $ ./wasm_test_server    # open your browser, and visit http://localhost:8080
 
 I hope this project can help many people to learn WebGL and to build awesome 2D & 3D graphics applications.  
 Many thanks to [Richard Musiol](https://github.com/neelance), for his vision and contributions for GopherJS and WebAssembly for Go.
+If you hava a feedback or suggestion, contact [go4orward](https://github.com/go4orward).
 
 Resources taken from:
 - [Go Gopher images](https://golang.org/doc/gopher/) : originally created by Renee French
