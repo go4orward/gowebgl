@@ -4,7 +4,7 @@ Interactive 2D & 3D Graphics Library using Go + WebAssembly + WebGL
 
 **=========================================================**  
 **THIS PROJECT WAS MOVED TO A NEW REPOSITORY [GIGL](https://github.com/go4orward/gigl) (May 9, 2021),**  
-**WHICH ALREADY INCLUDES SIGNIFICANT IMPROVEMENTS.
+**WHICH ALREADY INCLUDES SIGNIFICANT IMPROVEMENTS.**  
 **NO FURTHER DEVELOPMENT WILL BE MADE TO THIS PROJECT.**
 **=========================================================**  
 
